@@ -19,8 +19,10 @@
   | **19:00** | Vision (AI-проверка фото) встроен в пайплайн |
   | **22:00** | MVP на проде |
 
-- **Параллельность:** контракты, фикстуры и заглушки уже есть, поэтому **в 10:00 все четверо начинают сразу**, никто никого не ждёт. Пути пересекаются в 15:00–16:00 и в 19:00 (§6).
-- **Один репозиторий на всех**, работа через ветки и PR. Каждый PR автоматически получает превью-ссылку Vercel.
+- **Параллельность:** архитектура собрана как «ходячий скелет» ([module-map](module-map.md)). Каждый модуль и компонент уже существует с финальной сигнатурой, пайплайн работает сквозняком на проде и сам подхватывает реализацию каждого, как только её смержат. **В 10:00 все четверо начинают сразу**, большой склейки в 16:00 не будет (§6).
+- **Как работаем:** [team-workflow](team-workflow.md). В Claude Code: `/cp-task N` → `/cp-ship N` → PR сливается сам после зелёного CI → прод обновляется сам. В конце сессии `/cp-handoff N`.
+- **Прод:** https://campusproof.vercel.app · проверка: [/api/health](https://campusproof.vercel.app/api/health).
+- **Один репозиторий на всех**, `main` защищён: только PR с зелёным CI. Каждый PR получает превью-ссылку Vercel (пока закрыта логином, см. §3.4).
 
 ---
 
@@ -34,14 +36,16 @@
 | Категории с формулировками из кейса, списки доменов, лимиты и пороги | `lib/config/*` |
 | Правила для AI-ассистентов (Claude Code и Cursor читают их сами) | `AGENTS.md`, `CLAUDE.md` |
 | Фикстура профиля и стрим-реплей для разработки UI без бэкенда | `fixtures/*`, `/dev/fixtures`, `/api/dev/replay` (только dev и превью) |
-| Заглушки API в нужных местах | `/api/resolve`, `/api/profile/stream`, `/api/profile/[qid]` |
+| **Ходячий скелет:** все модули пайплайна и UI-компоненты с финальными сигнатурами, оркестратор, SSE, хук стрима, страницы `/search` и `/u/[qid]`, тесты контрактов | [module-map.md](module-map.md) |
+| Регламент работы с нескольких компьютеров и команды агента `/cp-task`, `/cp-ship`, `/cp-sync`, `/cp-handoff`, `/cp-review`, `/cp-standup` | [team-workflow.md](team-workflow.md), `.claude/` |
+| Защита `main` (PR + зелёный CI, squash, auto-merge, без force-push), Prettier, LF-переводы строк для всех ОС | GitHub Settings, `.prettierrc.json`, `.gitattributes` |
 | Проверка здоровья и диагностика стрима и sharp на Vercel | `/api/health`, `/api/dev/sse-check` |
 | Обёртка для Wikimedia с обязательным User-Agent | `lib/sources/wikimediaFetch.ts` |
 | Черновик vision-промпта и JSON-схемы, общий для TS и Python | `lib/vision/prompt.ts` |
 | Python-скелет: спайки, индекс, разметка, метрики | `scripts/python/*` |
 | CI (typecheck + lint + тесты) и шаблон PR | `.github/*` |
 | 31 задача с чеклистами, метками владельцев, майлстоунами и стартовыми промптами для AI | [issues](https://github.com/Amir10202010/campusproof/issues), [milestones](https://github.com/Amir10202010/campusproof/milestones) |
-| Продакшен на Vercel (регион fra1) | _появится после подключения Vercel — см. §3.4_ |
+| Продакшен на Vercel (регион fra1), автодеплой из `main` | https://campusproof.vercel.app · [/api/health](https://campusproof.vercel.app/api/health) |
 
 ---
 
@@ -49,7 +53,7 @@
 
 | Роль | Кто | Почему именно так | Главный результат дня |
 |---|---|---|---|
-| **P1 · Pipeline** | Сильный вайбкодер №1. **Рекомендация: Амир** (владелец GitHub и Vercel) | Самая связная работа: оркестратор, стриминг, дедлайны, склейка всех частей. На Vercel Hobby нет участников команды: env-переменные, логи и настройки деплоя видит только владелец. Поэтому интегратор — владелец | Живой профиль на проде, кеш, деградации |
+| **P1 · Pipeline** | Сильный вайбкодер №1. **Рекомендация: Амир** (владелец GitHub и Vercel) | Самая связная работа: оркестратор, стриминг, дедлайны, склейка всех частей. На Vercel Hobby нет участников команды: env-переменные, логи и настройки деплоя видит только владелец. Поэтому интегратор — владелец | Реальные данные в готовом скелете: резолвер, Wikidata/Commons, описание кампуса, кеш, лимиты |
 | **P2 · Verification** | Сильный вайбкодер №2 | Самая «умная» логика: безопасная загрузка картинок, хеши, дедупликация, Claude vision, скоринг. От неё зависит точность, это 30% оценки | Фото с честными уровнями и доказательствами |
 | **P3 · Data & Eval** | Python-разработчик | Работа изолирована от TypeScript: скрипты общаются с приложением только через JSON-файлы и HTTP API. Ошибка в скрипте не ломает сайт | Решения по данным и модели, индекс вузов, первые метрики |
 | **P4 · UI & Product** | Вайбкодер-новичок | Презентационные компоненты на фикстурах — самый безопасный вайбкодинг: результат сразу видно, нет асинхронщины, API и инфраструктуры. Плюс продуктовые задачи, где важна аккуратность, а не опыт | Все экраны профиля + QA-прогон |
@@ -83,12 +87,13 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 ### 3.3 Как работаем с кодом
 - **Ветка на задачу:** `p1/resolver`, `p2/dhash`, `p3/spikes`, `p4/photo-card`. PR маленькие, до ~400 строк.
+- **Проще всего через агента:** `/cp-task N` берёт задачу и создаёт ветку, `/cp-ship N` делает PR с auto-merge. Подробно в [team-workflow](team-workflow.md).
 - **Перед PR:** `npm run check`. В PR ссылка на issue (`Closes #7`).
 - **PR:** CI зелёный → открыть превью-ссылку Vercel из PR → 1 ревью → squash merge.
   - P1 ↔ P2 ревьюят друг друга.
   - P1 ревьюит P4.
   - P2 ревьюит TS-изменения P3.
-- **В `main` напрямую не пушим** (кроме хотфиксов P1). `main` всегда рабочий, потому что это прод.
+- **`main` защищён:** только PR с зелёным CI (`check`), squash, auto-merge, force-push запрещён. `main` всегда рабочий, потому что это прод.
 - **`lib/types.ts` и `package.json` меняем только через P1.** От них зависят все.
 - **Коммитим со своего аккаунта и часто.** Организаторы могут смотреть историю Git.
 
@@ -105,8 +110,9 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 **Майлстоуны:** T+3 · 13:00 → T+6 · 16:00 → T+12 · 22:00 → Пятница.
 
 ### 3.4 Vercel
-- **Проект:** `campusproof` у Амира. Регион `fra1` (задан в `vercel.json`).
-- **Автодеплой:** `main` → продакшен, каждый PR → превью. Репо публичный, поэтому превью работают для коммитов всех участников. На Vercel Hobby это возможно только с публичным репо.
+- **Проект:** `campusproof` у Амира, регион `fra1`. **Прод:** https://campusproof.vercel.app
+- **Автодеплой:** `main` → продакшен (~1 мин), каждый PR → превью. Репо публичный, поэтому деплои собираются из коммитов всех участников. На Vercel Hobby это работает только с публичным репо.
+- **Превью сейчас закрыты логином Vercel** (защита по умолчанию), а добавить тиммейтов в Hobby-проект нельзя. Амир решает: Settings → Deployment Protection → Vercel Authentication → **Disabled**. Тогда ссылки из PR откроются у всех. Иначе остальные проверяют UI локально через `npm run dev`.
 - **Env-переменные** задаёт Амир в Settings → Environment Variables (Production + Preview). Список — в `.env.example`.
 - **Логи функций** видит только Амир. Упало на превью — присылайте ему ссылку и время.
 
@@ -120,7 +126,7 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 | Время | Все |
 |---|---|
-| 10:00–10:30 | **Кикофф:** каждый читает свои issues (5 мин); P4 и Амир заводят ключи ([#2](https://github.com/Amir10202010/campusproof/issues/2)); остальные клонируют репо и запускают `npm run dev` |
+| 10:00–10:30 | **Кикофф:** каждый читает свои issues (5 мин); P4 и Амир заводят ключи ([#2](https://github.com/Amir10202010/campusproof/issues/2)); остальные настраивают компьютер по [team-workflow](team-workflow.md) §1 |
 | 10:30–13:00 | Блок 1 |
 | **13:00–13:15** | **Синк T+3**: что готово, выводы спайков S2/S3 от P3 |
 | 13:15–13:45 | Обед |
@@ -143,7 +149,7 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 | Кто | Готово | Как проверить |
 |---|---|---|
-| **P4** | [#2](https://github.com/Amir10202010/campusproof/issues/2) ключи Anthropic (с лимитом трат) и Serper у P2/P3, env в Vercel · [#3](https://github.com/Amir10202010/campusproof/issues/3) компоненты v1: `TierBadge`, `PhotoCard`, `CategorySection`, `FilterBar`, `SearchBox` | `/api/health` → `configured` = true; `/dev/fixtures` на превью похож на профиль |
+| **P4** | [#2](https://github.com/Amir10202010/campusproof/issues/2) ключи Anthropic (с лимитом трат) и Serper у P2/P3, env в Vercel · [#3](https://github.com/Amir10202010/campusproof/issues/3) дизайн вместо заглушек: `TierBadge`, `PhotoCard`, `CategorySection`, `FilterBar`, `SearchBox` | `/api/health` → `configured` = true; локально `/search?q=demo&replay=1` похож на профиль |
 | **P1** | [#7](https://github.com/Amir10202010/campusproof/issues/7) `/api/resolve` через Wikidata (resolved / ambiguous / not_found) · [#8](https://github.com/Amir10202010/campusproof/issues/8) `getEntity` + Wikipedia · первые цифры Commons | `curl "<превью>/api/resolve?q=MSU"` → ambiguous; `KBTU` → resolved |
 | **P2** | [#15](https://github.com/Amir10202010/campusproof/issues/15) safe fetch + канонизация + dHash + тесты · [#16](https://github.com/Amir10202010/campusproof/issues/16) Serper-адаптер возвращает `Candidate[]` | `npm test` зелёный; скрипт на 3 KZ-вуза отдаёт кандидатов |
 | **P3** | [#21](https://github.com/Amir10202010/campusproof/issues/21) спайки S2 (Commons) и S3 (Serper) → `docs/spikes.md` с выводами | Таблицы S2/S3 в main, выводы озвучены на синке |
@@ -152,10 +158,10 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 | Кто | Готово | Как проверить |
 |---|---|---|
-| **P1** | [#9](https://github.com/Amir10202010/campusproof/issues/9) Commons-адаптер · [#10](https://github.com/Amir10202010/campusproof/issues/10) оркестратор + SSE с дедлайном 27 с · [#11](https://github.com/Amir10202010/campusproof/issues/11) `useProfileStream` + `/u/[qid]` | `/u/<qid NU>` на превью строит профиль вживую, пока без AI-уровней |
+| **P1** | [#9](https://github.com/Amir10202010/campusproof/issues/9) Commons-адаптер · [#10](https://github.com/Amir10202010/campusproof/issues/10) скелет оркестратора уже работает — прогнать на реальных данных и укрепить · [#11](https://github.com/Amir10202010/campusproof/issues/11) хук и страницы уже готовы — проверить на живых данных | На проде `/search?q=Nazarbayev University`: источники `ok`, фото Commons с уровнями v0 от P2 |
 | **P2** | [#17](https://github.com/Amir10202010/campusproof/issues/17) дедуп L1/L2 + scoring v0 (не-визуальные сигналы) смержены и подключены P1 | Тесты зелёные; в профиле нет точных дублей |
 | **P3** | [#22](https://github.com/Amir10202010/campusproof/issues/22) выбор vision-модели на 40 размеченных картинках · [#23](https://github.com/Amir10202010/campusproof/issues/23) промпт v1 | Таблица моделей в `docs/spikes.md`; `VISION_MODEL` обновлён в Vercel |
-| **P4** | [#4](https://github.com/Amir10202010/campusproof/issues/4) `EvidenceDialog`, `CoveragePanel`, `ProfileHeader` с таймером, `PipelineRail`, `DegradedBanner`, `PickList` / `NotFound` + страница `/dev/stream` на реплее | На превью `/dev/stream` показывает весь путь от этапов до финала |
+| **P4** | [#4](https://github.com/Amir10202010/campusproof/issues/4) дизайн вместо заглушек: `EvidenceDialog`, `CoveragePanel`, `ProfileHeader` с таймером, `PipelineRail`, `DegradedBanner`, `DescriptionBlock`, `PickList` / `NotFound` | Локально `/search?q=demo&replay=1` показывает весь путь от этапов до финала в дизайне |
 
 ### ✅ T+9 — 19:00 (короткий синк)
 - **P2:** [#18](https://github.com/Amir10202010/campusproof/issues/18) vision-модуль встроен — фото приходят с наблюдениями модели.
@@ -166,8 +172,8 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 | Кто | Готово |
 |---|---|
-| **P1** | [#12](https://github.com/Amir10202010/campusproof/issues/12) кеш + бейдж «сохранённый профиль» · [#13](https://github.com/Amir10202010/campusproof/issues/13) деградации + `?simulate=` + лимиты · [#14](https://github.com/Amir10202010/campusproof/issues/14) резолвер на индексе + расстояние до центра |
-| **P2** | [#19](https://github.com/Amir10202010/campusproof/issues/19) scoring v1 с визуальными сигналами и причинами отбраковки · [#20](https://github.com/Amir10202010/campusproof/issues/20) описание кампуса с цитатами |
+| **P1** | [#12](https://github.com/Amir10202010/campusproof/issues/12) кеш + бейдж «сохранённый профиль» · [#13](https://github.com/Amir10202010/campusproof/issues/13) лимиты и дневной бюджет (simulate и деградации уже в скелете) · [#14](https://github.com/Amir10202010/campusproof/issues/14) резолвер на индексе · [#20](https://github.com/Amir10202010/campusproof/issues/20) описание кампуса с цитатами (перенесено от P2) |
+| **P2** | [#19](https://github.com/Amir10202010/campusproof/issues/19) scoring v1 с визуальными сигналами и причинами отбраковки |
 | **P3** | [#25](https://github.com/Amir10202010/campusproof/issues/25) разметка ≥8 вузов (tune/test) + первые метрики в `eval/results/2026-09-17.md` |
 | **P4** | [#5](https://github.com/Amir10202010/campusproof/issues/5) главная + `/how-it-works` + мобильная версия 375 px · [#6](https://github.com/Amir10202010/campusproof/issues/6) QA-прогон 15 запросов на проде → баги в issues |
 
@@ -210,7 +216,7 @@ flowchart LR
   subgraph T12["до 22:00"]
     I18["#18 vision · P2"]
     I19["#19 scoring v1 · P2"]
-    I20["#20 описание · P2"]
+    I20["#20 описание · P1"]
     I12["#12 кеш · P1"]
     I13["#13 деградации · P1"]
     I24["#24 индекс · P3"]
@@ -243,8 +249,8 @@ flowchart LR
 | 10:30 | P4 → P2, P3 | Ключи Serper и Anthropic | Лично → `.env.local` |
 | 13:00 | P3 → P2 | Какие шаблоны запросов и домены работают (S3) | `docs/spikes.md` |
 | 13:00 | P3 → P1 | Сколько фото реально даёт Commons (S2) | `docs/spikes.md` |
-| ~15:00 | P2 → P1 | `lib/images/*`, `dedup`, `score` v0 | PR в main |
-| ~15:00 | P4 → P1 | Компоненты v1 и их props | PR в main |
+| ~15:00 | P2 → все | `lib/images/*`, `dedup`, `score` v0 | PR в main — пайплайн подхватит сам |
+| ~15:00 | P4 → все | Дизайн компонентов v1 (props уже зафиксированы) | PR в main |
 | 16:00 | P3 → P2 | Выбранная модель + промпт v1 | `docs/spikes.md`, `lib/vision/prompt.ts` |
 | 16:00 | P3 → Амир | Значение `VISION_MODEL` | Vercel env |
 | 19:00 | P1 → P3 | `/api/profile/[qid]` на проде | Для разметки и метрик |
@@ -252,11 +258,8 @@ flowchart LR
 | 21:00 | P4 → P1, P2 | Баги QA-прогона | Issues с меткой `bug` |
 
 ### 6.4 Как не мешать друг другу
-- **Свои папки.** Карта владения — в `AGENTS.md`. Чужой файл — только после сообщения владельцу.
-- **Пока соседа нет, работайте на контракте.**
-  - P1 подключает временные функции с теми же сигнатурами, что будут у P2 (на реальных данных, без фейковых событий).
-  - P4 рендерит фикстуры.
-  - P2 до промпта v1 работает на черновике v0.
+- **Свои папки.** Карта владения — в [module-map.md](module-map.md) и `AGENTS.md`. Чужой файл — только после сообщения владельцу.
+- **Соседа ждать не нужно.** Заглушки уже стоят в пайплайне: пока модуль не готов, этап честно помечен `skipped`, а UI-заглушки показывают настоящие данные текстом. P2 до промпта v1 работает на черновике v0.
 - **Один общий файл — один владелец:** `lib/types.ts` (P1), `lib/config/categories.ts` (P2), `fixtures/*` (P4).
 
 ---
@@ -265,12 +268,12 @@ flowchart LR
 
 | Кто | Что сделать |
 |---|---|
-| **P1 (Амир)** | Пригласить collaborators (§3.2) · проверить `/api/health` и `/api/dev/sse-check?seconds=25` на проде (стрим идёт без буферизации?) · вместе с P4 завести env в Vercel |
-| **P2** | Клонировать репо → `npm run dev` · прочитать `docs/architecture.md` §5.2–5.6 · открыть #15 и отдать AI стартовый промпт из issue |
-| **P3** | Клонировать репо → venv по `scripts/python/README.md` · прочитать docstring `spike_commons_yield.py` · открыть #21 и отдать AI стартовый промпт |
-| **P4** | С Амиром и взрослым владельцем карты сделать #2 (Anthropic с лимитом трат, Serper, Upstash) · затем открыть `/dev/fixtures` и #3 |
+| **P1 (Амир)** | Пригласить collaborators (§3.2) · решить про превью (§3.4) · вместе с P4 завести env в Vercel · `/cp-task 7` |
+| **P2** | Настроить компьютер ([team-workflow](team-workflow.md) §1) · прочитать `docs/module-map.md` · `/cp-task 15` |
+| **P3** | Настроить компьютер ([team-workflow](team-workflow.md) §1) + venv по `scripts/python/README.md` · `/cp-task 21` |
+| **P4** | С Амиром и взрослым владельцем карты сделать #2 (Anthropic с лимитом трат, Serper, Upstash) · настроить компьютер ([team-workflow](team-workflow.md) §1) · `/cp-task 3` |
 
-**Как работать с AI-ассистентом:** в начале каждой сессии скажите ему «Прочитай AGENTS.md и issue #N». Дальше давайте стартовый промпт из issue. Claude Code читает `CLAUDE.md` сам, Cursor — `AGENTS.md`.
+**Как работать с AI-ассистентом:** в Claude Code — `/cp-task N`, в конце сессии `/cp-handoff N`. В Cursor и других скажите: «Прочитай AGENTS.md и `.claude/skills/cp-task/SKILL.md` и выполни шаги для issue #N».
 
 ---
 
@@ -280,7 +283,7 @@ flowchart LR
 |---|---|---|
 | 10:45 | Нет ключа Anthropic (нет карты или взрослого) | P3 делает S2/S3, P2 — #15/#16/#17. Vision (#18) и S4 (#22) ждут ключа. Если к 13:00 ключа нет, обсуждаем запасной провайдер (architecture §2) |
 | 13:00 | `/api/resolve` не работает на превью | P2 на 30 минут помогает P1; P4 и P3 продолжают |
-| 16:00 | Нет живого профиля Nazarbayev University | P1 + P2 парой чинят оркестратор; P4 переходит к #5; P3 продолжает |
+| 16:00 | Нет живого профиля Nazarbayev University | P1 + P2 парой доводят резолвер, Commons и загрузку картинок (оркестратор уже работает); P4 переходит к #5; P3 продолжает |
 | 16:00 | S4 не закончен | P2 берёт `claude-opus-5` с effort low по умолчанию; S4 доделываем до 19:00 |
 | 19:00 | Vision не встроен | Профиль на не-визуальных сигналах + честный баннер «визуальная проверка недоступна»; vision — первым делом в пятницу |
 | 19:00 | Индекс не готов | Резолвер остаётся на живом Wikidata + маленький файл алиасов; индекс утром в пятницу |

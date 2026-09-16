@@ -64,8 +64,8 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 
 | Area | Owner |
 |---|---|
-| `lib/resolver/**`, `lib/sources/{wikidata,wikipedia,commons,geo,wikimediaFetch}.ts`, `lib/cache/**`, `lib/pipeline/**`, `lib/client/**`, `hooks/**`, `components/containers/**`, `app/api/**`, `app/search/**`, `app/u/**`, `lib/types.ts`, `package.json`, `.github/**`, `.claude/**`, `vercel.json` | **P1** Pipeline |
-| `lib/images/**`, `lib/sources/webSearch/**`, `lib/sources/classifyDomain.ts`, `lib/vision/{provider,claude,schema,observeAll}.ts`, `lib/scoring/**`, `lib/describe/**`, `lib/config/**` | **P2** Verification |
+| `lib/resolver/**`, `lib/sources/{wikidata,wikipedia,commons,geo,wikimediaFetch}.ts`, `lib/describe/**`, `lib/cache/**`, `lib/pipeline/**`, `lib/client/**`, `hooks/**`, `components/containers/**`, `app/api/**`, `app/search/**`, `app/u/**`, `lib/types.ts`, `package.json`, `.github/**`, `.claude/**`, `vercel.json` | **P1** Pipeline |
+| `lib/images/**`, `lib/sources/webSearch/**`, `lib/sources/classifyDomain.ts`, `lib/vision/{provider,claude,schema,observeAll}.ts`, `lib/scoring/**`, `lib/config/**` | **P2** Verification |
 | `scripts/python/**`, `data/**`, `eval/**`, `lib/vision/prompt.ts`, `docs/spikes.md` | **P3** Data & Eval |
 | `components/profile/**`, `components/search/**`, `lib/ui/**`, `app/page.tsx`, `app/how-it-works/**`, `app/dev/**`, `fixtures/**`, `public/fixtures/**` | **P4** UI & Product |
 
