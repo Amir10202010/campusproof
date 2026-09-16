@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="640" height="480" fill="#1f5f3a"/>
+  <path d="M0 360 L160 250 L300 330 L440 210 L640 340 L640 480 L0 480 Z" fill="#ffffff" fill-opacity="0.12"/>
+  <circle cx="520" cy="110" r="42" fill="#ffffff" fill-opacity="0.18"/>
+  <text x="32" y="64" font-family="Arial, sans-serif" font-size="22" fill="#ffffff" fill-opacity="0.75">ФИКСТУРА · не настоящее фото</text>
+  <text x="32" y="420" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">Спорт</text>
+</svg>
