@@ -17,7 +17,7 @@ flowchart LR
   Q["query / qid"] --> R["resolveQuery · P1 #7"] --> E["getEntity · P1 #8"]
   E --> C["gatherCommons · P1 #9"]
   E --> W["gatherWebSearch · P2 #16"]
-  E --> S["getSummaries · P1 #8"] --> D["describeCampus · P2 #20"]
+  E --> S["getSummaries · P1 #8"] --> D["describeCampus · P1 #20"]
   C --> F["fetchCandidates · P2 #15"]
   W --> F
   F --> U["dedupeCandidates · P2 #17"] --> V["observeAll + Claude · P2 #18"] --> SC["scoreCandidate · P2 #17/#19"]
@@ -40,7 +40,8 @@ Status: ✅ done (harden only if your issue says so) · 🧩 stub with final sig
 | `lib/sources/wikipedia.ts` | `getSummaries` | `(entity, signal) => Promise<WikipediaSummary[]>` | #8 | 🧩 |
 | `lib/sources/commons.ts` | `gatherCommons` | `(entity, ctx) => Promise<CommonsGatherResult>` | #9 | 🧩 |
 | `lib/cache/profileCache.ts` | `getCachedProfile`, `saveProfile` | `(qid) => Promise<Profile \| null>` / `(profile) => Promise<void>` | #12 | 🧩 |
-| `lib/cache/ratelimit.ts` | `allowFreshRun` | `(clientKey) => Promise<{ allowed, reason? }>` | #13 | 🧩 |
+| `lib/cache/ratelimit.ts` | `allowFreshRun` | `(clientKey) => Promise<{ allowed, reason? }>` — not called yet: wire it into `app/api/profile/stream/route.ts` | #13 | 🧩 |
+| `lib/describe/description.ts` | `describeCampus` | `(input, signal) => Promise<Description \| null>` | #20 (moved from P2) | 🧩 |
 | `lib/pipeline/orchestrator.ts` | `runProfilePipeline` | `(input, deps, emit, signal) => Promise<Profile \| null>` | #10 | ✅ skeleton — harden per issue |
 | `lib/pipeline/{context,deadline,events,coverage,assemble,deps}.ts` | plumbing | — | — | ✅ |
 | `lib/client/profileStream.ts`, `hooks/useProfileStream.ts` | reducer + hook | — | #11 | ✅ |
@@ -65,7 +66,6 @@ Status: ✅ done (harden only if your issue says so) · 🧩 stub with final sig
 | `lib/vision/schema.ts` | `parseVisionObservations` | `(raw) => VisionObservation[]` | #18 | 🧩 |
 | `lib/vision/observeAll.ts` | `observeAll` | `(items, context, provider, ctx, onBatch?) => Promise<Map>` | #18 | 🧩 |
 | `lib/scoring/score.ts` | `scoreCandidate` | `(candidate, observation \| null, context) => ScoreResult` | #17 → #19 | 🧩 |
-| `lib/describe/description.ts` | `describeCampus` | `(input, signal) => Promise<Description \| null>` | #20 | 🧩 |
 | `lib/config/{categories,domains,limits}.ts` | config | — | — | ✅ extend freely |
 
 ### P3 · Data & evaluation (Python)

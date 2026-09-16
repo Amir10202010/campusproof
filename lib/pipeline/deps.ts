@@ -28,7 +28,7 @@ export interface PipelineDeps {
   visionProvider: VisionProvider; // P2 #18
   observeAll: ObserveAll; // P2 #18
   scoreCandidate: ScoreCandidate; // P2 #17/#19
-  describeCampus: DescribeCampus; // P2 #20
+  describeCampus: DescribeCampus; // P1 #20
   getCachedProfile: GetCachedProfile; // P1 #12
   saveProfile: SaveProfile; // P1 #12
   now: () => number;
