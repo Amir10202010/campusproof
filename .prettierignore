@@ -1,0 +1,12 @@
+# generated / vendored
+.next
+node_modules
+package-lock.json
+next-env.d.ts
+components/ui
+public
+data
+eval
+# docs and python are formatted by humans (markdown tables would churn)
+*.md
+scripts/python

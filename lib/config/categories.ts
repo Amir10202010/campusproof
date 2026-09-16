@@ -30,8 +30,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     labelEn: "Campus",
     requiredArea: true,
     descriptionRu: "Корпуса, территория, входы, виды сверху",
-    definition:
-      "Exterior of university buildings, grounds, entrances, courtyards and aerial views of the campus.",
+    definition: "Exterior of university buildings, grounds, entrances, courtyards and aerial views of the campus.",
     queries: {
       en: ['"{name}" campus', '"{name}" main building'],
       ru: ['"{name}" кампус', '"{name}" главный корпус'],
@@ -46,8 +45,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     requiredArea: true,
     filterLabelRu: "Общежитие",
     descriptionRu: "Здания общежитий, комнаты, общие зоны",
-    definition:
-      "Student housing: dormitory buildings, residence halls, dorm rooms and their common areas.",
+    definition: "Student housing: dormitory buildings, residence halls, dorm rooms and their common areas.",
     queries: {
       en: ['"{name}" dormitory', '"{name}" student housing'],
       ru: ['"{name}" общежитие', '"{name}" студенческий городок'],
@@ -62,8 +60,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     labelEn: "Classrooms",
     requiredArea: true,
     descriptionRu: "Лекционные залы, учебные аудитории, семинарские комнаты",
-    definition:
-      "Lecture halls, classrooms, seminar rooms and auditoriums used for teaching.",
+    definition: "Lecture halls, classrooms, seminar rooms and auditoriums used for teaching.",
     queries: {
       en: ['"{name}" lecture hall', '"{name}" classroom'],
       ru: ['"{name}" аудитория', '"{name}" лекционный зал'],
@@ -76,8 +73,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     labelEn: "Libraries",
     requiredArea: true,
     descriptionRu: "Здания библиотек, читальные залы, книгохранилища",
-    definition:
-      "Library buildings, reading rooms, book stacks and study spaces inside a library.",
+    definition: "Library buildings, reading rooms, book stacks and study spaces inside a library.",
     queries: {
       en: ['"{name}" library'],
       ru: ['"{name}" библиотека'],
@@ -106,8 +102,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     requiredArea: false,
     filterLabelRu: "Спорт",
     descriptionRu: "Спортзалы, стадионы, бассейны, площадки",
-    definition:
-      "Sports facilities: gyms, stadiums, swimming pools, sports halls, fields and courts.",
+    definition: "Sports facilities: gyms, stadiums, swimming pools, sports halls, fields and courts.",
     queries: {
       en: ['"{name}" sports complex', '"{name}" gym'],
       ru: ['"{name}" спорткомплекс', '"{name}" спортзал'],
@@ -121,8 +116,7 @@ export const CATEGORIES: readonly CategoryConfig[] = [
     requiredArea: false,
     filterLabelRu: "Лаборатории",
     descriptionRu: "Лаборатории, мейкерспейсы, компьютерные классы",
-    definition:
-      "Laboratories, makerspaces, computer labs, research equipment and workshops.",
+    definition: "Laboratories, makerspaces, computer labs, research equipment and workshops.",
     queries: {
       en: ['"{name}" laboratory'],
       ru: ['"{name}" лаборатория'],

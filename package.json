@@ -10,7 +10,10 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "fix": "prettier --write . && eslint --fix",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
@@ -42,6 +45,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "prettier": "^3.9.7",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.1"

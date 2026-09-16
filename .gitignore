@@ -54,3 +54,6 @@ scripts/python/.cache/
 
 # local eval artifacts
 eval/cache/
+
+# personal Claude Code overrides (the shared config is .claude/settings.json)
+.claude/settings.local.json

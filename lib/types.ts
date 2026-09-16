@@ -9,34 +9,17 @@
 
 // ─── Categories, tiers, sources ────────────────────────────────────────────────
 
-export type CategoryId =
-  | "campus"
-  | "dormitory"
-  | "classroom"
-  | "library"
-  | "city"
-  | "sports"
-  | "lab"
-  | "student_life";
+export type CategoryId = "campus" | "dormitory" | "classroom" | "library" | "city" | "sports" | "lab" | "student_life";
 
 export type Tier = "verified" | "likely" | "unconfirmed" | "rejected";
 
-export type SourceType =
-  | "official"
-  | "encyclopedic"
-  | "news"
-  | "independent"
-  | "social"
-  | "unknown";
+export type SourceType = "official" | "encyclopedic" | "news" | "independent" | "social" | "unknown";
 
 export type DateKind = "taken" | "uploaded" | "published" | "retrieved";
 
 export type SimulateFlag = "web_search_down" | "vision_down" | "wikimedia_down";
 
-export type DegradedFlag =
-  | "web_search_unavailable"
-  | "vision_unavailable"
-  | "wikimedia_unavailable";
+export type DegradedFlag = "web_search_unavailable" | "vision_unavailable" | "wikimedia_unavailable";
 
 // ─── University entity & resolver ──────────────────────────────────────────────
 
@@ -99,7 +82,39 @@ export interface UniversityIndexEntry {
   wikipedia: { lang: string; title: string }[];
 }
 
+/** Result of GET /api/resolve and of lib/resolver/resolve.ts. */
+export type ResolveResult =
+  | { status: "resolved"; entity: UniversityEntity }
+  | { status: "ambiguous"; query: string; candidates: CandidateCard[] }
+  | { status: "not_found"; query: string; suggestions: CandidateCard[] };
+
+export interface ProfileFact {
+  label: string; // RU label, e.g. "Основан"
+  value: string;
+  sourceUrl: string;
+}
+
+/** Output of lib/sources/wikidata.ts → getEntity(). */
+export interface EntityDetails {
+  entity: UniversityEntity;
+  facts: ProfileFact[];
+}
+
+export interface WikipediaSummary {
+  lang: string;
+  title: string;
+  url: string;
+  extract: string;
+}
+
 // ─── Pipeline internals ────────────────────────────────────────────────────────
+
+export interface PipelineInput {
+  query?: string;
+  qid?: string;
+  refresh: boolean;
+  simulate: SimulateFlag[];
+}
 
 export interface RunContext {
   requestId: string;
@@ -135,6 +150,41 @@ export interface Candidate {
   height?: number;
 }
 
+/** Output of lib/images/prepare.ts: what the pipeline keeps after downloading an image. */
+export interface PreparedImage {
+  jpeg: Buffer; // resized JPEG (long edge LIMITS.VISION_IMAGE_LONG_EDGE_PX), sent to the vision model
+  width: number; // original width
+  height: number; // original height
+  dHash: string; // 16 hex chars (64-bit)
+  exif?: { takenAt?: string; gps?: GeoPoint };
+}
+
+/** A candidate that was downloaded and prepared (lib/images/fetchAll.ts), before scoring. */
+export interface FetchedCandidate extends Candidate {
+  id: string; // stable hash of canonicalUrl
+  canonicalUrl: string;
+  prepared: PreparedImage;
+  lowRes: boolean; // verified from a provider thumbnail only
+  alsoFoundAt: { sourcePageUrl: string; sourceDomain: string }[]; // filled by dedup
+}
+
+/** Input of lib/scoring/score.ts. */
+export interface ScoringContext {
+  entity: UniversityEntity;
+  visionAvailable: boolean;
+}
+
+/** Output of lib/scoring/score.ts. The orchestrator turns it into a Photo or a RejectedItem. */
+export interface ScoreResult {
+  points: number;
+  tier: Tier;
+  category: CategoryId;
+  secondary: CategoryId[];
+  evidence: Evidence[];
+  labels: PhotoLabel[];
+  reject?: { reason: RejectReason; detail: string };
+}
+
 /** What the vision model reports for one image (docs/architecture.md §5.5). Code decides the tier. */
 export interface VisionObservation {
   id: string;
@@ -164,23 +214,12 @@ export interface VisionObservation {
 
 export interface Evidence {
   signal: string; // e.g. "commons_category", "geo_near_campus"
-  kind:
-    | "provenance"
-    | "geo"
-    | "visual"
-    | "text"
-    | "cross_source"
-    | "quality"
-    | "community";
+  kind: "provenance" | "geo" | "visual" | "text" | "cross_source" | "quality" | "community";
   points: number;
   label: string; // plain language, shown in the evidence dialog
 }
 
-export type PhotoLabel =
-  | "render"
-  | "possibly_outdated"
-  | "visual_check_unavailable"
-  | "low_res_verification";
+export type PhotoLabel = "render" | "possibly_outdated" | "visual_check_unavailable" | "low_res_verification";
 
 export interface Photo {
   id: string; // hash of the canonical URL
@@ -253,7 +292,7 @@ export interface Description {
 export interface UniversityProfile {
   pipelineVersion: string;
   entity: UniversityEntity;
-  facts: { label: string; value: string; sourceUrl: string }[];
+  facts: ProfileFact[];
   description: Description | null;
   photos: Photo[]; // verified + likely + unconfirmed; the UI filters by tier
   rejected: RejectedItem[];

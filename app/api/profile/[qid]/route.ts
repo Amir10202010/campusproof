@@ -1,9 +1,23 @@
+import { getCachedProfile } from "@/lib/cache/profileCache";
+import { isNotImplemented } from "@/lib/notImplemented";
+
 /**
- * GET /api/profile/{qid} → cached UniversityProfile JSON (permalinks, compare, stream fallback, eval scripts).
- * Owner: P1 · Spec: docs/architecture.md §4, §8
- * Stub until the cache exists.
+ * GET /api/profile/{qid} → cached UniversityProfile JSON (permalinks, compare, eval scripts, stream fallback).
+ * Owner: P1 · issue #12. The route is final; the logic lives in lib/cache/profileCache.ts.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ qid: string }> }) {
   const { qid } = await params;
-  return Response.json({ error: "not_implemented", owner: "P1", qid }, { status: 501 });
+  if (!/^Q\d{1,12}$/.test(qid)) return Response.json({ error: "bad_qid" }, { status: 400 });
+
+  try {
+    const profile = await getCachedProfile(qid);
+    if (!profile) return Response.json({ error: "not_cached", qid }, { status: 404 });
+    return Response.json(profile);
+  } catch (error) {
+    if (isNotImplemented(error)) {
+      return Response.json({ error: "not_implemented", message: error.message }, { status: 501 });
+    }
+    console.error(JSON.stringify({ at: "api/profile/[qid]", error: String(error) }));
+    return Response.json({ error: "cache_failed" }, { status: 502 });
+  }
 }

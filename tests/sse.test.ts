@@ -5,9 +5,7 @@ const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
 
 describe("encodeSSE", () => {
   it("writes event name and JSON data terminated by a blank line", () => {
-    const text = decode(
-      encodeSSE({ type: "error", code: "not_implemented", message: "x", retryable: false }),
-    );
+    const text = decode(encodeSSE({ type: "error", code: "not_implemented", message: "x", retryable: false }));
     expect(text.startsWith("event: error\ndata: ")).toBe(true);
     expect(text.endsWith("\n\n")).toBe(true);
     const json = JSON.parse(text.split("data: ")[1]);

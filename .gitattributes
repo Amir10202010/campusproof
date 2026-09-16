@@ -1,0 +1,8 @@
+# Same line endings on macOS, Linux and Windows → no whole-file diffs between teammates' machines.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.pdf binary

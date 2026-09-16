@@ -15,8 +15,7 @@ export const env = {
   upstashRedisToken: process.env.UPSTASH_REDIS_REST_TOKEN,
 
   wikimediaUserAgent:
-    process.env.WIKIMEDIA_USER_AGENT ??
-    "CampusProof/0.1 (https://github.com/Amir10202010/campusproof)",
+    process.env.WIKIMEDIA_USER_AGENT ?? "CampusProof/0.1 (https://github.com/Amir10202010/campusproof)",
 
   pipelineVersion: process.env.PIPELINE_VERSION ?? "0.1.0",
   maxFreshProfilesPerDay: Number(process.env.MAX_FRESH_PROFILES_PER_DAY ?? 400),

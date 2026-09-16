@@ -10,14 +10,26 @@ export default function Home() {
         <p className="text-sm font-medium text-muted-foreground">LOCUS Startup Hackathon 2026 · Кейс 01</p>
         <h1 className="text-4xl font-semibold tracking-tight">CampusProof</h1>
         <p className="text-lg text-muted-foreground">
-          Введите название университета — и получите проверенные фотографии с источниками, а не
-          случайную выдачу поиска.
+          Введите название университета — и получите проверенные фотографии с источниками, а не случайную выдачу поиска.
         </p>
       </div>
 
-      <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-        Сервис в разработке. Поиск появится здесь.
-      </div>
+      {/* Temporary plain form (works without JS). P4 · #5 replaces it with <SearchBox>. */}
+      <form action="/search" method="get" className="flex gap-2">
+        <input
+          name="q"
+          required
+          maxLength={120}
+          placeholder="Название университета, например KBTU"
+          className="h-10 flex-1 rounded-md border px-3 text-sm"
+        />
+        <button type="submit" className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
+          Найти
+        </button>
+      </form>
+      <p className="text-xs text-muted-foreground">
+        Сервис в разработке: этапы пайплайна подключаются по мере готовности.
+      </p>
 
       <div className="grid gap-4 text-sm sm:grid-cols-2">
         <div>

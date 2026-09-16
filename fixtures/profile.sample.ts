@@ -35,7 +35,12 @@ export const samplePhotos: Photo[] = [
     tier: "verified",
     points: 115,
     evidence: [
-      { signal: "commons_category", kind: "provenance", points: 40, label: "В категории университета на Wikimedia Commons" },
+      {
+        signal: "commons_category",
+        kind: "provenance",
+        points: 40,
+        label: "В категории университета на Wikimedia Commons",
+      },
       { signal: "geo_near_campus", kind: "geo", points: 35, label: "Снято в 80 м от кампуса" },
       { signal: "visible_text_this", kind: "text", points: 30, label: "На фасаде читается название университета" },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Изображение соответствует описанию кампуса" },
@@ -63,8 +68,18 @@ export const samplePhotos: Photo[] = [
     tier: "verified",
     points: 85,
     evidence: [
-      { signal: "commons_depicts", kind: "provenance", points: 45, label: "В Commons отмечено, что на фото изображён этот университет" },
-      { signal: "commons_category", kind: "provenance", points: 40, label: "В категории университета на Wikimedia Commons" },
+      {
+        signal: "commons_depicts",
+        kind: "provenance",
+        points: 45,
+        label: "В Commons отмечено, что на фото изображён этот университет",
+      },
+      {
+        signal: "commons_category",
+        kind: "provenance",
+        points: 40,
+        label: "В категории университета на Wikimedia Commons",
+      },
     ],
     labels: [],
     alsoFoundAt: [],
@@ -116,7 +131,12 @@ export const samplePhotos: Photo[] = [
     evidence: [
       { signal: "news_mentions_name", kind: "provenance", points: 10, label: "Новостная статья об университете" },
       { signal: "page_mentions_name", kind: "text", points: 15, label: "Страница упоминает университет" },
-      { signal: "cross_source_match", kind: "cross_source", points: 15, label: "То же фото найдено ещё в одном источнике" },
+      {
+        signal: "cross_source_match",
+        kind: "cross_source",
+        points: 15,
+        label: "То же фото найдено ещё в одном источнике",
+      },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Изображение соответствует описанию кампуса" },
       { signal: "low_res", kind: "quality", points: -10, label: "Проверено по уменьшенной копии" },
     ],
@@ -190,13 +210,18 @@ export const samplePhotos: Photo[] = [
     date: { value: "2022-10-03", kind: "taken" },
     retrievedAt,
     license: commonsLicense,
-    geo: { lat: 51.0911, lon: 71.3990, distanceToCampusM: 120 },
+    geo: { lat: 51.0911, lon: 71.399, distanceToCampusM: 120 },
     category: "classroom",
     secondary: [],
     tier: "verified",
     points: 85,
     evidence: [
-      { signal: "commons_category", kind: "provenance", points: 40, label: "В категории университета на Wikimedia Commons" },
+      {
+        signal: "commons_category",
+        kind: "provenance",
+        points: 40,
+        label: "В категории университета на Wikimedia Commons",
+      },
       { signal: "geo_near_campus", kind: "geo", points: 35, label: "Снято в 120 м от кампуса" },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Похоже на лекционный зал" },
     ],
@@ -224,7 +249,12 @@ export const samplePhotos: Photo[] = [
     tier: "verified",
     points: 85,
     evidence: [
-      { signal: "commons_category", kind: "provenance", points: 40, label: "В подкатегории «Библиотека» университета на Commons" },
+      {
+        signal: "commons_category",
+        kind: "provenance",
+        points: 40,
+        label: "В подкатегории «Библиотека» университета на Commons",
+      },
       { signal: "geo_near_campus", kind: "geo", points: 35, label: "Снято в 150 м от кампуса" },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Похоже на читальный зал" },
     ],
@@ -251,7 +281,12 @@ export const samplePhotos: Photo[] = [
     points: 70,
     evidence: [
       { signal: "official_domain", kind: "provenance", points: 30, label: "Найдено на официальном сайте example.edu" },
-      { signal: "visible_text_this", kind: "text", points: 30, label: "На здании читается «Библиотека Демо Университета»" },
+      {
+        signal: "visible_text_this",
+        kind: "text",
+        points: 30,
+        label: "На здании читается «Библиотека Демо Университета»",
+      },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Похоже на здание библиотеки" },
     ],
     labels: [],
@@ -278,7 +313,12 @@ export const samplePhotos: Photo[] = [
     tier: "verified",
     points: 75,
     evidence: [
-      { signal: "commons_city_category", kind: "provenance", points: 40, label: "В категории города на Wikimedia Commons" },
+      {
+        signal: "commons_city_category",
+        kind: "provenance",
+        points: 40,
+        label: "В категории города на Wikimedia Commons",
+      },
       { signal: "geo_in_city", kind: "geo", points: 35, label: "Снято в пределах города" },
     ],
     labels: [],
@@ -305,7 +345,12 @@ export const samplePhotos: Photo[] = [
     tier: "verified",
     points: 75,
     evidence: [
-      { signal: "commons_city_category", kind: "provenance", points: 40, label: "В категории города на Wikimedia Commons" },
+      {
+        signal: "commons_city_category",
+        kind: "provenance",
+        points: 40,
+        label: "В категории города на Wikimedia Commons",
+      },
       { signal: "geo_in_city", kind: "geo", points: 35, label: "Снято в пределах города" },
     ],
     labels: [],
@@ -330,7 +375,12 @@ export const samplePhotos: Photo[] = [
     tier: "likely",
     points: 35,
     evidence: [
-      { signal: "official_domain_stock_like", kind: "provenance", points: 10, label: "Найдено на официальном сайте, но снимок похож на стоковый" },
+      {
+        signal: "official_domain_stock_like",
+        kind: "provenance",
+        points: 10,
+        label: "Найдено на официальном сайте, но снимок похож на стоковый",
+      },
       { signal: "page_mentions_name", kind: "text", points: 15, label: "Страница о спорте в университете" },
       { signal: "visual_consistent", kind: "visual", points: 10, label: "Похоже на спортзал" },
     ],
@@ -426,8 +476,7 @@ export const sampleProfile: UniversityProfile = {
     { label: "Город", value: "Астана", sourceUrl: "https://example.org/wikidata/Q0" },
   ],
   description: {
-    text:
-      "Демо Университет — вымышленный университет для разработки интерфейса [1]. Кампус находится примерно в 11 км от центра города по прямой [2]. Все данные в этом профиле ненастоящие [1].",
+    text: "Демо Университет — вымышленный университет для разработки интерфейса [1]. Кампус находится примерно в 11 км от центра города по прямой [2]. Все данные в этом профиле ненастоящие [1].",
     citations: [
       { n: 1, url: "https://example.org/wiki/demo", title: "Википедия (фикстура)", quote: "вымышленный университет" },
       { n: 2, url: "https://example.org/wikidata/Q0", title: "Wikidata (фикстура)" },

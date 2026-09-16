@@ -1,14 +1,23 @@
 import type { NextRequest } from "next/server";
+import { LIMITS } from "@/lib/config/limits";
+import { isNotImplemented } from "@/lib/notImplemented";
+import { resolveQuery } from "@/lib/resolver/resolve";
 
 /**
- * GET /api/resolve?q=  → { status: "resolved" | "ambiguous" | "not_found", ... }
- * Owner: P1 · Issue: "P1 · /api/resolve" · Spec: docs/architecture.md §5.1
- * Stub until implemented.
+ * GET /api/resolve?q=  → ResolveResult (lib/types.ts). Owner: P1 · issue #7.
+ * The route is final; the logic lives in lib/resolver/resolve.ts.
  */
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q") ?? "";
-  return Response.json(
-    { error: "not_implemented", owner: "P1", query: q, spec: "docs/architecture.md#51-resolve" },
-    { status: 501 },
-  );
+  const query = (request.nextUrl.searchParams.get("q") ?? "").trim().slice(0, LIMITS.QUERY_MAX_LENGTH);
+  if (!query) return Response.json({ error: "empty_query" }, { status: 400 });
+
+  try {
+    return Response.json(await resolveQuery(query, request.signal));
+  } catch (error) {
+    if (isNotImplemented(error)) {
+      return Response.json({ error: "not_implemented", message: error.message }, { status: 501 });
+    }
+    console.error(JSON.stringify({ at: "api/resolve", error: String(error) }));
+    return Response.json({ error: "resolve_failed" }, { status: 502 });
+  }
 }
