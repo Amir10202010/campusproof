@@ -68,31 +68,16 @@ export const gatherCommons: GatherCommons = async (entity, ctx) => {
             signal,
           )
         : Promise.resolve([]),
-      cityQid
-        ? queryFiles(
-            { generator: "search", gsrsearch: `haswbstatement:P180=${cityQid}`, gsrnamespace: 6, gsrlimit: 30 },
-            signal,
-          )
-        : cityCenter
-          ? queryFiles(
-              {
-                generator: "geosearch",
-                ggscoord: `${cityCenter.lat}|${cityCenter.lon}`,
-                ggsradius: CITY_RADIUS_M,
-                ggsnamespace: 6,
-                ggslimit: 30,
-              },
-              signal,
-            )
-          : Promise.resolve([]),
-      wikipediaArticleImages(entity, signal),
+      cityFiles(cityQid, cityCenter, signal),
+      articleFiles(entity.wikipedia, signal),
     ]);
 
   const settled = [subcategories, subcategoryFiles, categoryFiles, depicts, nearby, city, articleImages];
   if (settled.every((s) => s.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
   const value = <T>(s: PromiseSettledResult<T>, fallback: T): T => (s.status === "fulfilled" ? s.value : fallback);
 
-  const used = value(articleImages, new Set<string>());
+  const fromArticle = value(articleImages, []);
+  const used = new Set(fromArticle.map((file) => fileKey(file.title)));
   const relevantNames = new Set(await relevant.catch(() => []));
   const merged = new Map<string, Candidate>();
   const add = (files: CommonsFile[], origin: Origin) => {
@@ -103,6 +88,7 @@ export const gatherCommons: GatherCommons = async (entity, ctx) => {
       merged.set(file.title, existing ? mergeCandidates(existing, candidate) : candidate);
     }
   };
+  add(fromArticle, "article");
   add(value(subcategoryFiles, []), "category");
   add(value(categoryFiles, []), "category");
   add(value(depicts, []), "depicts");
@@ -137,7 +123,7 @@ const NON_PHOTO_WORDS =
 export const NON_PHOTO = new RegExp(`(?<![\\p{L}\\p{N}])(?:${NON_PHOTO_WORDS})(?![\\p{L}\\p{N}])`, "iu");
 const PEOPLE = /\b(people|persons|alumni|faculty members|rectors|presidents|portraits)\b|люди|выпускник/i;
 
-type Origin = "category" | "depicts" | "geosearch" | "city";
+type Origin = "category" | "depicts" | "geosearch" | "city" | "article";
 
 interface CommonsFile {
   title: string;
@@ -182,9 +168,13 @@ export function pickRelevantSubcategories(names: string[]): string[] {
   return picked;
 }
 
-async function queryFiles(generator: WikimediaParams, signal: AbortSignal): Promise<CommonsFile[]> {
+async function queryFiles(
+  generator: WikimediaParams,
+  signal: AbortSignal,
+  host = COMMONS_HOST,
+): Promise<CommonsFile[]> {
   const body = await wikimediaApi<{ query?: { pages?: CommonsFile[] } }>(
-    COMMONS_HOST,
+    host,
     {
       action: "query",
       ...generator,
@@ -201,16 +191,63 @@ async function queryFiles(generator: WikimediaParams, signal: AbortSignal): Prom
   return body.query?.pages ?? [];
 }
 
-/** File names used in the ru (else en) Wikipedia article — "used on Wikipedia" is a strong provenance signal. */
-async function wikipediaArticleImages(entity: UniversityEntity, signal: AbortSignal): Promise<Set<string>> {
-  const article = entity.wikipedia.find((w) => w.lang === "ru") ?? entity.wikipedia.find((w) => w.lang === "en");
-  if (!article) return new Set();
-  const body = await wikimediaApi<{ query?: { pages?: { images?: { title: string }[] }[] } }>(
+/** Images of the ru (else en) Wikipedia article: candidates and the "used on Wikipedia" provenance signal. */
+async function articleFiles(articles: UniversityEntity["wikipedia"], signal: AbortSignal): Promise<CommonsFile[]> {
+  const article = articles.find((w) => w.lang === "ru") ?? articles.find((w) => w.lang === "en");
+  if (!article) return [];
+  return queryFiles(
+    { generator: "images", gimlimit: 50, titles: article.title, redirects: 1 },
+    signal,
     `${article.lang}.wikipedia.org`,
-    { action: "query", prop: "images", imlimit: "max", redirects: 1, titles: article.title },
+  );
+}
+
+/**
+ * City photos: the images of the city's own Wikipedia article (curated: skylines, landmarks) — much cleaner than
+ * everything tagged "depicts this city". No article → files that depict the city; no city item → geosearch around it.
+ */
+async function cityFiles(
+  cityQid: string | undefined,
+  cityCenter: { lat?: number; lon?: number } | undefined,
+  signal: AbortSignal,
+): Promise<CommonsFile[]> {
+  if (cityQid) {
+    const article = await cityArticle(cityQid, signal).catch(() => undefined);
+    if (article) return articleFiles([article], signal);
+    return queryFiles(
+      { generator: "search", gsrsearch: `haswbstatement:P180=${cityQid}`, gsrnamespace: 6, gsrlimit: 30 },
+      signal,
+    );
+  }
+  if (cityCenter?.lat === undefined || cityCenter.lon === undefined) return [];
+  return queryFiles(
+    {
+      generator: "geosearch",
+      ggscoord: `${cityCenter.lat}|${cityCenter.lon}`,
+      ggsradius: CITY_RADIUS_M,
+      ggsnamespace: 6,
+      ggslimit: 30,
+    },
     signal,
   );
-  return new Set((body.query?.pages?.[0]?.images ?? []).map((image) => fileKey(image.title)));
+}
+
+/** ru (else en) Wikipedia article of the city, from its Wikidata sitelinks. */
+async function cityArticle(
+  cityQid: string,
+  signal: AbortSignal,
+): Promise<{ lang: string; title: string; url: string } | undefined> {
+  const body = await wikimediaApi<{ entities?: Record<string, { sitelinks?: Record<string, { title: string }> }> }>(
+    "www.wikidata.org",
+    { action: "wbgetentities", ids: cityQid, props: "sitelinks", sitefilter: "ruwiki|enwiki" },
+    signal,
+  );
+  const sitelinks = body.entities?.[cityQid]?.sitelinks;
+  for (const lang of ["ru", "en"]) {
+    const title = sitelinks?.[`${lang}wiki`]?.title;
+    if (title) return { lang, title, url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}` };
+  }
+  return undefined;
 }
 
 function toCandidate(
@@ -222,6 +259,9 @@ function toCandidate(
 ): Candidate | null {
   const info = file.imageinfo?.[0];
   if (!info?.url || !info.descriptionurl || !PHOTO_MIME.test(info.mime ?? "")) return null;
+  // Only Commons files: images hosted on a Wikipedia itself are often non-free (fair use) — we never show those,
+  // they only count as the "used on Wikipedia" signal.
+  if (hostOf(info.descriptionurl) !== COMMONS_HOST) return null;
   if (Math.min(info.width ?? 0, info.height ?? 0) < LIMITS.IMAGE_MIN_SHORT_SIDE_PX) return null;
 
   const meta = (key: string) => {
@@ -255,7 +295,7 @@ function toCandidate(
     provenance: {
       commonsCategoryMatch: origin === "category",
       depictsQid: origin === "depicts",
-      usedOnWikipedia: usedOnWikipedia.has(fileKey(file.title)),
+      usedOnWikipedia: origin === "article" || usedOnWikipedia.has(fileKey(file.title)),
       pageMentionsName: origin !== "city" && mentionsName(`${title} ${name} ${description ?? ""}`, entity),
       sourceType: "encyclopedic",
     },
@@ -346,6 +386,14 @@ function fileKey(title: string): string {
     .replace(/^[^:]+:/, "")
     .replace(/_/g, " ")
     .toLowerCase();
+}
+
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
 }
 
 function underscore(name: string): string {
