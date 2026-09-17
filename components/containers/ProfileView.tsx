@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ProfileGuide } from "@/components/help/ProfileGuide";
+import { CampusMap } from "@/components/profile/CampusMap";
 import { CategorySection } from "@/components/profile/CategorySection";
 import { CoveragePanel } from "@/components/profile/CoveragePanel";
 import { DegradedBanner } from "@/components/profile/DegradedBanner";
@@ -77,6 +79,7 @@ export function ProfileView(props: ProfileStreamParams) {
       <DegradedBanner degraded={state.profile?.degraded ?? []} />
       <DescriptionBlock description={state.description} ready={state.descriptionReady} />
       <FilterBar value={filters} onChange={setFilters} counts={counts} />
+      <ProfileGuide photosCount={visible.length} />
       {shownCategories.map((category) => (
         <CategorySection
           key={category.id}
@@ -86,7 +89,16 @@ export function ProfileView(props: ProfileStreamParams) {
           onOpenPhoto={setOpenPhoto}
         />
       ))}
-      <CoveragePanel coverage={coverage} />
+      <CampusMap
+        entity={state.entity}
+        photos={visible}
+        distanceToCityCenterM={state.profile?.distanceToCityCenterM}
+        onOpenPhoto={setOpenPhoto}
+      />
+      <CoveragePanel
+        coverage={coverage}
+        onShowUnconfirmed={() => setFilters((f) => ({ ...f, showUnconfirmed: true }))}
+      />
       <FilteredOutTray items={state.rejected} />
       <EvidenceDialog
         photo={openPhoto}

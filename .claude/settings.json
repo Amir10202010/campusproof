@@ -53,7 +53,8 @@
       "Bash(curl -s http://localhost:3000/*)",
       "Bash(curl -sN http://localhost:3000/*)",
       "Bash(curl -s https://campusproof.vercel.app/*)",
-      "Bash(curl -sN https://campusproof.vercel.app/*)"
+      "Bash(curl -sN https://campusproof.vercel.app/*)",
+      "Bash(node scripts/qa/*)"
     ],
     "ask": [
       "Bash(npm install *)",
