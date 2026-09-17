@@ -1,0 +1,69 @@
+{
+  "$comment": "P4 · #39 · judge-simulation matrix (docs/roadmap.md §9). expect = acceptable terminal events: profile (done), ambiguous, not_found.",
+  "groups": [
+    {
+      "id": "kz-known",
+      "title": "Казахстан, известные",
+      "expect": ["profile"],
+      "queries": [
+        "Nazarbayev University",
+        "KBTU",
+        "Satbayev University",
+        "L.N. Gumilyov Eurasian National University",
+        "KIMEP University"
+      ]
+    },
+    {
+      "id": "kz-sparse",
+      "title": "Казахстан, региональные",
+      "expect": ["profile"],
+      "queries": ["Korkyt Ata Kyzylorda University", "Karaganda Buketov University", "Kozybayev University"]
+    },
+    {
+      "id": "central-asia",
+      "title": "Центральная Азия",
+      "expect": ["profile"],
+      "queries": ["American University of Central Asia", "Westminster International University in Tashkent"]
+    },
+    {
+      "id": "international",
+      "title": "Международные",
+      "expect": ["profile"],
+      "queries": ["Harvard University", "ETH Zurich", "University of Tartu"]
+    },
+    {
+      "id": "ambiguous",
+      "title": "Неоднозначные",
+      "expect": ["ambiguous"],
+      "queries": ["MSU", "SDU"]
+    },
+    {
+      "id": "misspelled",
+      "title": "С опечатками",
+      "expect": ["profile", "not_found"],
+      "queries": ["Nazarbaev Univercity", "Harvrad", "Gumilev"]
+    },
+    {
+      "id": "cyrillic",
+      "title": "Кириллица и сокращения",
+      "expect": ["profile"],
+      "queries": ["КБТУ", "ЕНУ", "Назарбаев Университет"]
+    },
+    {
+      "id": "junk",
+      "title": "Не вуз и мусор",
+      "expect": ["not_found", "ambiguous"],
+      "queries": ["asdfgh", "pizza", "<script>alert(1)</script>"]
+    },
+    {
+      "id": "simulate",
+      "title": "Симуляция сбоев",
+      "expect": ["profile"],
+      "queries": [
+        { "q": "KBTU", "simulate": "web_search_down" },
+        { "q": "KBTU", "simulate": "vision_down" },
+        { "q": "KBTU", "simulate": "wikimedia_down" }
+      ]
+    }
+  ]
+}
