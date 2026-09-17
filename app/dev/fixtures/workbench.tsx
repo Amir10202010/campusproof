@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
+import { ProfileGuide } from "@/components/help/ProfileGuide";
+import { CampusMap } from "@/components/profile/CampusMap";
 import { CategorySection } from "@/components/profile/CategorySection";
 import { CoveragePanel } from "@/components/profile/CoveragePanel";
 import { DegradedBanner } from "@/components/profile/DegradedBanner";
@@ -169,8 +171,9 @@ export function FixturesWorkbench({
         <NotFound query="фывапролд" suggestions={[]} onPick={(qid) => setLastAction(qid)} />
       </Demo>
 
-      <Demo title="Профиль · FilterBar · CategorySection · CoveragePanel · FilteredOutTray · EvidenceDialog">
+      <Demo title="Профиль · FilterBar · ProfileGuide · CategorySection · CampusMap · CoveragePanel · FilteredOutTray · EvidenceDialog">
         <FilterBar value={filters} onChange={setFilters} counts={counts} />
+        <ProfileGuide photosCount={visible.length} />
         {shownCategories.map((category) => (
           <CategorySection
             key={category.id}
@@ -180,6 +183,12 @@ export function FixturesWorkbench({
             onOpenPhoto={setOpenPhoto}
           />
         ))}
+        <CampusMap
+          entity={profile.entity}
+          photos={visible}
+          distanceToCityCenterM={profile.distanceToCityCenterM}
+          onOpenPhoto={setOpenPhoto}
+        />
         <CoveragePanel
           coverage={profile.coverage}
           onShowUnconfirmed={(id) => {
