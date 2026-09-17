@@ -10,8 +10,10 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { StageState } from "@/lib/client/profileStream";
 import type { PipelineStage, SourceStatus } from "@/lib/types";
+import { SOURCE_STATUS_HINT_RU } from "@/lib/ui/labels";
 import { cn } from "@/lib/utils";
 
 export interface PipelineRailProps {
@@ -80,6 +82,7 @@ function stageSummary(stage: StageState): string {
 /** P4 · #4 · Поиск → Загрузка → Дубли → Проверка → Профиль with counts; source chips ok / timeout / error / skipped / simulated_down. */
 export function PipelineRail({ stages, sources }: PipelineRailProps) {
   const latest = [...stages].reverse().find((stage) => stage.status !== "pending" && stageSummary(stage));
+  const problems = sources.filter((source) => source.status !== "ok");
 
   return (
     <section aria-label="Ход проверки" className="space-y-3 rounded-xl border px-3 py-3 sm:px-4">
@@ -116,40 +119,65 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-1.5 border-t pt-3 text-xs">
-        <span className="text-muted-foreground">Источники:</span>
-        {sources.length === 0 ? (
-          <span className="text-muted-foreground">ждём ответа…</span>
-        ) : (
-          <ul className="contents">
-            {sources.map((source) => {
-              const status = SOURCE_STATUS[source.status];
-              const Icon = status.icon;
-              const name = SOURCE_NAME_RU[source.source] ?? source.source;
-              const found = source.candidates > 0 ? `, найдено: ${source.candidates}` : "";
-              return (
-                <li
-                  key={source.source}
-                  title={[`${name}: ${status.label}${found}`, source.note].filter(Boolean).join("\n")}
-                  className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5", status.className)}
-                >
-                  <Icon className="size-3 shrink-0" strokeWidth={2.5} aria-hidden="true" />
-                  <span className="font-medium">{name}</span>
-                  {source.status === "ok" || source.status === "partial" ? (
-                    <span className="tabular-nums">{source.candidates}</span>
-                  ) : (
-                    <span>{status.label}</span>
-                  )}
-                  <span className="sr-only">
-                    : {status.label}
-                    {found}
-                  </span>
-                </li>
-              );
-            })}
+      <div className="space-y-2 border-t pt-3 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted-foreground">Источники:</span>
+          {sources.length === 0 ? (
+            <span className="text-muted-foreground">ждём ответа…</span>
+          ) : (
+            <ul className="contents">
+              {sources.map((source) => (
+                <SourceChip key={source.source} source={source} />
+              ))}
+            </ul>
+          )}
+        </div>
+        {problems.length > 0 ? (
+          <ul className="space-y-0.5 text-muted-foreground">
+            {problems.map((source) => (
+              <li key={source.source}>
+                {SOURCE_NAME_RU[source.source] ?? source.source}: {SOURCE_STATUS_HINT_RU[source.status]}.
+              </li>
+            ))}
           </ul>
-        )}
+        ) : null}
       </div>
     </section>
+  );
+}
+
+/** P4 · #37 · a source chip with a hint: what this status means for the profile. Developer notes in English stay out. */
+function SourceChip({ source }: { source: SourceStatus }) {
+  const status = SOURCE_STATUS[source.status];
+  const Icon = status.icon;
+  const name = SOURCE_NAME_RU[source.source] ?? source.source;
+  const hint = SOURCE_STATUS_HINT_RU[source.status];
+  return (
+    <li>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "inline-flex cursor-help items-center gap-1 rounded-full border px-2 py-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid",
+              status.className,
+            )}
+          >
+            <Icon className="size-3 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+            <span className="font-medium">{name}</span>
+            {source.status === "ok" || source.status === "partial" ? (
+              <span className="tabular-nums">{source.candidates}</span>
+            ) : (
+              <span>{status.label}</span>
+            )}
+            <span className="sr-only">: {hint}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-64 text-pretty">
+          {name}: {hint}
+          {source.note && /[а-яё]/i.test(source.note) ? ` (${source.note})` : ""}
+        </TooltipContent>
+      </Tooltip>
+    </li>
   );
 }
