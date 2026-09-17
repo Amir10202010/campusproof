@@ -15,7 +15,7 @@ pip install -r requirements.txt
 Ключи берутся из `.env.local` в корне репозитория (его создаёт каждый у себя, в git он не попадает):
 
 ```
-ANTHROPIC_API_KEY=...
+GEMINI_API_KEY=...   # бесплатный ключ Google AI Studio
 SERPER_API_KEY=...
 ```
 
@@ -31,7 +31,7 @@ SERPER_API_KEY=...
 |---|---|---|
 | `spike_commons_yield.py` | S2: сколько пригодных фото есть на Commons у тестовых вузов | `eval/spikes/s2_commons.json` + таблица в `docs/spikes.md` |
 | `spike_search_yield.py` | S3: сколько релевантных картинок даёт Serper для KZ-вузов (RU/EN) | `eval/spikes/s3_search.json` + HTML-лист для ручной оценки |
-| `spike_vision.py` | S4: выбор vision-модели (точность, латентность, стоимость) | `eval/spikes/s4_vision.json` + решение в `docs/spikes.md` |
+| `spike_vision.py` | S4: выбор бесплатной vision-модели Gemini (точность, скорость, лимиты) | `eval/spikes/s4_vision.json` + решение в `docs/spikes.md` |
 | `build_index.py` | Индекс университетов для резолвера | `data/universities.min.json` (формат `UniversityIndexEntry` из `lib/types.ts`) |
 | `label_sheet.py` | HTML-лист для разметки кандидатов пайплайна | `eval/labels/<qid>.json` |
 | `eval_run.py` | Метрики качества по продакшен-API | `eval/results/<дата>.json` + `.md` |

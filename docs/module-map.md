@@ -17,10 +17,12 @@ flowchart LR
   Q["query / qid"] --> R["resolveQuery · P1 #7"] --> E["getEntity · P1 #8"]
   E --> C["gatherCommons · P1 #9"]
   E --> W["gatherWebSearch · P2 #16"]
+  E --> O["gatherOpenverse · P2 #33"]
   E --> S["getSummaries · P1 #8"] --> D["describeCampus · P1 #20"]
   C --> F["fetchCandidates · P2 #15"]
   W --> F
-  F --> U["dedupeCandidates · P2 #17"] --> V["observeAll + Claude · P2 #18"] --> SC["scoreCandidate · P2 #17/#19"]
+  O --> F
+  F --> U["dedupeCandidates · P2 #17"] --> V["observeAll + Gemini free · P2 #18"] --> SC["scoreCandidate · P2 #17/#19"]
   SC --> A["assemble + coverage · done"] --> K["cache · P1 #12"]
   A --> SSE["SSE events · done"] --> H["useProfileStream · done"] --> PV["ProfileView · done"] --> UI["components · P4 #3/#4"]
 ```
@@ -48,6 +50,8 @@ Status: ✅ done (harden only if your issue says so) · 🧩 stub with final sig
 | `components/containers/ProfileView.tsx`, `app/search`, `app/u/[qid]` | page wiring | — | #11 | ✅ wired |
 | `app/api/{resolve,profile/stream,profile/[qid]}` | routes | — | — | ✅ final (logic lives in lib) |
 | `lib/sources/wikimediaFetch.ts`, `lib/sources/geo.ts` | helpers | — | — | ✅ |
+| `lib/cache/kv.ts` | `kvGet`, `kvSet`, `getRedis` | Upstash free tier; no-op without keys — **use it from any lane** | — | ✅ |
+| `lib/pipeline/regions.ts` | `freeAiAllowedFor` | no free-tier AI for EEA/CH/UK visitors (Gemini terms) → `PipelineInput.aiAllowed` | — | ✅ |
 
 ### P2 · Verification
 | File | Export | Signature | Issue | Status |
@@ -62,7 +66,8 @@ Status: ✅ done (harden only if your issue says so) · 🧩 stub with final sig
 | `lib/sources/webSearch/queryPlan.ts` | `planQueries` | `(entity) => SearchQuery[]` | #16 | 🧩 |
 | `lib/sources/webSearch/index.ts` | `gatherWebSearch` | `(entity, ctx) => Promise<Candidate[]>` | #16 | 🧩 |
 | `lib/sources/classifyDomain.ts` | `classifyDomain` | `(hostname, entity) => DomainClass` | #16 | 🧩 |
-| `lib/vision/claude.ts` | `createClaudeVisionProvider` | `() => VisionProvider` | #18 | 🧩 |
+| `lib/sources/openverse.ts` | `gatherOpenverse` | `(entity, ctx) => Promise<Candidate[]>` — free CC photos | #33 (stage 2) | 🧩 |
+| `lib/vision/gemini.ts` | `createGeminiVisionProvider` | `() => VisionProvider` — free Gemini via `@google/genai` | #18 | 🧩 |
 | `lib/vision/schema.ts` | `parseVisionObservations` | `(raw) => VisionObservation[]` | #18 | 🧩 |
 | `lib/vision/observeAll.ts` | `observeAll` | `(items, context, provider, ctx, onBatch?) => Promise<Map>` | #18 | 🧩 |
 | `lib/scoring/score.ts` | `scoreCandidate` | `(candidate, observation \| null, context) => ScoreResult` | #17 → #19 | 🧩 |

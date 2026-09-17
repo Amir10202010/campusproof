@@ -21,6 +21,6 @@ export async function GET() {
     node: process.version,
     configured: configuredServices(),
     visionModel: env.visionModel,
-    webSearchProvider: env.webSearchProvider,
+    descriptionModel: env.descriptionModel,
   });
 }

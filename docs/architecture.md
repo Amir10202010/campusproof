@@ -7,6 +7,11 @@
 
 ---
 
+> **⚠️ Update 17 Sep 2026 — FREE APIs only (team decision).** Paid Claude API is replaced everywhere below:
+> - **Vision + description:** Google **Gemini API free tier** via `@google/genai` (`VISION_MODEL`, `DESCRIPTION_MODEL`; model chosen by spike S4, #22). Free quotas are per project and small → ≤3 vision requests per profile (batches of 12), caching via `lib/cache/kv.ts`, daily budget guard (#13). The description uses Gemini JSON output with validated source indices instead of Claude citations (#20).
+> - **Terms:** the Gemini API account holder must be **18+**; free tier must not be offered to users in the **EEA/CH/UK** → `lib/pipeline/regions.ts` disables AI for those visitors; free-tier inputs may be used by Google to improve products → only public web photos are sent.
+> - **Web images:** Serper (2,500 free credits, no card) + **Openverse** (free CC photos incl. Flickr, #33). Brave and Flickr API are dropped (card / paid Pro required). Cost model §14 no longer applies: running cost is $0.
+
 ## 0. TL;DR
 
 - **One Next.js (TypeScript) app on Vercel**, Node.js runtime, function region **`fra1`** (Frankfurt). One repo, one deploy, no separate backend service.

@@ -1,5 +1,5 @@
 /**
- * Vision prompt + output schema — DRAFT v0. Owner: P3 (text), P2 (usage in lib/vision/claude.ts).
+ * Vision prompt + output schema — DRAFT v0. Owner: P3 (text), P2 (usage in lib/vision/gemini.ts).
  *
  * Keep both constants as plain template literals WITHOUT ${} interpolation:
  * scripts/python/common.py → read_ts_prompt() extracts them with a regex, so the Python spike (S4)

@@ -23,7 +23,7 @@
 <!-- TODO (P2/P3): сигналы, веса, уровни достоверности, ограничения. См. docs/architecture.md §5.6 -->
 
 ## Архитектура и стек
-Next.js 16 (App Router, TypeScript) на Vercel (fra1) · Tailwind CSS 4 + shadcn/ui · Claude API (vision) · Wikidata / Wikipedia / Wikimedia Commons · API веб-поиска изображений · Upstash Redis.
+Next.js 16 (App Router, TypeScript) на Vercel (fra1) · Tailwind CSS 4 + shadcn/ui · Google Gemini API, бесплатный тариф (vision и описание) · Wikidata / Wikipedia / Wikimedia Commons · Serper (бесплатные кредиты) и Openverse (поиск изображений) · Upstash Redis (бесплатный тариф). Только бесплатные API.
 Подробно: [docs/architecture.md](docs/architecture.md).
 
 ## Запуск локально

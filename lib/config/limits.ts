@@ -13,12 +13,17 @@ export const LIMITS = {
   IMAGE_FETCH_CONCURRENCY: 16,
   IMAGE_MIN_SHORT_SIDE_PX: 300,
 
+  // Free Gemini tier: few requests per minute/day → ≤3 vision requests per profile (36 images / 12 per request).
   VISION_IMAGE_LONG_EDGE_PX: 640,
-  VISION_MAX_IMAGES: 40,
-  VISION_BATCH_SIZE: 8,
-  VISION_BATCH_TIMEOUT_MS: 12_000,
+  VISION_MAX_IMAGES: 36,
+  VISION_BATCH_SIZE: 12,
+  VISION_MAX_PARALLEL_BATCHES: 3,
+  VISION_BATCH_TIMEOUT_MS: 15_000,
+  VISION_CACHE_TTL_S: 14 * 24 * 3600,
 
-  WEB_SEARCH_MAX_QUERIES: 8,
+  // Serper has 2,500 free credits in total → few queries per profile + cached responses.
+  WEB_SEARCH_MAX_QUERIES: 6,
+  OPENVERSE_MAX_QUERIES: 2,
   WIKIMEDIA_MAX_CALLS_PER_PROFILE: 15,
 
   DHASH_NEAR_DUPLICATE_MAX_HAMMING: 6,

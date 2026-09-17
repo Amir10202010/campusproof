@@ -1,5 +1,7 @@
 # План на четверг, 17 сентября — направление B «Proof, Not Pictures»
 
+> **Обновление 17.09, ночь:** только бесплатные API — Gemini (бесплатный тариф) вместо Claude, Serper + Openverse для поиска картинок. Детали в `docs/architecture.md` (баннер вверху) и в issues #2, #18, #20, #22, #33.
+
 > Для всей команды из 4 человек. Собран из [case-analysis](case-analysis.md), [product-strategy](product-strategy.md), [architecture](architecture.md) и [roadmap](roadmap.md).
 > Время — **Астана**. Старт дня **T0 = 10:00**, поэтому T+3 = 13:00, T+6 = 16:00, T+9 = 19:00, T+12 = 22:00.
 > Трекер дня: [issue #1](https://github.com/Amir10202010/campusproof/issues/1). Все задачи: [issues](https://github.com/Amir10202010/campusproof/issues).
@@ -54,7 +56,7 @@
 | Роль | Кто | Почему именно так | Главный результат дня |
 |---|---|---|---|
 | **P1 · Pipeline** | Сильный вайбкодер №1. **Рекомендация: Амир** (владелец GitHub и Vercel) | Самая связная работа: оркестратор, стриминг, дедлайны, склейка всех частей. На Vercel Hobby нет участников команды: env-переменные, логи и настройки деплоя видит только владелец. Поэтому интегратор — владелец | Реальные данные в готовом скелете: резолвер, Wikidata/Commons, описание кампуса, кеш, лимиты |
-| **P2 · Verification** | Сильный вайбкодер №2 | Самая «умная» логика: безопасная загрузка картинок, хеши, дедупликация, Claude vision, скоринг. От неё зависит точность, это 30% оценки | Фото с честными уровнями и доказательствами |
+| **P2 · Verification** | Сильный вайбкодер №2 | Самая «умная» логика: безопасная загрузка картинок, хеши, дедупликация, AI-проверка через бесплатный Gemini, скоринг. От неё зависит точность, это 30% оценки | Фото с честными уровнями и доказательствами |
 | **P3 · Data & Eval** | Python-разработчик | Работа изолирована от TypeScript: скрипты общаются с приложением только через JSON-файлы и HTTP API. Ошибка в скрипте не ломает сайт | Решения по данным и модели, индекс вузов, первые метрики |
 | **P4 · UI & Product** | Вайбкодер-новичок | Презентационные компоненты на фикстурах — самый безопасный вайбкодинг: результат сразу видно, нет асинхронщины, API и инфраструктуры. Плюс продуктовые задачи, где важна аккуратность, а не опыт | Все экраны профиля + QA-прогон |
 
@@ -149,7 +151,7 @@ cd campusproof && npm install && cp .env.example .env.local && npm run dev
 
 | Кто | Готово | Как проверить |
 |---|---|---|
-| **P4** | [#2](https://github.com/Amir10202010/campusproof/issues/2) ключи Anthropic (с лимитом трат) и Serper у P2/P3, env в Vercel · [#3](https://github.com/Amir10202010/campusproof/issues/3) дизайн вместо заглушек: `TierBadge`, `PhotoCard`, `CategorySection`, `FilterBar`, `SearchBox` | `/api/health` → `configured` = true; локально `/search?q=demo&replay=1` похож на профиль |
+| **P4** | [#2](https://github.com/Amir10202010/campusproof/issues/2) бесплатные ключи Gemini и Serper у P1/P2/P3, env в Vercel · [#3](https://github.com/Amir10202010/campusproof/issues/3) дизайн вместо заглушек: `TierBadge`, `PhotoCard`, `CategorySection`, `FilterBar`, `SearchBox` | `/api/health` → `configured` = true; локально `/search?q=demo&replay=1` похож на профиль |
 | **P1** | [#7](https://github.com/Amir10202010/campusproof/issues/7) `/api/resolve` через Wikidata (resolved / ambiguous / not_found) · [#8](https://github.com/Amir10202010/campusproof/issues/8) `getEntity` + Wikipedia · первые цифры Commons | `curl "<превью>/api/resolve?q=MSU"` → ambiguous; `KBTU` → resolved |
 | **P2** | [#15](https://github.com/Amir10202010/campusproof/issues/15) safe fetch + канонизация + dHash + тесты · [#16](https://github.com/Amir10202010/campusproof/issues/16) Serper-адаптер возвращает `Candidate[]` | `npm test` зелёный; скрипт на 3 KZ-вуза отдаёт кандидатов |
 | **P3** | [#21](https://github.com/Amir10202010/campusproof/issues/21) спайки S2 (Commons) и S3 (Serper) → `docs/spikes.md` с выводами | Таблицы S2/S3 в main, выводы озвучены на синке |
@@ -246,7 +248,7 @@ flowchart LR
 ### 6.3 Передачи между людьми
 | Когда | От → кому | Что | Где |
 |---|---|---|---|
-| 10:30 | P4 → P2, P3 | Ключи Serper и Anthropic | Лично → `.env.local` |
+| 10:30 | P4 → P1, P2, P3 | Бесплатные ключи Gemini и Serper | Лично → `.env.local` |
 | 13:00 | P3 → P2 | Какие шаблоны запросов и домены работают (S3) | `docs/spikes.md` |
 | 13:00 | P3 → P1 | Сколько фото реально даёт Commons (S2) | `docs/spikes.md` |
 | ~15:00 | P2 → все | `lib/images/*`, `dedup`, `score` v0 | PR в main — пайплайн подхватит сам |
@@ -271,7 +273,7 @@ flowchart LR
 | **P1 (Амир)** | Пригласить collaborators (§3.2) · решить про превью (§3.4) · вместе с P4 завести env в Vercel · `/cp-task 7` |
 | **P2** | Настроить компьютер ([team-workflow](team-workflow.md) §1) · прочитать `docs/module-map.md` · `/cp-task 15` |
 | **P3** | Настроить компьютер ([team-workflow](team-workflow.md) §1) + venv по `scripts/python/README.md` · `/cp-task 21` |
-| **P4** | С Амиром и взрослым владельцем карты сделать #2 (Anthropic с лимитом трат, Serper, Upstash) · настроить компьютер ([team-workflow](team-workflow.md) §1) · `/cp-task 3` |
+| **P4** | С Амиром и взрослым (18+) сделать #2: бесплатные ключи Gemini, Serper, Openverse, Upstash · настроить компьютер ([team-workflow](team-workflow.md) §1) · `/cp-task 3` |
 
 **Как работать с AI-ассистентом:** в Claude Code — `/cp-task N`, в конце сессии `/cp-handoff N`. В Cursor и других скажите: «Прочитай AGENTS.md и `.claude/skills/cp-task/SKILL.md` и выполни шаги для issue #N».
 
@@ -281,10 +283,10 @@ flowchart LR
 
 | Когда | Если | Делаем |
 |---|---|---|
-| 10:45 | Нет ключа Anthropic (нет карты или взрослого) | P3 делает S2/S3, P2 — #15/#16/#17. Vision (#18) и S4 (#22) ждут ключа. Если к 13:00 ключа нет, обсуждаем запасной провайдер (architecture §2) |
+| 10:45 | Нет ключа Gemini (нет взрослого 18+) | P3 делает S2/S3, P2 — #15/#16/#17. Vision (#18) и S4 (#22) ждут ключа. Если к 13:00 ключа нет, обсуждаем запасной провайдер (architecture §2) |
 | 13:00 | `/api/resolve` не работает на превью | P2 на 30 минут помогает P1; P4 и P3 продолжают |
 | 16:00 | Нет живого профиля Nazarbayev University | P1 + P2 парой доводят резолвер, Commons и загрузку картинок (оркестратор уже работает); P4 переходит к #5; P3 продолжает |
-| 16:00 | S4 не закончен | P2 берёт `claude-opus-5` с effort low по умолчанию; S4 доделываем до 19:00 |
+| 16:00 | S4 не закончен | P2 берёт `gemini-2.5-flash-lite` (значение по умолчанию); S4 доделываем до 19:00 |
 | 19:00 | Vision не встроен | Профиль на не-визуальных сигналах + честный баннер «визуальная проверка недоступна»; vision — первым делом в пятницу |
 | 19:00 | Индекс не готов | Резолвер остаётся на живом Wikidata + маленький файл алиасов; индекс утром в пятницу |
 | 21:30 | Медиана > 30 с | Уменьшить до 24 картинок на vision и 6 поисковых запросов, картинки 512 px |
