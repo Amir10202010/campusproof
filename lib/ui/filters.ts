@@ -18,6 +18,13 @@ export function applyFilters(photos: Photo[], filters: ProfileFilters): Photo[] 
   );
 }
 
+const TIER_RANK: Record<Photo["tier"], number> = { verified: 0, likely: 1, unconfirmed: 2 };
+
+/** Display order inside a category: tier, then evidence points. Stable, so ties keep the pipeline's order. */
+export function sortForDisplay(photos: Photo[]): Photo[] {
+  return [...photos].sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier] || b.points - a.points);
+}
+
 export function toggleCategory(filters: ProfileFilters, id: CategoryId): ProfileFilters {
   const categories = filters.categories.includes(id)
     ? filters.categories.filter((c) => c !== id)
