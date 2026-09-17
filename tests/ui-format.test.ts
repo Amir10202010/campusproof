@@ -4,6 +4,7 @@ import { sortForDisplay } from "@/lib/ui/filters";
 import {
   displayHost,
   formatDateRu,
+  formatDateTimeRu,
   formatDistanceRu,
   formatSecondsRu,
   photoAlt,
@@ -21,6 +22,13 @@ describe("formatDistanceRu", () => {
     expect(formatDistanceRu(1_240)).toBe("1,2 км");
     expect(formatDistanceRu(11_200)).toBe("11 км");
     expect(formatDistanceRu(1_240_000)).toBe(`1${NBSP}240 км`);
+  });
+});
+
+describe("formatDateTimeRu", () => {
+  it("shows day, month, year and time; keeps broken input as is", () => {
+    expect(formatDateTimeRu("2026-09-17T09:00:16.420Z")).toMatch(/^\d{2}\.\d{2}\.2026, \d{2}:\d{2}$/);
+    expect(formatDateTimeRu("вчера")).toBe("вчера");
   });
 });
 
