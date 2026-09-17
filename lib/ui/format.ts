@@ -37,6 +37,19 @@ export function formatSecondsRu(ms: number): string {
   return `${(ms / 1000).toLocaleString("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} с`;
 }
 
+/** ISO timestamp → «17.09.2026, 14:02» in the viewer's time zone. */
+export function formatDateTimeRu(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** Links from sources are untrusted: only http(s) URLs become links (never javascript: or data:). */
 export function safeHttpUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
