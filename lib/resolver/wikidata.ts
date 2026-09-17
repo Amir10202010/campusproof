@@ -110,26 +110,114 @@ export interface RankedCandidate {
  * wbgetentities call to filter by P31 and rank by name match and popularity.
  */
 export async function searchWikidataRanked(query: string, signal: AbortSignal): Promise<RankedCandidate[]> {
+  return (await searchWikidataDetailed(query, signal)).ranked;
+}
+
+/** Ranked universities + ids of the other items found (a city, a person…), used for not_found suggestions. */
+export async function searchWikidataDetailed(
+  query: string,
+  signal: AbortSignal,
+): Promise<{ ranked: RankedCandidate[]; otherIds: string[] }> {
   const raw = query.trim();
   const variants = queryVariants(raw);
-  if (variants.length === 0) return [];
+  if (variants.length === 0) return { ranked: [], otherIds: [] };
 
-  const searches: Promise<string[]>[] = [fullTextSearch(raw, signal), prefixSearch(raw, signal)];
+  const searches: Promise<string[]>[] = [filteredSearch(raw, signal), prefixSearch(raw, signal)];
   if (variants[1]) searches.push(prefixSearch(variants[1], signal));
   const settled = await Promise.allSettled(searches);
   if (settled.every((s) => s.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
 
   const ids = interleave(settled.map((s) => (s.status === "fulfilled" ? s.value : []))).slice(0, MAX_CANDIDATES);
-  if (ids.length === 0) return [];
+  if (ids.length === 0) return { ranked: [], otherIds: [] };
 
   const entities = await loadEntities(ids, signal);
-  return rankCandidates(
-    variants,
-    ids.flatMap((id) => {
-      const entity = entities.get(id);
-      return entity && isHigherEducation(entity) ? [entity] : [];
-    }),
+  const found = ids.flatMap((id) => entities.get(id) ?? []);
+  return {
+    ranked: rankCandidates(variants, found.filter(isHigherEducation)),
+    otherIds: found.filter((entity) => !isHigherEducation(entity)).map((entity) => entity.id),
+  };
+}
+
+/**
+ * Suggestions for not_found (never auto-selected — an honest "not found" beats a wrong university):
+ * typos via fuzzy full-text search (`harvrad~`), kept only when a name is really close;
+ * universities located in the place the query named ("Алматы" → universities with P131/P159 = Almaty).
+ */
+export async function suggestWikidata(
+  query: string,
+  otherIds: string[],
+  signal: AbortSignal,
+): Promise<RankedCandidate[]> {
+  const variants = queryVariants(query);
+  const fuzzyTerms = significantWords(normalizeQuery(query))
+    .filter((word) => word.length >= 3)
+    .map((word) => `${word}~`)
+    .join(" ");
+  const places = otherIds.slice(0, 2).flatMap((id) => [`P131=${id}`, `P159=${id}`]);
+  const [fuzzy, located] = await Promise.allSettled([
+    fuzzyTerms ? filteredSearch(fuzzyTerms, signal) : Promise.resolve([]),
+    places.length > 0 ? filteredSearch(`haswbstatement:${places.join("|")}`, signal) : Promise.resolve([]),
+  ]);
+  const fuzzyIds = fuzzy.status === "fulfilled" ? fuzzy.value : [];
+  const locatedIds = located.status === "fulfilled" ? located.value : [];
+  if (fuzzyIds.length + locatedIds.length === 0) return [];
+
+  const entities = await loadEntities([...new Set([...fuzzyIds, ...locatedIds])].slice(0, MAX_CANDIDATES), signal);
+  const pick = (ids: string[]) => ids.flatMap((id) => entities.get(id) ?? []).filter(isHigherEducation);
+  const close = pick(fuzzyIds).filter(
+    (entity) => fuzzySimilarity(variants, entityTerms(entity)) >= MIN_FUZZY_SIMILARITY,
   );
+  const local = pick(locatedIds).sort((a, b) => sitelinkCount(b) - sitelinkCount(a));
+  const unique = [...new Map([...close, ...local].map((entity) => [entity.id, entity])).values()];
+  return unique.slice(0, MAX_CARDS).map((entity) => rankCandidates(variants, [entity])[0]);
+}
+
+export const MIN_FUZZY_SIMILARITY = 0.75;
+const FILLER_LIKE = ["university", "университет"];
+
+/** Drops words that are misspelled filler words ("univrsity"), so they don't dilute the similarity. */
+function significantWords(text: string): string[] {
+  const words = text.split(" ").filter(Boolean);
+  const kept = words.filter((word) => !(word.length >= 5 && FILLER_LIKE.some((f) => editDistance(word, f) <= 2)));
+  return kept.length > 0 ? kept : words;
+}
+
+/** Best similarity (0..1) between the query and any label/alias: whole strings or word by word. */
+export function fuzzySimilarity(variants: string[], terms: { text: string }[]): number {
+  let best = 0;
+  for (const term of terms) {
+    const nameWords = significantWords(normalizeQuery(term.text));
+    for (const variant of variants) {
+      const queryWords = significantWords(variant);
+      best = Math.max(best, similarity(queryWords.join(" "), nameWords.join(" ")));
+      const long = queryWords.filter((word) => word.length >= 3);
+      if (long.length > 0) {
+        const perWord = long.map((q) => Math.max(0, ...nameWords.map((n) => similarity(q, n))));
+        best = Math.max(best, perWord.reduce((sum, v) => sum + v, 0) / perWord.length);
+      }
+    }
+  }
+  return best;
+}
+
+function similarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  return 1 - editDistance(a, b) / Math.max(a.length, b.length);
+}
+
+/** Optimal string alignment distance (Levenshtein + adjacent transpositions: "harvrad" → "harvard" = 1). */
+export function editDistance(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array<number>(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1])
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
 }
 
 /** Round-robin merge of ranked id lists without duplicates: the best hits of every search survive the cap. */
@@ -188,7 +276,8 @@ async function prefixSearch(search: string, signal: AbortSignal): Promise<string
   return (body.search ?? []).map((hit) => hit.id);
 }
 
-async function fullTextSearch(search: string, signal: AbortSignal): Promise<string[]> {
+/** Full-text search restricted to higher-education classes; `search` may contain CirrusSearch operators. */
+async function filteredSearch(search: string, signal: AbortSignal): Promise<string[]> {
   const cleaned = search.replace(/["\\]/g, " ").trim();
   const filter = `haswbstatement:${SEARCH_FILTER_CLASSES.map((id) => `P31=${id}`).join("|")}`;
   const body = await wikimediaApi<{ query?: { search?: { title: string }[] } }>(

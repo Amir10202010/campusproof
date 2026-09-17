@@ -1,7 +1,13 @@
 import { kvGet, kvSet } from "@/lib/cache/kv";
 import { LIMITS } from "@/lib/config/limits";
 import { normalizeQuery } from "@/lib/resolver/normalize";
-import { MAX_CARDS, searchWikidataRanked, toCandidateCards, type RankedCandidate } from "@/lib/resolver/wikidata";
+import {
+  MAX_CARDS,
+  searchWikidataDetailed,
+  suggestWikidata,
+  toCandidateCards,
+  type RankedCandidate,
+} from "@/lib/resolver/wikidata";
 import { buildUniversityEntity } from "@/lib/sources/wikidata";
 import type { ResolveResult } from "@/lib/types";
 
@@ -23,27 +29,32 @@ export const resolveQuery: ResolveQuery = async (query, signal) => {
 
   const bounded = AbortSignal.any([signal, AbortSignal.timeout(LIMITS.RESOLVE_TIMEOUT_MS)]);
   const result = await resolveLive(trimmed, bounded);
-  // not_found is not cached: a new Wikidata item or a better resolver (#14) should be picked up right away.
-  if (result.status !== "not_found") await kvSet(cacheKey, result, LIMITS.RESOLVE_CACHE_TTL_S);
+  // not_found lives shorter: a new Wikidata item should be picked up within a day.
+  const ttl = result.status === "not_found" ? LIMITS.WIKIMEDIA_CACHE_TTL_S : LIMITS.RESOLVE_CACHE_TTL_S;
+  await kvSet(cacheKey, result, ttl);
   return result;
 };
 
 /** Bump when resolution rules change, so stale cached answers are not served. */
-const RESOLVER_VERSION = 1;
+const RESOLVER_VERSION = 2;
 
 export function resolveCacheKey(normalizedQuery: string): string {
   return `resolve:v${RESOLVER_VERSION}:${normalizedQuery}`;
 }
 
 async function resolveLive(query: string, signal: AbortSignal): Promise<ResolveResult> {
-  const ranked = await searchWikidataRanked(query, signal);
+  const { ranked, otherIds } = await searchWikidataDetailed(query, signal);
   switch (decide(ranked)) {
     case "resolved":
       return { status: "resolved", entity: await buildUniversityEntity(ranked[0].entity, signal) };
     case "ambiguous":
       return { status: "ambiguous", query, candidates: await toCandidateCards(ranked.slice(0, MAX_CARDS), signal) };
-    case "not_found":
-      return { status: "not_found", query, suggestions: [] };
+    case "not_found": {
+      const suggestions = await suggestWikidata(query, otherIds, signal)
+        .then((found) => toCandidateCards(found, signal))
+        .catch(() => []);
+      return { status: "not_found", query, suggestions };
+    }
   }
 }
 
