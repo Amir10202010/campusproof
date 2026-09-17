@@ -49,7 +49,8 @@ export async function runProfilePipeline(
 
   const wikimediaDown = ctx.simulate.includes("wikimedia_down");
   const webSearchDown = ctx.simulate.includes("web_search_down");
-  const visionDown = ctx.simulate.includes("vision_down");
+  // Free-tier AI is not offered to visitors from the EEA/CH/UK (lib/pipeline/regions.ts) → honest degraded mode.
+  const visionDown = ctx.simulate.includes("vision_down") || !input.aiAllowed;
 
   // ── 1 · Resolve ──────────────────────────────────────────────────────────────
   const resolveStarted = deps.now();
@@ -121,11 +122,11 @@ export async function runProfilePipeline(
   const descriptionPromise = summariesPromise.then((summaries) =>
     optional(ctx, "describeCampus", () =>
       withTimeout("description", ctx, LIMITS.GLOBAL_DEADLINE_MS, (s) =>
-        deps.describeCampus({ entity, summaries: summaries ?? [], facts }, s),
+        deps.describeCampus({ entity, summaries: summaries ?? [], facts, aiAllowed: input.aiAllowed }, s),
       ),
     ),
   );
-  const [commons, web, summaries] = await Promise.all([
+  const [commons, web, openverse, summaries] = await Promise.all([
     source(
       "commons",
       wikimediaDown,
@@ -138,9 +139,15 @@ export async function runProfilePipeline(
       (s) => deps.gatherWebSearch(entity, { ...ctx, signal: s }),
       (v) => v.length,
     ),
+    source(
+      "openverse",
+      false,
+      (s) => deps.gatherOpenverse(entity, { ...ctx, signal: s }),
+      (v) => v.length,
+    ),
     summariesPromise,
   ]);
-  const candidates = [...(commons?.candidates ?? []), ...(web ?? [])];
+  const candidates = [...(commons?.candidates ?? []), ...(web ?? []), ...(openverse ?? [])];
   stages.gather = deps.now() - gatherStarted;
   emit({
     type: "stage",

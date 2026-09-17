@@ -5,10 +5,11 @@ import { fetchCandidates, type FetchCandidates } from "@/lib/images/fetchAll";
 import { resolveQuery, type ResolveQuery } from "@/lib/resolver/resolve";
 import { scoreCandidate, type ScoreCandidate } from "@/lib/scoring/score";
 import { gatherCommons, type GatherCommons } from "@/lib/sources/commons";
+import { gatherOpenverse, type GatherOpenverse } from "@/lib/sources/openverse";
 import { gatherWebSearch, type GatherWebSearch } from "@/lib/sources/webSearch";
 import { getEntity, type GetEntity } from "@/lib/sources/wikidata";
 import { getSummaries, type GetSummaries } from "@/lib/sources/wikipedia";
-import { createClaudeVisionProvider } from "@/lib/vision/claude";
+import { createGeminiVisionProvider } from "@/lib/vision/gemini";
 import { observeAll, type ObserveAll } from "@/lib/vision/observeAll";
 import type { VisionProvider } from "@/lib/vision/provider";
 
@@ -23,6 +24,7 @@ export interface PipelineDeps {
   getSummaries: GetSummaries; // P1 #8
   gatherCommons: GatherCommons; // P1 #9
   gatherWebSearch: GatherWebSearch; // P2 #16
+  gatherOpenverse: GatherOpenverse; // P2 #33 (stage 2)
   fetchCandidates: FetchCandidates; // P2 #15
   dedupeCandidates: DedupeCandidates; // P2 #17
   visionProvider: VisionProvider; // P2 #18
@@ -41,9 +43,10 @@ export function createDefaultDeps(): PipelineDeps {
     getSummaries,
     gatherCommons,
     gatherWebSearch,
+    gatherOpenverse,
     fetchCandidates,
     dedupeCandidates,
-    visionProvider: createClaudeVisionProvider(),
+    visionProvider: createGeminiVisionProvider(),
     observeAll,
     scoreCandidate,
     describeCampus,

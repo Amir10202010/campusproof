@@ -34,7 +34,8 @@ Hard deadline: **Sat 19 Sep 2026, 12:00 Astana time**. Feature freeze Fri 19:00.
 
 - Next.js 16.3 App Router + React 19.2 + TypeScript (strict). Turbopack. Node.js 24 runtime on Vercel (`fra1`).
 - Tailwind CSS 4 + **shadcn/ui with the Radix base** (`components/ui/*`, style `radix-nova`, icons `lucide-react`). Use the Radix API (`asChild`), not Base UI's `render` prop.
-- zod 4 · `@anthropic-ai/sdk` · sharp · `@upstash/redis` + `@upstash/ratelimit` · minisearch · leaflet/react-leaflet.
+- zod 4 · `@google/genai` (Gemini, free tier) · sharp · `@upstash/redis` + `@upstash/ratelimit` · minisearch · leaflet/react-leaflet.
+- **Free APIs only — no paid APIs.** Vision + description: Google Gemini free tier. Web images: Serper (2,500 free credits), Openverse (free). Data: Wikidata / Wikipedia / Wikimedia Commons. Cache: Upstash Redis free tier.
 - vitest (`tests/**/*.test.ts`) · Prettier (`.prettierrc.json`) · ESLint.
 - Python (offline scripts only): `scripts/python/`.
 
@@ -64,9 +65,9 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 
 | Area | Owner |
 |---|---|
-| `lib/resolver/**`, `lib/sources/{wikidata,wikipedia,commons,geo,wikimediaFetch}.ts`, `lib/describe/**`, `lib/cache/**`, `lib/pipeline/**`, `lib/client/**`, `hooks/**`, `components/containers/**`, `app/api/**`, `app/search/**`, `app/u/**`, `lib/types.ts`, `package.json`, `.github/**`, `.claude/**`, `vercel.json` | **P1** Pipeline |
-| `lib/images/**`, `lib/sources/webSearch/**`, `lib/sources/classifyDomain.ts`, `lib/vision/{provider,claude,schema,observeAll}.ts`, `lib/scoring/**`, `lib/config/**` | **P2** Verification |
-| `scripts/python/**`, `data/**`, `eval/**`, `lib/vision/prompt.ts`, `docs/spikes.md` | **P3** Data & Eval |
+| `lib/resolver/**`, `lib/sources/{wikidata,wikipedia,commons,geo,wikimediaFetch}.ts`, `lib/describe/**`, `lib/cache/**` (`kv.ts` is ready for everyone to use), `lib/pipeline/**`, `lib/client/**`, `hooks/**`, `components/containers/**`, `app/api/**`, `app/search/**`, `app/u/**`, `lib/types.ts`, `package.json`, `.github/**`, `.claude/**`, `vercel.json` | **P1** Pipeline |
+| `lib/images/**`, `lib/sources/webSearch/**`, `lib/sources/{classifyDomain,openverse}.ts`, `lib/vision/{provider,gemini,schema,observeAll}.ts`, `lib/scoring/**`, `lib/config/**` | **P2** Verification |
+| `scripts/python/**`, `data/**`, `eval/**`, `lib/vision/prompt.ts`, `docs/spikes.md`, `app/benchmark/**` | **P3** Data & Eval |
 | `components/profile/**`, `components/search/**`, `lib/ui/**`, `app/page.tsx`, `app/how-it-works/**`, `app/dev/**`, `fixtures/**`, `public/fixtures/**` | **P4** UI & Product |
 
 - `components/profile/*` and `components/search/*` stay **presentational**: props in, JSX out, no data fetching.
@@ -82,6 +83,7 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 6. No stock-photo sources. No HTML scraping of Google Images / Instagram / Facebook / VK / 2GIS. Official APIs and open data only.
 7. Never ask the vision model to identify people; exclude close-up portraits.
 8. **Never read, print, or commit secrets** (`.env*`, `.vercel/`). Keys live in `.env.local` and Vercel env.
+9. **No paid APIs.** Don't add a provider or SDK that needs a card or paid credits.
 
 ## Technical rules
 
@@ -91,7 +93,8 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 - **Server-only modules** (`lib/env.ts`, `lib/sources/**`, `lib/vision/**`, `lib/cache/**`, `lib/pipeline/orchestrator.ts`, `lib/pipeline/deps.ts`) must never be imported from `"use client"` files. Client-safe: `lib/types.ts`, `lib/config/*`, `lib/client/*`, `lib/ui/*`, `lib/pipeline/coverage.ts`.
 - **Streaming** goes through `lib/pipeline/events.ts` on the server and `hooks/useProfileStream.ts` on the client. Don't open your own `EventSource` elsewhere: it must close on terminal events or the browser re-runs the paid pipeline.
 - **Third-party photos:** plain `<img src loading="lazy" referrerPolicy="no-referrer">` with an `onError` fallback. Don't use `next/image` for them.
-- **Claude API:** the model id comes from `env.visionModel` (never hard-code it). Images: base64 JPEG, long edge 640 px, batches of 8. Validate output with zod; retry once with a smaller batch; then degrade.
+- **Gemini API (free tier)** via `@google/genai`: model ids come from `env.visionModel` / `env.descriptionModel` (never hard-code them). Vision: base64 JPEG, long edge 640 px, batches of `LIMITS.VISION_BATCH_SIZE` (12), ≤3 requests per profile. Validate output with zod; retry once with a smaller batch; then degrade. Free quotas are tiny: cache results via `lib/cache/kv.ts`, treat HTTP 429 as "unavailable", never loop retries.
+- **Free-tier AI is not offered to visitors from the EEA/CH/UK** (Gemini API terms): `PipelineInput.aiAllowed` from `lib/pipeline/regions.ts`. Respect it in anything that calls Gemini.
 - **UI language:** Russian. Category and filter labels come from `lib/config/categories.ts` (they match the case wording).
 - **Leaflet** loads client-side only (dynamic import with `ssr: false`).
 

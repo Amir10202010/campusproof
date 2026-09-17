@@ -42,7 +42,18 @@
       "Bash(gh pr merge *)",
       "Bash(gh pr review *)",
       "Bash(gh run list *)",
-      "Bash(gh run view *)"
+      "Bash(gh run view *)",
+      "Bash(gh issue create *)",
+      "Bash(gh pr checks * --watch)",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(pip install *)",
+      "Bash(.venv/bin/python *)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(curl -s http://localhost:3000/*)",
+      "Bash(curl -sN http://localhost:3000/*)",
+      "Bash(curl -s https://campusproof.vercel.app/*)",
+      "Bash(curl -sN https://campusproof.vercel.app/*)"
     ],
     "ask": [
       "Bash(npm install *)",
@@ -64,7 +75,9 @@
       "Bash(git push origin main)",
       "Bash(git push origin HEAD:main)",
       "Bash(vercel env pull *)",
-      "Bash(npx vercel env pull *)"
+      "Bash(npx vercel env pull *)",
+      "Bash(git push -u origin main)",
+      "Bash(git push --set-upstream origin main)"
     ]
   }
 }

@@ -7,8 +7,8 @@ export interface SearchQuery {
   categoryHint?: CategoryId;
 }
 
-/** P2 · issue #16 · one implementation per provider (serper.ts, brave.ts). */
+/** P2 · issue #16 · free providers only (Serper: 2,500 free queries). Cache responses via lib/cache/kv.ts to save credits. */
 export interface WebImageSearchProvider {
-  id: "serper" | "brave";
+  id: "serper";
   search(query: SearchQuery, signal: AbortSignal): Promise<Candidate[]>;
 }

@@ -114,6 +114,11 @@ export interface PipelineInput {
   qid?: string;
   refresh: boolean;
   simulate: SimulateFlag[];
+  /**
+   * false → don't call free-tier AI (vision, description) for this visitor: Gemini API terms forbid offering
+   * Unpaid Services to users in the EEA, Switzerland and the UK (lib/pipeline/regions.ts).
+   */
+  aiAllowed: boolean;
 }
 
 export interface RunContext {
@@ -131,7 +136,7 @@ export interface Candidate {
   thumbUrl?: string;
   sourcePageUrl: string;
   sourceDomain: string;
-  provider: string; // "commons" | "serper" | "brave" | ...
+  provider: string; // "commons" | "serper" | "openverse" | ...
   title?: string;
   caption?: string;
   categoryHint?: CategoryId;

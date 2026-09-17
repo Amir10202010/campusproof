@@ -30,6 +30,7 @@ function deps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     getSummaries: async () => missing("getSummaries"),
     gatherCommons: async () => missing("gatherCommons"),
     gatherWebSearch: async () => missing("gatherWebSearch"),
+    gatherOpenverse: async () => missing("gatherOpenverse"),
     fetchCandidates: async () => missing("fetchCandidates"),
     dedupeCandidates: () => missing("dedupeCandidates"),
     visionProvider: { observe: async () => missing("observe") },
@@ -62,7 +63,7 @@ function fetched(id: string, overrides: Partial<FetchedCandidate> = {}): Fetched
 async function run(d: PipelineDeps, input: Partial<PipelineInput> = {}) {
   const events: StreamEvent[] = [];
   const profile = await runProfilePipeline(
-    { query: "test", refresh: false, simulate: [], ...input },
+    { query: "test", refresh: false, simulate: [], aiAllowed: true, ...input },
     d,
     (event) => events.push(event),
     new AbortController().signal,
@@ -90,7 +91,7 @@ describe("pipeline walking skeleton", () => {
     expect(profile?.photos).toEqual([]);
     expect(profile?.degraded).toEqual([]);
     const sources = events.flatMap((e) => (e.type === "source" ? [e.status] : []));
-    expect(sources.map((s) => s.status)).toEqual(["skipped", "skipped", "skipped"]);
+    expect(sources.map((s) => s.status)).toEqual(["skipped", "skipped", "skipped", "skipped"]);
     expect(events.at(-1)).toEqual(expect.objectContaining({ type: "done", cached: false }));
   });
 
@@ -133,6 +134,33 @@ describe("pipeline walking skeleton", () => {
     const web = events.find((e) => e.type === "source" && e.status.source === "web_search");
     expect(web).toEqual(expect.objectContaining({ status: expect.objectContaining({ status: "simulated_down" }) }));
     expect(profile?.degraded).toContain("web_search_unavailable");
+  });
+
+  it("never calls free-tier AI for visitors from restricted regions", async () => {
+    const observeAll = vi.fn(async () => new Map());
+    const describeCampus = vi.fn(async () => null);
+    const { profile } = await run(
+      deps({
+        resolveQuery: async () => ({ status: "resolved", entity }),
+        gatherCommons: async () => ({ candidates: [fetched("a")], subcategories: [] }),
+        fetchCandidates: async () => ({ fetched: [fetched("a")], failed: [] }),
+        dedupeCandidates: (items) => ({ kept: items, rejected: [] }),
+        observeAll,
+        describeCampus,
+        scoreCandidate: () => ({
+          points: 10,
+          tier: "unconfirmed",
+          category: "campus",
+          secondary: [],
+          evidence: [],
+          labels: [],
+        }),
+      }),
+      { aiAllowed: false },
+    );
+    expect(observeAll).not.toHaveBeenCalled();
+    expect(describeCampus).toHaveBeenCalledWith(expect.objectContaining({ aiAllowed: false }), expect.anything());
+    expect(profile?.degraded).toContain("vision_unavailable");
   });
 
   it("serves a cached profile immediately", async () => {

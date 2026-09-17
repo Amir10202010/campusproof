@@ -1,91 +1,102 @@
-"""Spike S4 — which vision model should the pipeline use?
+"""Spike S4 — which FREE Gemini model should the pipeline use for vision?
 
-Owner: P3 · Deadline: T+6 (16:00) · Needs: ANTHROPIC_API_KEY · Spec: docs/architecture.md §5.5, §16 (S4)
+Owner: P3 · Issue #22 · Needs: GEMINI_API_KEY (free tier, Google AI Studio) · Spec: docs/architecture.md §5.5
 
-Input: eval/spike_vision/labels.json — 40 labeled images (collect them in the morning from real
-S2/S3 results; include traps: stock photos, renders, logos/maps, photos of OTHER universities):
+Input: eval/spike_vision/labels.json — 36 labeled images (collect them from real S2/S3 results; include traps:
+stock photos, renders, logos/maps, photos of OTHER universities):
   [{"id": "img_01", "path": "eval/spike_vision/img_01.jpg", "university": "Satbayev University",
     "city": "Almaty", "true_category": "library", "belongs": true, "trap": null}, ...]
 
-For each candidate model: send the 40 images in batches of 8 (5 runs for latency), measure:
+For each candidate model: send the images in batches of 12 (exactly like the app: LIMITS.VISION_BATCH_SIZE),
+3 runs for latency, and measure:
   - category accuracy on images with belongs=true
   - trap catch rate (image_type != photo, stock_like, names_institution == "other")
   - names_institution correctness
-  - p50 / p90 latency per 8-image batch
-  - input/output tokens → cost per profile (40 images) using docs/architecture.md §14 prices
-Decision rule: the most accurate model whose p90 batch latency is ≤ 8 s. Write it into docs/spikes.md.
+  - p50 / p90 latency per 12-image batch
+  - prompt/output tokens per batch (response.usage_metadata)
+Also open https://aistudio.google.com/rate-limit and write down the free RPM / RPD of each model for OUR project.
+Decision rule: the most accurate model whose p90 batch latency is ≤ 8 s AND whose free RPD allows ≥ 150 profiles/day
+(3 requests per profile). Write the decision into docs/spikes.md; tell P1 (Amir) the value for VISION_MODEL in Vercel.
+
+Free quota is small: runs are cached on disk (.cache/vision/) — re-running the script doesn't spend requests.
+Free tier data may be used by Google to improve products — only public web photos go here, nothing personal.
 """
 
 from __future__ import annotations
 
-import base64
+import hashlib
 import io
 import json
+import os
 import time
 from pathlib import Path
 
-import anthropic
+from google import genai
+from google.genai import types
 from PIL import Image
 
-from common import REPO_ROOT, read_ts_prompt, write_json
+from common import CACHE_DIR, REPO_ROOT, read_ts_prompt, write_json
 
-CANDIDATE_MODELS = ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5"]
-BATCH_SIZE = 8
+# Verify the list against https://ai.google.dev/gemini-api/docs/models (free tier: .../pricing)
+CANDIDATE_MODELS = ["gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+BATCH_SIZE = 12
 LONG_EDGE_PX = 640
+RUNS = 3
 
-client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY (loaded from .env.local by common.py)
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])  # loaded from .env.local by common.py
 
 
-def image_block(path: Path) -> dict:
-    """Resize to 640 px long edge, JPEG, base64 — the same input the TS pipeline will send."""
+def jpeg_bytes(path: Path) -> bytes:
+    """Resize to 640 px long edge, JPEG — the same input the TypeScript pipeline sends."""
     image = Image.open(path).convert("RGB")
     image.thumbnail((LONG_EDGE_PX, LONG_EDGE_PX))
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG", quality=85)
-    data = base64.standard_b64encode(buffer.getvalue()).decode()
-    return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
+    return buffer.getvalue()
 
 
-def model_options(model: str) -> dict:
-    """Latency-oriented settings per model (see docs/architecture.md §5.5)."""
-    if model == "claude-opus-5":
-        return {"output_config_extra": {"effort": "low"}}
-    if model == "claude-sonnet-5":
-        return {"thinking": {"type": "disabled"}}
-    return {}  # claude-haiku-4-5: no thinking by default; effort is not supported
+def run_batch(model: str, batch: list[dict], context: str, run: int) -> tuple[list[dict], float, dict]:
+    """One vision request. Cached per (model, images, run) so re-runs cost nothing."""
+    key = hashlib.sha1(json.dumps([model, [b["id"] for b in batch], run]).encode()).hexdigest()
+    cache_file = CACHE_DIR / "vision" / f"{key}.json"
+    if cache_file.exists():
+        cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        return cached["images"], cached["seconds"], cached["usage"]
 
-
-def run_batch(model: str, batch: list[dict], context: str, schema: dict) -> tuple[list[dict], float, dict]:
-    content: list[dict] = []
+    contents: list = []
     for item in batch:
-        content.append({"type": "text", "text": f"Image {item['id']}:"})
-        content.append(image_block(REPO_ROOT / item["path"]))
-    content.append({"type": "text", "text": context})
+        contents.append(f"Image {item['id']}:")
+        contents.append(types.Part.from_bytes(data=jpeg_bytes(REPO_ROOT / item["path"]), mime_type="image/jpeg"))
+    contents.append(context)
 
-    options = model_options(model)
-    output_config = {"format": {"type": "json_schema", "schema": schema}, **options.pop("output_config_extra", {})}
     started = time.perf_counter()
-    response = client.messages.create(
+    response = client.models.generate_content(
         model=model,
-        max_tokens=4000,
-        system=read_ts_prompt("VISION_SYSTEM_PROMPT"),
-        messages=[{"role": "user", "content": content}],
-        output_config=output_config,
-        **options,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=read_ts_prompt("VISION_SYSTEM_PROMPT"),
+            response_mime_type="application/json",
+            response_json_schema=json.loads(read_ts_prompt("VISION_OUTPUT_JSON_SCHEMA")),
+            media_resolution=types.MediaResolution.MEDIA_RESOLUTION_MEDIUM,  # also try LOW: fewer tokens
+        ),
     )
-    elapsed = time.perf_counter() - started
-    text = next(block.text for block in response.content if block.type == "text")
-    usage = {"input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens}
-    return json.loads(text)["images"], elapsed, usage
+    seconds = time.perf_counter() - started
+    usage = {
+        "prompt_tokens": response.usage_metadata.prompt_token_count,
+        "output_tokens": response.usage_metadata.candidates_token_count,
+    }
+    images = json.loads(response.text)["images"]
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text(json.dumps({"images": images, "seconds": seconds, "usage": usage}), encoding="utf-8")
+    return images, seconds, usage
 
 
 def main() -> None:
     labels = json.loads((REPO_ROOT / "eval/spike_vision/labels.json").read_text(encoding="utf-8"))
-    schema = json.loads(read_ts_prompt("VISION_OUTPUT_JSON_SCHEMA"))
     results = {}
     for model in CANDIDATE_MODELS:
-        # TODO(P3): batches of 8; context text = university name/city + category definitions;
-        #           repeat 5 times for latency; compute the metrics listed in the docstring.
+        # TODO(P3): group labels by university; context text = university name/city + "which university to check";
+        #           batches of 12; RUNS runs; catch 429 (quota) → record and move on; compute the metrics listed above.
         results[model] = {}
     write_json("eval/spikes/s4_vision.json", results)
 
