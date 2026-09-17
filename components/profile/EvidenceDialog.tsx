@@ -1,16 +1,34 @@
 "use client";
 
-import { Check, ExternalLink, Flag, Minus, TriangleAlert, X } from "lucide-react";
+import {
+  Archive,
+  Check,
+  CircleDot,
+  Eye,
+  ExternalLink,
+  Flag,
+  Layers,
+  MapPin,
+  Minus,
+  ScanSearch,
+  TriangleAlert,
+  Type,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { CATEGORY_BY_ID } from "@/lib/config/categories";
 import type { Evidence, Photo } from "@/lib/types";
+import { groupEvidence } from "@/lib/ui/evidence";
 import { displayHost, formatDateRu, formatDistanceRu, photoAlt, safeHttpUrl } from "@/lib/ui/format";
 import {
   DATE_KIND_HINT_RU,
   DATE_KIND_RU,
+  EVIDENCE_KIND_RU,
   PHOTO_LABEL_DETAIL_RU,
   PROVIDER_RU,
   SOURCE_TYPE_RU,
@@ -18,6 +36,17 @@ import {
 } from "@/lib/ui/labels";
 import { ExternalImage } from "./ExternalImage";
 import { TierBadge } from "./TierBadge";
+
+/** P4 · #37 · an icon per evidence kind, next to the plain-language hint from EVIDENCE_KIND_RU. */
+const EVIDENCE_KIND_ICON: Record<Evidence["kind"], LucideIcon> = {
+  provenance: Archive,
+  geo: MapPin,
+  text: Type,
+  visual: Eye,
+  cross_source: Layers,
+  community: Users,
+  quality: ScanSearch,
+};
 
 export interface EvidenceDialogProps {
   photo: Photo | null;
@@ -98,25 +127,43 @@ function EvidenceBody({ photo }: { photo: Photo }) {
           <DialogDescription className="text-sm text-foreground/80">{TIER_VERDICT_RU[photo.tier]}</DialogDescription>
         </div>
 
-        <section className="space-y-2" aria-label="Доказательства">
+        <section className="space-y-3" aria-label="Доказательства">
           <h3 className="text-sm font-medium">Почему такой уровень</h3>
-          <ul className="space-y-1.5 text-sm">
-            {photo.evidence.map((evidence, index) => (
-              <EvidenceLine key={`${evidence.signal}-${index}`} evidence={evidence} />
-            ))}
-            {photo.labels.map((label) => (
-              <li key={label} className="flex gap-2 text-amber-900">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <span>{PHOTO_LABEL_DETAIL_RU[label]}</span>
-              </li>
-            ))}
-          </ul>
+          {groupEvidence(photo.evidence).map((group) => {
+            const meta = EVIDENCE_KIND_RU[group.kind] ?? { title: "Другое", hint: "прочие сигналы" };
+            const KindIcon = EVIDENCE_KIND_ICON[group.kind] ?? CircleDot;
+            return (
+              <div key={group.kind} className="space-y-1">
+                <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                  <KindIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="font-medium text-foreground">{meta.title}</span>
+                  <span>— {meta.hint}</span>
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {group.items.map((evidence, index) => (
+                    <EvidenceLine key={`${evidence.signal}-${index}`} evidence={evidence} />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          {photo.labels.length > 0 ? (
+            <ul className="space-y-1.5 text-sm">
+              {photo.labels.map((label) => (
+                <li key={label} className="flex gap-2 text-amber-900">
+                  <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  <span>{PHOTO_LABEL_DETAIL_RU[label]}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <details className="text-xs text-muted-foreground">
             <summary className="cursor-pointer select-none hover:text-foreground">
-              Баллы доказательств: {photo.points}
+              Очки доказательств: {photo.points}
             </summary>
             <p className="mt-1">
-              Это сумма баллов за найденные признаки, а не вероятность. Уровень выставляют правила по этим баллам.
+              Это очки доказательств, а не вероятность: сумма за найденные признаки. Уровень выставляют правила по этим
+              очкам.
             </p>
             <ul className="mt-1 space-y-0.5 tabular-nums">
               {photo.evidence.map((evidence, index) => (

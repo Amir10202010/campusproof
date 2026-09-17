@@ -3,15 +3,12 @@ import Link from "next/link";
 import { TierBadge } from "@/components/profile/TierBadge";
 import { HomeSearch } from "@/components/search/HomeSearch";
 import { MANDATORY_FILTERS, REQUIRED_AREAS } from "@/lib/config/categories";
+import { TIER_SHORT_RU } from "@/lib/ui/labels";
 
 /** Search examples: an ambiguous abbreviation, a Kazakhstan university, an international one (product-strategy §12). */
 const EXAMPLES = ["MSU", "Назарбаев Университет", "ETH Zurich"];
 
-const TIERS = [
-  { tier: "verified", text: "есть сильное доказательство, что это именно этот вуз" },
-  { tier: "likely", text: "доказательства есть, но их меньше" },
-  { tier: "unconfirmed", text: "доказательств мало, скрыто по умолчанию" },
-] as const;
+const TIERS = ["verified", "likely", "unconfirmed"] as const;
 
 /** P4 · #5 · home: value proposition, search with examples, coverage note, link to the methodology. */
 export default function Home() {
@@ -45,10 +42,10 @@ export default function Home() {
         <div className="space-y-2">
           <h2 className="font-medium">Уровни доверия</h2>
           <ul className="space-y-2">
-            {TIERS.map(({ tier, text }) => (
+            {TIERS.map((tier) => (
               <li key={tier} className="flex flex-col items-start gap-1">
                 <TierBadge tier={tier} />
-                <span className="text-muted-foreground">{text}</span>
+                <span className="text-muted-foreground">{TIER_SHORT_RU[tier]}</span>
               </li>
             ))}
           </ul>
