@@ -1,5 +1,7 @@
-import { notImplemented } from "@/lib/notImplemented";
-import type { FetchedCandidate, ScoreResult, ScoringContext, VisionObservation } from "@/lib/types";
+import { CATEGORIES } from "@/lib/config/categories";
+import type { CategoryId, FetchedCandidate, ScoreResult, ScoringContext, VisionObservation } from "@/lib/types";
+import { collectSignals } from "./signals";
+import { decideTier } from "./tiers";
 
 /**
  * P2 · issue #17 (v0: non-visual signals) → issue #19 (v1: visual signals, hard rejects).
@@ -11,4 +13,47 @@ export type ScoreCandidate = (
   observation: VisionObservation | null,
   context: ScoringContext,
 ) => ScoreResult;
-export const scoreCandidate: ScoreCandidate = () => notImplemented("scoreCandidate", "P2", 17);
+
+const CATEGORY_IDS = new Set<string>(CATEGORIES.map((category) => category.id));
+
+const isCategory = (value: string): value is CategoryId => CATEGORY_IDS.has(value);
+
+/** What the photo shows: the model's category, else the hint from the source, else the generic campus section. */
+export function resolveCategory(
+  candidate: FetchedCandidate,
+  observation: VisionObservation | null,
+): { category: CategoryId; secondary: CategoryId[] } {
+  const primary =
+    observation && isCategory(observation.primary_category)
+      ? observation.primary_category
+      : (candidate.categoryHint ?? "campus");
+  const secondary = (observation?.secondary_categories ?? []).filter(
+    (id, index, all): id is CategoryId => isCategory(id) && id !== primary && all.indexOf(id) === index,
+  );
+  return { category: primary, secondary };
+}
+
+export const scoreCandidate: ScoreCandidate = (candidate, observation, context) => {
+  const { category, secondary } = resolveCategory(candidate, observation);
+  const signals = collectSignals(candidate, observation, context, category);
+  const points = signals.evidence.reduce((sum, item) => sum + item.points, 0);
+  const base = { points, category, secondary, evidence: signals.evidence, labels: signals.labels };
+
+  if (signals.reject) return { ...base, tier: "rejected", reject: signals.reject };
+
+  const tier = decideTier({
+    points,
+    strong: signals.strong,
+    negativeVisual: signals.negativeVisual,
+    visionAvailable: context.visionAvailable,
+  });
+
+  if (tier === "rejected") {
+    return {
+      ...base,
+      tier,
+      reject: { reason: "low_score", detail: `Слишком мало доказательств: ${points} из 60 очков` },
+    };
+  }
+  return { ...base, tier };
+};
