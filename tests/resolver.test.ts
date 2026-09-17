@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import recorded from "@/tests/data/wikidata-resolver.json";
 import { replayFetch } from "@/tests/helpers/replayFetch";
+
+// These tests cover the live Wikidata path: the local index (#14) is switched off (tests/index-search.test.ts covers it).
+vi.mock("@/lib/resolver/indexSearch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/resolver/indexSearch")>()),
+  searchIndex: () => [],
+}));
 import { decide, resolveQuery } from "@/lib/resolver/resolve";
 import { interleave, isHigherEducation, matchQuality, searchWikidata } from "@/lib/resolver/wikidata";
 import { clearWikidataMemo, type RawEntity } from "@/lib/sources/wikidata";
@@ -110,6 +116,13 @@ describe("resolver ranking rules", () => {
       decide([
         { match: 1, score: 0.9 },
         { match: 0.4, score: 0.5 },
+      ]),
+    ).toBe("resolved");
+    // an exact name beats a partial match of a more popular university
+    expect(
+      decide([
+        { match: 1, score: 0.79 },
+        { match: 0.75, score: 0.74 },
       ]),
     ).toBe("resolved");
   });

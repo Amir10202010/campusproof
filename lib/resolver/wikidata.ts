@@ -228,11 +228,16 @@ export function interleave(lists: string[][]): string[] {
   return [...seen];
 }
 
+/** 0..1 — log-scaled sitelink count (150+ Wikipedia articles ≈ 1). */
+export function popularityOf(sitelinks: number): number {
+  return Math.min(1, Math.log10(sitelinks + 1) / Math.log10(151));
+}
+
 export function rankCandidates(variants: string[], entities: RawEntity[]): RankedCandidate[] {
   return entities
     .map((entity) => {
       const match = matchQuality(variants, entityTerms(entity));
-      const popularity = Math.min(1, Math.log10(sitelinkCount(entity) + 1) / Math.log10(151));
+      const popularity = popularityOf(sitelinkCount(entity));
       return { qid: entity.id, entity, match, popularity, score: 0.7 * match + 0.3 * popularity };
     })
     .sort((a, b) => b.score - a.score);
