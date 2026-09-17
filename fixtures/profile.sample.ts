@@ -1,4 +1,4 @@
-import type { Photo, RejectedItem, UniversityProfile } from "@/lib/types";
+import type { CandidateCard, Photo, RejectedItem, UniversityProfile } from "@/lib/types";
 
 /**
  * FIXTURE — fictional data for building the UI before the pipeline exists.
@@ -452,6 +452,19 @@ export const sampleRejected: RejectedItem[] = [
     reason: "portrait",
     detail: "Крупный портрет человека — не показываем",
   },
+];
+
+/** Pick-list / not-found cards for the UI workbench (fictional universities). */
+export const sampleCandidates: CandidateCard[] = [
+  { qid: "Q0-FIXTURE", name: "Демо Университет (ФИКСТУРА)", city: "Астана", country: "Казахстан", founded: "2010" },
+  {
+    qid: "Q1-FIXTURE",
+    name: "Демо Технический Университет (ФИКСТУРА)",
+    city: "Алматы",
+    country: "Казахстан",
+    founded: "1934",
+  },
+  { qid: "Q2-FIXTURE", name: "Demo State University (FIXTURE)", country: "США" },
 ];
 
 export const sampleProfile: UniversityProfile = {
