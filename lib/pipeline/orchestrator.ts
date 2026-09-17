@@ -76,13 +76,31 @@ export async function runProfilePipeline(
     const qid = input.qid ?? (resolved as UniversityEntity).qid;
 
     // ── 2 · Cache ── checked before entity details: a saved profile costs no Wikimedia calls.
-    if (cacheable) {
+    const serveCached = async () => {
       const cached = await optional(ctx, "getCachedProfile", () => deps.getCachedProfile(qid));
       if (cached) {
         emit({ type: "resolved", entity: cached.entity });
         emit({ type: "done", profile: cached, cached: true });
-        return cached;
       }
+      return cached;
+    };
+    if (cacheable) {
+      const cached = await serveCached();
+      if (cached) return cached;
+    }
+
+    // Fresh runs spend free quotas: rate limit + daily budget. Over the limit → the saved profile or an honest message.
+    const gate = deps.beforeFreshRun ? await optional(ctx, "beforeFreshRun", deps.beforeFreshRun) : null;
+    if (gate && !gate.allowed) {
+      const cached = cacheable ? null : await serveCached();
+      if (cached) return cached;
+      emit({
+        type: "error",
+        code: "rate_limited",
+        message: gate.reason ?? "Слишком много новых проверок. Попробуйте позже.",
+        retryable: true,
+      });
+      return null;
     }
 
     if (resolved) {

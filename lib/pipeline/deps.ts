@@ -33,6 +33,8 @@ export interface PipelineDeps {
   describeCampus: DescribeCampus; // P1 #20
   getCachedProfile: GetCachedProfile; // P1 #12
   saveProfile: SaveProfile; // P1 #12
+  /** Per-request gate before a fresh (non-cached) run: rate limit + daily budget (P1 #13). Absent → always allowed. */
+  beforeFreshRun?: () => Promise<{ allowed: boolean; reason?: string }>;
   now: () => number;
 }
 

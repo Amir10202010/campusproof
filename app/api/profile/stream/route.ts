@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { allowFreshRun, clientKeyFromHeaders } from "@/lib/cache/ratelimit";
 import { LIMITS } from "@/lib/config/limits";
 import { parseSimulate } from "@/lib/pipeline/context";
 import { createDefaultDeps } from "@/lib/pipeline/deps";
@@ -15,7 +16,7 @@ const QID = /^Q\d{1,12}$/;
  * GET /api/profile/stream?q=... | ?qid=Q123  (&refresh=1, &simulate=web_search_down,vision_down,wikimedia_down)
  * Streams StreamEvent objects (lib/types.ts) as Server-Sent Events. Owner: P1 · issue #10.
  * The route is final; the pipeline lives in lib/pipeline/orchestrator.ts.
- * TODO(P1 #13): call allowFreshRun() from lib/cache/ratelimit.ts before running a fresh (non-cached) profile.
+ * Fresh (non-cached) runs pass allowFreshRun() (rate limit + daily budget, #13); saved profiles are never limited.
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -34,7 +35,8 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const deps = createDefaultDeps();
+  const clientKey = clientKeyFromHeaders(request.headers);
+  const deps = { ...createDefaultDeps(), beforeFreshRun: () => allowFreshRun(clientKey) };
   return eventStreamResponse(async (emit, signal) => {
     await runProfilePipeline(input, deps, emit, signal);
   }, request.signal);
