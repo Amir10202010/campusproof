@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { kvGet, kvSet } from "@/lib/cache/kv";
+import { LIMITS } from "@/lib/config/limits";
 import { env } from "@/lib/env";
 
 /**
@@ -52,15 +55,25 @@ export function wikimediaApiUrl(host: string, params: WikimediaParams): URL {
   return url;
 }
 
+/** Responses bigger than this are not cached (Upstash free tier: 1 MB per request). */
+const MAX_CACHED_CHARS = 400_000;
+
 /**
  * Calls the MediaWiki Action API through wikimediaFetch and returns the parsed body.
+ * Successful responses are cached in Redis for LIMITS.WIKIMEDIA_CACHE_TTL_S (`wm:{sha1(url)}`, docs/architecture.md §8.1).
  * HTTP errors and API-level `error` objects throw WikimediaError: callers degrade, never crash the request.
  */
 export async function wikimediaApi<T>(host: string, params: WikimediaParams, signal: AbortSignal): Promise<T> {
   const url = wikimediaApiUrl(host, params);
+  const cacheKey = `wm:${createHash("sha1").update(url.toString()).digest("hex")}`;
+  const cached = await kvGet<T>(cacheKey);
+  if (cached) return cached;
+
   const response = await wikimediaFetch(url, { signal });
   if (!response.ok) throw new WikimediaError(host, response.status);
-  const body = (await response.json()) as T & { error?: { code?: string } };
+  const text = await response.text();
+  const body = JSON.parse(text) as T & { error?: { code?: string } };
   if (body.error) throw new WikimediaError(host, response.status, body.error.code);
+  if (text.length <= MAX_CACHED_CHARS) await kvSet(cacheKey, body, LIMITS.WIKIMEDIA_CACHE_TTL_S);
   return body;
 }
