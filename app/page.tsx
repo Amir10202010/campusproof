@@ -1,52 +1,68 @@
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { TierBadge } from "@/components/profile/TierBadge";
+import { HomeSearch } from "@/components/search/HomeSearch";
 import { MANDATORY_FILTERS, REQUIRED_AREAS } from "@/lib/config/categories";
 
-/**
- * Temporary home page. P4 replaces it with the real search experience (docs/product-strategy.md §12).
- */
+/** Search examples: an ambiguous abbreviation, a Kazakhstan university, an international one (product-strategy §12). */
+const EXAMPLES = ["MSU", "Назарбаев Университет", "ETH Zurich"];
+
+const TIERS = [
+  { tier: "verified", text: "есть сильное доказательство, что это именно этот вуз" },
+  { tier: "likely", text: "доказательства есть, но их меньше" },
+  { tier: "unconfirmed", text: "доказательств мало, скрыто по умолчанию" },
+] as const;
+
+/** P4 · #5 · home: value proposition, search with examples, coverage note, link to the methodology. */
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-6 py-24">
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-muted-foreground">LOCUS Startup Hackathon 2026 · Кейс 01</p>
-        <h1 className="text-4xl font-semibold tracking-tight">CampusProof</h1>
-        <p className="text-lg text-muted-foreground">
-          Введите название университета — и получите проверенные фотографии с источниками, а не случайную выдачу поиска.
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-10 px-4 py-12 sm:px-6 sm:py-20">
+      <div className="space-y-4">
+        <p className="text-sm font-semibold tracking-tight">CampusProof</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          Настоящие фото университета — у каждого есть источник, дата и уровень доверия
+        </h1>
+        <p className="text-muted-foreground">
+          Введите название вуза: за полминуты соберём кампус, общежития, аудитории, библиотеки и город из открытых
+          источников и покажем, почему доверяем каждому снимку.
         </p>
       </div>
 
-      {/* Temporary plain form (works without JS). P4 · #5 replaces it with <SearchBox>. */}
-      <form action="/search" method="get" className="flex gap-2">
-        <input
-          name="q"
-          required
-          maxLength={120}
-          placeholder="Название университета, например KBTU"
-          className="h-10 flex-1 rounded-md border px-3 text-sm"
-        />
-        <button type="submit" className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
-          Найти
-        </button>
-      </form>
-      <p className="text-xs text-muted-foreground">
-        Сервис в разработке: этапы пайплайна подключаются по мере готовности.
-      </p>
+      <div className="space-y-3">
+        <HomeSearch examples={EXAMPLES} />
+        <p className="text-sm text-muted-foreground">
+          Лучше всего протестировано на вузах Казахстана, Центральной Азии и крупных международных университетах.
+        </p>
+        <Link
+          href="/how-it-works"
+          className="inline-flex items-center gap-1 text-sm font-medium underline-offset-3 hover:underline"
+        >
+          Как мы проверяем фото
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
 
-      <div className="grid gap-4 text-sm sm:grid-cols-2">
-        <div>
-          <p className="mb-2 font-medium">Разделы профиля</p>
-          <ul className="space-y-1 text-muted-foreground">
-            {REQUIRED_AREAS.map((c) => (
-              <li key={c.id}>{c.labelRu}</li>
+      <div className="grid gap-6 border-t pt-8 text-sm sm:grid-cols-2">
+        <div className="space-y-2">
+          <h2 className="font-medium">Уровни доверия</h2>
+          <ul className="space-y-2">
+            {TIERS.map(({ tier, text }) => (
+              <li key={tier} className="flex flex-col items-start gap-1">
+                <TierBadge tier={tier} />
+                <span className="text-muted-foreground">{text}</span>
+              </li>
             ))}
           </ul>
         </div>
-        <div>
-          <p className="mb-2 font-medium">Фильтры</p>
-          <ul className="space-y-1 text-muted-foreground">
-            {MANDATORY_FILTERS.map((c) => (
-              <li key={c.id}>{c.filterLabelRu}</li>
-            ))}
-          </ul>
+        <div className="space-y-2">
+          <h2 className="font-medium">В профиле</h2>
+          <p className="text-muted-foreground">
+            Разделы: {REQUIRED_AREAS.map((c) => c.labelRu.toLowerCase()).join(", ")}. Фильтры:{" "}
+            {MANDATORY_FILTERS.map((c) => `«${c.filterLabelRu}»`).join(", ")}.
+          </p>
+          <p className="text-muted-foreground">
+            Если подтвердить фото нельзя, так и напишем — чужие снимки хуже честного «не нашли».
+          </p>
         </div>
       </div>
     </main>
