@@ -54,15 +54,12 @@ export async function runProfilePipeline(
 
   // ── 1 · Resolve ──────────────────────────────────────────────────────────────
   const resolveStarted = deps.now();
+  const cacheable = !input.refresh && ctx.simulate.length === 0;
   let entity: UniversityEntity;
   let facts: ProfileFact[] = [];
   try {
-    const qid = input.qid;
-    if (qid) {
-      ({ entity, facts } = await withTimeout("getEntity", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) =>
-        deps.getEntity(qid, s),
-      ));
-    } else {
+    let resolved: UniversityEntity | undefined;
+    if (!input.qid) {
       const result = await withTimeout("resolve", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) =>
         deps.resolveQuery(input.query ?? "", s),
       );
@@ -74,11 +71,30 @@ export async function runProfilePipeline(
         emit({ type: "not_found", query: result.query, suggestions: result.suggestions });
         return null;
       }
-      entity = result.entity;
+      resolved = result.entity;
+    }
+    const qid = input.qid ?? (resolved as UniversityEntity).qid;
+
+    // ── 2 · Cache ── checked before entity details: a saved profile costs no Wikimedia calls.
+    if (cacheable) {
+      const cached = await optional(ctx, "getCachedProfile", () => deps.getCachedProfile(qid));
+      if (cached) {
+        emit({ type: "resolved", entity: cached.entity });
+        emit({ type: "done", profile: cached, cached: true });
+        return cached;
+      }
+    }
+
+    if (resolved) {
+      entity = resolved;
       const details = await optional(ctx, "getEntity", () =>
-        withTimeout("getEntity", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) => deps.getEntity(result.entity.qid, s)),
+        withTimeout("getEntity", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) => deps.getEntity(qid, s)),
       );
       if (details) ({ entity, facts } = details);
+    } else {
+      ({ entity, facts } = await withTimeout("getEntity", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) =>
+        deps.getEntity(qid, s),
+      ));
     }
   } catch (error) {
     emit({
@@ -97,16 +113,6 @@ export async function runProfilePipeline(
   }
   stages.resolve = deps.now() - resolveStarted;
   emit({ type: "resolved", entity });
-
-  // ── 2 · Cache ────────────────────────────────────────────────────────────────
-  const cacheable = !input.refresh && ctx.simulate.length === 0;
-  if (cacheable) {
-    const cached = await optional(ctx, "getCachedProfile", () => deps.getCachedProfile(entity.qid));
-    if (cached) {
-      emit({ type: "done", profile: cached, cached: true });
-      return cached;
-    }
-  }
 
   // ── 3 · Gather (parallel sources) ───────────────────────────────────────────
   emit({ type: "stage", stage: "gather", status: "start", ms: elapsedMs(ctx, deps.now()) });
