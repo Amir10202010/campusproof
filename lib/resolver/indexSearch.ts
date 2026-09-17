@@ -1,7 +1,7 @@
 import MiniSearch from "minisearch";
 import rawIndex from "@/data/universities.min.json";
 import { foldText, queryVariants } from "@/lib/resolver/normalize";
-import { commonsFileUrl } from "@/lib/sources/wikidata";
+import { commonsFileUrl } from "@/lib/sources/commons";
 import type { CandidateCard, UniversityEntity, UniversityIndexEntry } from "@/lib/types";
 
 /**
@@ -29,6 +29,13 @@ export const searchIndex: SearchIndex = (query) => {
 };
 
 let loaded: { search: MiniSearch<IndexDocument>; entries: Map<string, UniversityIndexEntry> } | undefined;
+let indexedQids: Set<string> | undefined;
+
+/** True when the item is in the local index (built from P31/P279* higher-education institution). */
+export function isIndexedUniversity(qid: string): boolean {
+  indexedQids ??= new Set((rawIndex as UniversityIndexEntry[]).map((entry) => entry.qid));
+  return indexedQids.has(qid);
+}
 
 interface IndexDocument {
   id: string;

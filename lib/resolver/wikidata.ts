@@ -1,7 +1,8 @@
 import { normalizeQuery, queryVariants } from "@/lib/resolver/normalize";
 import {
   entityTerms,
-  instanceOf,
+  HIGHER_EDUCATION_CLASSES,
+  isHigherEducation,
   loadEntities,
   loadPlacesFor,
   sitelinkCount,
@@ -16,6 +17,8 @@ import type { CandidateCard } from "@/lib/types";
  * P1 · issue #7 · live Wikidata search (wbsearchentities in en + ru) via lib/sources/wikimediaFetch.ts.
  * Keep only higher-education institutions (P31 → Q38723 / Q3918, or a description that says so).
  */
+export { HIGHER_EDUCATION_CLASSES, isHigherEducation };
+
 export type SearchWikidata = (query: string, signal: AbortSignal) => Promise<CandidateCard[]>;
 
 export const searchWikidata: SearchWikidata = async (query, signal) => {
@@ -27,72 +30,8 @@ export const MAX_CARDS = 6;
 const SEARCH_LIMIT = 10;
 const MAX_CANDIDATES = 8;
 
-/**
- * Classes of higher-education institutions (P31 values). Generic taxonomy — the most used direct
- * subclasses of Q38723 / Q3918 on Wikidata, not a list of particular universities.
- */
-export const HIGHER_EDUCATION_CLASSES = new Set([
-  "Q38723", // higher education institution
-  "Q3918", // university
-  "Q875538", // public university
-  "Q902104", // private university
-  "Q15936437", // research university
-  "Q62078547", // public research university
-  "Q265662", // national university
-  "Q4315006", // national research university
-  "Q1371037", // institute of technology
-  "Q189004", // college
-  "Q1663017", // engineering school
-  "Q1143635", // business school
-  "Q162633", // academy
-  "Q1336920", // community college
-  "Q184644", // conservatory
-  "Q917182", // military academy
-  "Q20820271", // graduate school
-  "Q2120173", // school of education
-  "Q1916585", // medical university
-  "Q494230", // medical school
-  "Q1321960", // law school
-  "Q7603893", // state public university
-  "Q131389368", // state private university
-  "Q17028020", // vocational university
-  "Q15407956", // university college
-  "Q7894996", // university college
-  "Q615150", // land-grant university
-  "Q3354859", // collegiate university
-  "Q1767829", // comprehensive university
-  "Q3551775", // university in France
-  "Q847027", // grande école
-  "Q21028957", // Hochschule
-  "Q3889692", // college of music
-  "Q16710795", // specialized higher education institution
-  "Q12420428", // agricultural college
-  "Q1499580", // sports higher education institution
-  "Q130382439", // military university
-  "Q2120466", // pontifical university
-  "Q1407393", // distance education university
-  "Q3698852", // graduate university
-  "Q47531586", // Institute of National Importance
-  "Q98658352", // higher education institution under the Ministry of Education of China
-  "Q16077796", // vice-ministerial level university
-  "Q3520135", // deemed university
-  "Q1620945", // historically black college or university
-]);
-
 /** The most common classes, used as a server-side filter in the full-text search. */
 const SEARCH_FILTER_CLASSES = [...HIGHER_EDUCATION_CLASSES].slice(0, 20);
-
-/** Generic classes that need a name or description saying "university" (e.g. Astana IT University). */
-const GENERIC_EDUCATION_CLASSES = new Set(["Q5341295", "Q2385804", "Q4671277"]);
-const HIGHER_EDUCATION_TEXT = /universit|университет|higher education|высшее учебное|вуз\b/i;
-
-export function isHigherEducation(entity: RawEntity): boolean {
-  const classes = instanceOf(entity);
-  if (classes.some((id) => HIGHER_EDUCATION_CLASSES.has(id))) return true;
-  if (classes.length > 0 && !classes.some((id) => GENERIC_EDUCATION_CLASSES.has(id))) return false;
-  const texts = [...Object.values(entity.labels ?? {}), ...Object.values(entity.descriptions ?? {})];
-  return texts.some((t) => HIGHER_EDUCATION_TEXT.test(t.value));
-}
 
 export interface RankedCandidate {
   qid: string;
