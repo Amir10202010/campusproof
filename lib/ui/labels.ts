@@ -1,4 +1,4 @@
-import type { DateKind, Photo, PhotoLabel, SourceType } from "@/lib/types";
+import type { DateKind, Photo, PhotoLabel, RejectReason, SourceType } from "@/lib/types";
 
 /** Russian UI texts for enum values from lib/types.ts. Owner: P4. Category labels live in lib/config/categories.ts. */
 
@@ -59,4 +59,21 @@ export const PROVIDER_RU: Record<string, string> = {
   commons: "Wikimedia Commons",
   serper: "веб-поиск",
   openverse: "Openverse",
+};
+
+/** Group titles in the «Отфильтровано» tray. */
+export const REJECT_REASON_RU: Record<RejectReason, string> = {
+  other_institution: "На снимке другой вуз",
+  far_geotag: "Снято далеко от кампуса",
+  stock_source: "Стоковые сайты",
+  stock_reuse: "Стоковое фото на другом сайте",
+  reused_across_universities: "Тот же снимок у других вузов",
+  render: "Рендеры и иллюстрации",
+  not_a_photo: "Не фотографии: логотипы, карты, документы",
+  portrait: "Крупные портреты людей",
+  duplicate: "Дубликаты",
+  low_quality: "Низкое качество",
+  low_score: "Мало доказательств",
+  verification_timeout: "Не успели проверить",
+  fetch_failed: "Не удалось загрузить",
 };
