@@ -21,7 +21,7 @@ const ctx = () => createRunContext({ signal: new AbortController().signal });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("gatherCommons (recorded responses)", () => {
-  it("returns ≥20 sourced, dated and licensed candidates for Nazarbayev University within 8 calls", async () => {
+  it("returns ≥20 free, sourced, dated and licensed candidates for Nazarbayev University within 8 calls", async () => {
     const calls = replayFetch(responses);
     const { candidates } = await gatherCommons(nu, ctx());
     expect(candidates.length).toBeGreaterThanOrEqual(20);
@@ -43,6 +43,7 @@ describe("gatherCommons (recorded responses)", () => {
     expect(candidates.some((c) => c.provenance.depictsQid)).toBe(true);
     expect(candidates.find((c) => c.provenance.usedOnWikipedia)?.title).toBe("Nazarbaev University Astana");
     expect(candidates.filter((c) => c.categoryHint === "city").length).toBeGreaterThan(0);
+    expect(candidates.every((c) => c.sourceDomain === "commons.wikimedia.org")).toBe(true);
     expect(candidates.find((c) => c.title === "Назарбаев Университеті")).toMatchObject({
       date: { value: "2011-05-12", kind: "taken" },
       license: { name: "CC BY-SA 3.0", author: "Qarakesek" },
