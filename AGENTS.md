@@ -17,6 +17,7 @@ Hard deadline: **Sat 19 Sep 2026, 12:00 Astana time**. Feature freeze Fri 19:00.
 
 ## Read before coding
 
+0. **`docs/agent-playbook.md`** — how we work while the team is asleep: taking issues, the shared queue, taking over a free issue from another lane, freeze rules. Role prompts: `docs/prompts/`.
 1. **`docs/module-map.md`** — which file is yours, its exact signature, how to see it live. **Start here.**
 2. The GitHub issue you're working on (`gh issue view <N> --comments`), including handoff comments from previous sessions.
 3. `lib/types.ts` — data contracts. Import types from here; never redefine them.
@@ -72,6 +73,7 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 
 - `components/profile/*`, `components/search/*` and `components/help/*` stay **presentational**: props in, JSX out, no data fetching. Only exception: `components/compare/CompareView.tsx` may GET `/api/resolve` and `/api/profile/{qid}` (never EventSource, never runs the pipeline).
 - New npm dependency or change to `lib/types.ts` → ask P1 first (lockfile and contract conflicts).
+- **A free issue beats the lane:** an unassigned issue of another lane may be taken (assign yourself first). Its files are yours until the PR merges. Never touch files of an issue someone else has taken.
 
 ## Integrity rules (breaking these can disqualify the team)
 
