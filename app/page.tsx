@@ -18,7 +18,6 @@ export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-10 px-4 py-12 sm:px-6 sm:py-20">
       <div className="space-y-4">
-        <p className="text-sm font-semibold tracking-tight">CampusProof</p>
         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           Настоящие фото университета — у каждого есть источник, дата и уровень доверия
         </h1>

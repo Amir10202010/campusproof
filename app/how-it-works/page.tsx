@@ -8,7 +8,7 @@ import { GEO, LIMITS, TIER_THRESHOLDS } from "@/lib/config/limits";
 import { formatDistanceRu, pluralRu } from "@/lib/ui/format";
 
 export const metadata: Metadata = {
-  title: "Как мы проверяем фото — CampusProof",
+  title: "Как мы проверяем фото",
   description:
     "Откуда берутся фото, какие доказательства мы ищем, как считаются уровни доверия и чего сервис не умеет.",
 };
