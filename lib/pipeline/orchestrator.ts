@@ -21,7 +21,7 @@ import type { VisionItem } from "@/lib/vision/provider";
 import { toPhotoOrRejected } from "./assemble";
 import { createRunContext } from "./context";
 import { computeCoverage } from "./coverage";
-import { elapsedMs, TimeoutError, withTimeout } from "./deadline";
+import { elapsedMs, remainingMs, TimeoutError, withTimeout } from "./deadline";
 import type { PipelineDeps } from "./deps";
 import type { Emit } from "./events";
 
@@ -30,8 +30,9 @@ import type { Emit } from "./events";
  * It already runs every stage in order. A stage whose module still throws NotImplementedError is
  * reported honestly as `skipped` and the pipeline continues, so the product "lights up" as lanes merge.
  *
- * TODO(P1 #10): per-category quotas, best-first vision batches, weak-category web queries,
- *               per-stage budgets from docs/architecture.md §5.0, request logging to a sink.
+ * Stage budgets (§5.0): fetch ≤ LIMITS.FETCH_STAGE_TIMEOUT_MS, vision = rest of the deadline minus
+ * LIMITS.ASSEMBLE_RESERVE_MS; both stages receive their own `ctx.deadlineAt` and should return partial results by then.
+ * TODO(P1 #10): tune on real data once fetch/scoring (P2) land; per-category quotas live in fetchCandidates (P2 #15).
  */
 export async function runProfilePipeline(
   input: PipelineInput,
@@ -186,9 +187,11 @@ export async function runProfilePipeline(
   const fetchStarted = deps.now();
   let fetched: FetchedCandidate[] = [];
   if (candidates.length > 0) {
+    const budget = Math.min(LIMITS.FETCH_STAGE_TIMEOUT_MS, remainingMs(ctx, deps.now()) - LIMITS.ASSEMBLE_RESERVE_MS);
+    const stageDeadline = deps.now() + Math.max(0, budget);
     const result = await optional(ctx, "fetchCandidates", () =>
-      withTimeout("fetch", ctx, LIMITS.GLOBAL_DEADLINE_MS, (s) =>
-        deps.fetchCandidates(candidates, { ...ctx, signal: s }),
+      withTimeout("fetch", ctx, Math.max(0, budget) + LIMITS.STAGE_GRACE_MS, (s) =>
+        deps.fetchCandidates(candidates, { ...ctx, signal: s, deadlineAt: stageDeadline }),
       ),
     );
     fetched = result?.fetched ?? [];
@@ -260,12 +263,15 @@ export async function runProfilePipeline(
 
   if (kept.length > 0) {
     let observations: Map<string, VisionObservation> | null = null;
-    if (visionDown) {
+    // Vision gets what is left of the global deadline minus a reserve for scoring and assembling.
+    const visionBudget = remainingMs(ctx, deps.now()) - LIMITS.ASSEMBLE_RESERVE_MS;
+    if (visionDown || visionBudget <= 0) {
       degraded.add("vision_unavailable");
     } else {
       const byId = new Map(kept.map((item) => [item.id, item]));
+      const stageDeadline = deps.now() + visionBudget;
       try {
-        observations = await withTimeout("vision", ctx, LIMITS.GLOBAL_DEADLINE_MS, (s) =>
+        observations = await withTimeout("vision", ctx, visionBudget + LIMITS.STAGE_GRACE_MS, (s) =>
           deps.observeAll(
             kept.map(toVisionItem),
             {
@@ -274,7 +280,7 @@ export async function runProfilePipeline(
               wikipediaExtract: summaries?.[0]?.extract.slice(0, 600),
             },
             deps.visionProvider,
-            { ...ctx, signal: s },
+            { ...ctx, signal: s, deadlineAt: stageDeadline },
             (batchObservations) => {
               const items = batchObservations
                 .map((o) => byId.get(o.id))

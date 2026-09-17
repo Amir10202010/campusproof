@@ -7,6 +7,12 @@ export const LIMITS = {
   RESOLVE_TIMEOUT_MS: 2_500,
   ADAPTER_TIMEOUT_MS: 7_000,
 
+  // Stage budgets inside the global deadline (docs/architecture.md §5.0). Stages get `ctx.deadlineAt` = their own
+  // deadline and must return partial results by then; the hard abort comes STAGE_GRACE_MS later.
+  FETCH_STAGE_TIMEOUT_MS: 8_000,
+  ASSEMBLE_RESERVE_MS: 1_500,
+  STAGE_GRACE_MS: 500,
+
   IMAGE_FETCH_TIMEOUT_MS: 3_000,
   IMAGE_FETCH_MAX_BYTES: 5 * 1024 * 1024,
   IMAGE_FETCH_MAX_REDIRECTS: 3,
