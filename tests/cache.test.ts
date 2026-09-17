@@ -58,9 +58,9 @@ describe("resolver and Wikimedia caches", () => {
     expect(calls.length).toBe(liveCalls);
   });
 
-  it("does not cache not_found", async () => {
+  it("caches not_found only for a day", async () => {
     await resolveQuery("asdfgh", signal());
-    expect(store.has(resolveCacheKey("asdfgh"))).toBe(false);
+    expect(store.get(resolveCacheKey("asdfgh"))?.ttl).toBe(24 * 3600);
   });
 
   it("serves identical Action API requests from the 24 h cache", async () => {
