@@ -1,15 +1,60 @@
-import { notImplemented } from "@/lib/notImplemented";
 import { wikimediaApi } from "@/lib/sources/wikimediaFetch";
-import type { CandidateCard, EntityDetails, GeoPoint, UniversityEntity } from "@/lib/types";
+import type { CandidateCard, EntityDetails, GeoPoint, ProfileFact, UniversityEntity } from "@/lib/types";
 
 /**
- * P1 · issue #8 · wbgetentities (university + its city in one batched call) via wikimediaFetch.
- * entity: labels/aliases en/ru/kk, P17 country (+ P297 ISO code), P131 → city (+ P625 coords),
- * P625 coords, P856 website → domains, P373 Commons category, P154 logo, sitelinks → Wikipedia.
- * facts (RU labels): P571 "Основан", P2196 "Студентов", city "Город" — each with a Wikidata sourceUrl.
+ * P1 · issue #8 · wbgetentities for the university, then city + country in one light batched call, via wikimediaFetch.
+ * entity: labels/aliases en/ru/kk, P17 country (+ P297 ISO code), P159/P131/P276 → city (+ coords),
+ * P625 coords (fallback: coordinates of the Wikipedia article), P856 website → domains, P373 Commons category,
+ * P154 logo, sitelinks → Wikipedia. ≤3 Wikimedia calls (0–1 after the resolver read the same item).
+ * facts (RU labels): P571 "Основан", P2196 "Студентов", "Город", "Страна", "Сайт" — each with a Wikidata sourceUrl.
  */
 export type GetEntity = (qid: string, signal: AbortSignal) => Promise<EntityDetails>;
-export const getEntity: GetEntity = async () => notImplemented("getEntity", "P1", 8);
+
+export const getEntity: GetEntity = async (qid, signal) => {
+  const raw = (await loadEntities([qid], signal)).get(qid);
+  if (!raw) throw new Error(`Wikidata item ${qid} not found`);
+  const [entity, articleCoords] = await Promise.all([
+    buildUniversityEntity(raw, signal),
+    coordinateClaim(raw) ? undefined : articleCoordinates(raw, signal).catch(() => undefined),
+  ]);
+  if (!entity.coords && articleCoords) entity.coords = articleCoords;
+  return { entity, facts: buildFacts(raw, entity) };
+};
+
+export function buildFacts(raw: RawEntity, entity: UniversityEntity): ProfileFact[] {
+  const source = (property: string) => `${wikidataUrl(raw.id)}#${property}`;
+  const facts: ProfileFact[] = [];
+  const founded = yearClaim(raw, "P571");
+  if (founded) facts.push({ label: "Основан", value: founded, sourceUrl: source("P571") });
+  const students = latestQuantity(raw, "P2196");
+  if (students) {
+    const value = new Intl.NumberFormat("ru-RU").format(students.amount);
+    facts.push({
+      label: "Студентов",
+      value: students.year ? `${value} (${students.year})` : value,
+      sourceUrl: source("P2196"),
+    });
+  }
+  const cityProperty = ["P159", "P131", "P276"].find((p) => itemClaims(raw, p)[0] === entity.city?.qid);
+  if (entity.city && cityProperty)
+    facts.push({ label: "Город", value: entity.city.name, sourceUrl: source(cityProperty) });
+  if (entity.country) facts.push({ label: "Страна", value: entity.country, sourceUrl: source("P17") });
+  if (entity.website) facts.push({ label: "Сайт", value: entity.website, sourceUrl: source("P856") });
+  return facts;
+}
+
+/** Coordinates of the ru/en/kk Wikipedia article — many items lack P625 while the article has them. */
+async function articleCoordinates(raw: RawEntity, signal: AbortSignal): Promise<GeoPoint | undefined> {
+  const lang = WIKIPEDIA_LANGS.find((l) => raw.sitelinks?.[`${l}wiki`]?.title);
+  if (!lang) return undefined;
+  const body = await wikimediaApi<{ query?: { pages?: { coordinates?: { lat: number; lon: number }[] }[] } }>(
+    `${lang}.wikipedia.org`,
+    { action: "query", prop: "coordinates", redirects: 1, titles: raw.sitelinks?.[`${lang}wiki`]?.title },
+    signal,
+  );
+  const coords = body.query?.pages?.[0]?.coordinates?.[0];
+  return coords ? { lat: coords.lat, lon: coords.lon } : undefined;
+}
 
 // ─── Wikidata client shared by the resolver (#7) and getEntity (#8) ────────────
 
@@ -25,6 +70,7 @@ interface RawSnak {
 interface RawClaim {
   mainsnak: RawSnak;
   rank: "preferred" | "normal" | "deprecated";
+  qualifiers?: Record<string, RawSnak[]>;
 }
 
 /** Subset of a wbgetentities entity (formatversion 2). */
@@ -215,12 +261,17 @@ export function yearClaim(entity: RawEntity, property: string): string | undefin
   return undefined;
 }
 
-export function quantityClaim(entity: RawEntity, property: string): number | undefined {
+/** The value with the latest "point in time" (P585) qualifier, e.g. the most recent student count. */
+export function latestQuantity(entity: RawEntity, property: string): { amount: number; year?: string } | undefined {
+  let best: { amount: number; time: string } | undefined;
   for (const claim of bestClaims(entity, property)) {
     const amount = Number((claim.mainsnak.datavalue?.value as { amount?: string } | undefined)?.amount);
-    if (Number.isFinite(amount)) return amount;
+    if (!Number.isFinite(amount)) continue;
+    const time = (claim.qualifiers?.P585?.[0]?.datavalue?.value as { time?: string } | undefined)?.time ?? "";
+    if (!best || time > best.time) best = { amount, time };
   }
-  return undefined;
+  if (!best) return undefined;
+  return { amount: best.amount, year: best.time.match(/^\+?(\d{4})-/)?.[1] };
 }
 
 export function label(entity: RawEntity, lang?: string): string | undefined {

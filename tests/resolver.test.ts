@@ -1,22 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import recorded from "@/tests/data/wikidata-resolver.json";
+import { replayFetch } from "@/tests/helpers/replayFetch";
 import { decide, resolveQuery } from "@/lib/resolver/resolve";
 import { interleave, isHigherEducation, matchQuality, searchWikidata } from "@/lib/resolver/wikidata";
 import { clearWikidataMemo, type RawEntity } from "@/lib/sources/wikidata";
 
 /** Replays real Wikidata responses recorded on 17 Sep 2026 (tests never call live APIs). */
-const responses = recorded as Record<string, unknown>;
-let calls: { url: string; userAgent: string | null }[] = [];
+let calls: ReturnType<typeof replayFetch>;
 
 beforeEach(() => {
   clearWikidataMemo();
-  calls = [];
-  vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
-    const url = String(input);
-    calls.push({ url, userAgent: new Headers(init?.headers).get("User-Agent") });
-    const body = responses[url];
-    return body ? Response.json(body) : new Response("not recorded", { status: 404 });
-  });
+  calls = replayFetch(recorded as Record<string, unknown>);
 });
 
 afterEach(() => vi.unstubAllGlobals());
