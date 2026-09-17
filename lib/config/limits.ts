@@ -20,6 +20,8 @@ export const LIMITS = {
   VISION_MAX_PARALLEL_BATCHES: 3,
   VISION_BATCH_TIMEOUT_MS: 15_000,
   VISION_CACHE_TTL_S: 14 * 24 * 3600,
+  // One free Gemini text call per fresh profile (#20); on timeout the Wikipedia quote is used instead.
+  DESCRIPTION_TIMEOUT_MS: 12_000,
 
   // Serper has 2,500 free credits in total → few queries per profile + cached responses.
   WEB_SEARCH_MAX_QUERIES: 6,
