@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 export interface ExternalImageProps {
   src: string;
+  /** Tried when `src` fails, e.g. the thumbnail for a full-size image. */
+  fallbackSrc?: string;
   alt: string;
   className?: string;
   loading?: "lazy" | "eager";
@@ -18,14 +20,17 @@ export interface ExternalImageProps {
  */
 export function ExternalImage({
   src,
+  fallbackSrc,
   alt,
   className,
   loading = "lazy",
   fallbackText = "Превью не загрузилось",
 }: ExternalImageProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string[]>([]);
+  const current = [src, fallbackSrc].find((url): url is string => Boolean(url) && !failed.includes(url as string));
+  const markFailed = (url: string) => setFailed((list) => (list.includes(url) ? list : [...list, url]));
 
-  if (failedSrc === src) {
+  if (!current) {
     return (
       <span
         role="img"
@@ -43,16 +48,17 @@ export function ExternalImage({
 
   return (
     <img
+      key={current}
       ref={(img) => {
         // A server-rendered image can fail before hydration, when onError is not attached yet.
-        if (img?.complete && img.naturalWidth === 0) setFailedSrc(src);
+        if (img?.complete && img.naturalWidth === 0) markFailed(current);
       }}
-      src={src}
+      src={current}
       alt={alt}
       loading={loading}
       decoding="async"
       referrerPolicy="no-referrer"
-      onError={() => setFailedSrc(src)}
+      onError={() => markFailed(current)}
       className={className}
     />
   );

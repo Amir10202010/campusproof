@@ -24,6 +24,39 @@ export function photoAlt(photo: Pick<Photo, "title" | "category" | "sourceDomain
   return photo.title?.trim() || `${CATEGORY_BY_ID[photo.category].labelRu}: фото с ${photo.sourceDomain}`;
 }
 
+/** 80 → «80 м», 1240 → «1,2 км», 11200 → «11 км». */
+export function formatDistanceRu(meters: number): string {
+  if (meters < 100) return `${Math.round(meters)} м`;
+  if (meters < 1000) return `${Math.round(meters / 10) * 10} м`;
+  const km = meters / 1000;
+  return `${km < 10 ? km.toLocaleString("ru-RU", { maximumFractionDigits: 1 }) : Math.round(km).toLocaleString("ru-RU")} км`;
+}
+
+/** 16420 → «16,4 с». */
+export function formatSecondsRu(ms: number): string {
+  return `${(ms / 1000).toLocaleString("ru-RU", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} с`;
+}
+
+/** Links from sources are untrusted: only http(s) URLs become links (never javascript: or data:). */
+export function safeHttpUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** «https://www.example.edu/about» → «example.edu». */
+export function displayHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 /** Russian plural form: pluralRu(5, ["источник", "источника", "источников"]) → "источников". */
 export function pluralRu(n: number, forms: readonly [one: string, few: string, many: string]): string {
   const mod10 = Math.abs(n) % 10;

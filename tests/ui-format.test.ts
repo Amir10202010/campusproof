@@ -1,7 +1,51 @@
 import { describe, expect, it } from "vitest";
 import { samplePhotos } from "@/fixtures/profile.sample";
 import { sortForDisplay } from "@/lib/ui/filters";
-import { formatDateRu, photoAlt, photoDateText, pluralRu } from "@/lib/ui/format";
+import {
+  displayHost,
+  formatDateRu,
+  formatDistanceRu,
+  formatSecondsRu,
+  photoAlt,
+  photoDateText,
+  pluralRu,
+  safeHttpUrl,
+} from "@/lib/ui/format";
+
+const NBSP = " ";
+
+describe("formatDistanceRu", () => {
+  it("uses meters below a kilometer and one decimal below ten", () => {
+    expect(formatDistanceRu(80)).toBe("80 м");
+    expect(formatDistanceRu(344)).toBe("340 м");
+    expect(formatDistanceRu(1_240)).toBe("1,2 км");
+    expect(formatDistanceRu(11_200)).toBe("11 км");
+    expect(formatDistanceRu(1_240_000)).toBe(`1${NBSP}240 км`);
+  });
+});
+
+describe("formatSecondsRu", () => {
+  it("formats milliseconds as seconds with a decimal comma", () => {
+    expect(formatSecondsRu(16_420)).toBe("16,4 с");
+    expect(formatSecondsRu(240)).toBe("0,2 с");
+  });
+});
+
+describe("safeHttpUrl", () => {
+  it("keeps only http(s) links from sources", () => {
+    expect(safeHttpUrl("https://example.edu/a b")).toBe("https://example.edu/a%20b");
+    expect(safeHttpUrl("http://example.edu")).toBe("http://example.edu/");
+    expect(safeHttpUrl("javascript:alert(1)")).toBeUndefined();
+    expect(safeHttpUrl("data:text/html,hi")).toBeUndefined();
+    expect(safeHttpUrl("not a url")).toBeUndefined();
+    expect(safeHttpUrl(undefined)).toBeUndefined();
+  });
+
+  it("shows a short host", () => {
+    expect(displayHost("https://www.example.edu/about")).toBe("example.edu");
+    expect(displayHost("not a url")).toBe("not a url");
+  });
+});
 
 describe("formatDateRu", () => {
   it("formats full, partial and timestamp dates", () => {
