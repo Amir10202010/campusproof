@@ -162,3 +162,23 @@ export function buildStreamUrl(params: {
   if (params.simulate) search.set("simulate", params.simulate);
   return `/api/profile/stream?${search.toString()}`;
 }
+
+/**
+ * Fallback when the stream breaks before a terminal event (docs/architecture.md §4): the saved final profile
+ * from GET /api/profile/{qid}, or null when there is none. Never throws.
+ */
+export async function fetchSavedProfile(
+  qid: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<UniversityProfile | null> {
+  try {
+    const response = await fetchImpl(`/api/profile/${encodeURIComponent(qid)}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const profile = (await response.json()) as UniversityProfile;
+    return profile?.entity?.qid === qid ? profile : null;
+  } catch {
+    return null;
+  }
+}
