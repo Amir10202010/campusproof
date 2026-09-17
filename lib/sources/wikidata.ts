@@ -1,3 +1,5 @@
+import { isIndexedUniversity } from "@/lib/resolver/indexSearch";
+import { commonsFileUrl } from "@/lib/sources/commons";
 import { wikimediaApi } from "@/lib/sources/wikimediaFetch";
 import type { CandidateCard, EntityDetails, GeoPoint, ProfileFact, UniversityEntity } from "@/lib/types";
 
@@ -12,7 +14,10 @@ export type GetEntity = (qid: string, signal: AbortSignal) => Promise<EntityDeta
 
 export const getEntity: GetEntity = async (qid, signal) => {
   const raw = (await loadEntities([qid], signal)).get(qid);
-  if (!raw) throw new Error(`Wikidata item ${qid} not found`);
+  if (!raw) throw new NotAUniversityError(qid, "not_found");
+  // /u/<qid> accepts any id: never build a profile (and search photos) for a person, a city or anything else.
+  // The index (P3) is built from the full class hierarchy (P279*), so an indexed item is a university too.
+  if (!isHigherEducation(raw) && !isIndexedUniversity(qid)) throw new NotAUniversityError(qid, "not_a_university");
   const [entity, articleCoords] = await Promise.all([
     buildUniversityEntity(raw, signal),
     coordinateClaim(raw) ? undefined : articleCoordinates(raw, signal).catch(() => undefined),
@@ -20,6 +25,18 @@ export const getEntity: GetEntity = async (qid, signal) => {
   if (!entity.coords && articleCoords) entity.coords = articleCoords;
   return { entity, facts: buildFacts(raw, entity) };
 };
+
+export class NotAUniversityError extends Error {
+  readonly qid: string;
+  readonly reason: "not_found" | "not_a_university";
+
+  constructor(qid: string, reason: "not_found" | "not_a_university") {
+    super(reason === "not_found" ? `Wikidata item ${qid} not found` : `${qid} is not a higher-education institution`);
+    this.name = "NotAUniversityError";
+    this.qid = qid;
+    this.reason = reason;
+  }
+}
 
 export function buildFacts(raw: RawEntity, entity: UniversityEntity): ProfileFact[] {
   const source = (property: string) => `${wikidataUrl(raw.id)}#${property}`;
@@ -213,6 +230,72 @@ export async function loadCountryCode(countryQid: string, signal: AbortSignal): 
   return code;
 }
 
+// ─── Higher-education taxonomy ─────────────────────────────────────────────────
+
+/**
+ * Classes of higher-education institutions (P31 values). Generic taxonomy — the most used direct
+ * subclasses of Q38723 / Q3918 on Wikidata, not a list of particular universities.
+ */
+export const HIGHER_EDUCATION_CLASSES = new Set([
+  "Q38723", // higher education institution
+  "Q3918", // university
+  "Q875538", // public university
+  "Q902104", // private university
+  "Q15936437", // research university
+  "Q62078547", // public research university
+  "Q265662", // national university
+  "Q4315006", // national research university
+  "Q1371037", // institute of technology
+  "Q189004", // college
+  "Q1663017", // engineering school
+  "Q1143635", // business school
+  "Q162633", // academy
+  "Q1336920", // community college
+  "Q184644", // conservatory
+  "Q917182", // military academy
+  "Q20820271", // graduate school
+  "Q2120173", // school of education
+  "Q1916585", // medical university
+  "Q494230", // medical school
+  "Q1321960", // law school
+  "Q7603893", // state public university
+  "Q131389368", // state private university
+  "Q17028020", // vocational university
+  "Q15407956", // university college
+  "Q7894996", // university college
+  "Q615150", // land-grant university
+  "Q3354859", // collegiate university
+  "Q1767829", // comprehensive university
+  "Q3551775", // university in France
+  "Q847027", // grande école
+  "Q21028957", // Hochschule
+  "Q3889692", // college of music
+  "Q16710795", // specialized higher education institution
+  "Q12420428", // agricultural college
+  "Q1499580", // sports higher education institution
+  "Q130382439", // military university
+  "Q2120466", // pontifical university
+  "Q1407393", // distance education university
+  "Q3698852", // graduate university
+  "Q47531586", // Institute of National Importance
+  "Q98658352", // higher education institution under the Ministry of Education of China
+  "Q16077796", // vice-ministerial level university
+  "Q3520135", // deemed university
+  "Q1620945", // historically black college or university
+]);
+
+/** Generic classes that need a name or description saying "university" (e.g. Astana IT University). */
+const GENERIC_EDUCATION_CLASSES = new Set(["Q5341295", "Q2385804", "Q4671277"]);
+const HIGHER_EDUCATION_TEXT = /universit|университет|higher education|высшее учебное|вуз\b/i;
+
+export function isHigherEducation(entity: RawEntity): boolean {
+  const classes = instanceOf(entity);
+  if (classes.some((id) => HIGHER_EDUCATION_CLASSES.has(id))) return true;
+  if (classes.length > 0 && !classes.some((id) => GENERIC_EDUCATION_CLASSES.has(id))) return false;
+  const texts = [...Object.values(entity.labels ?? {}), ...Object.values(entity.descriptions ?? {})];
+  return texts.some((t) => HIGHER_EDUCATION_TEXT.test(t.value));
+}
+
 // ─── Claim readers ─────────────────────────────────────────────────────────────
 
 /** Preferred-rank claims if any, otherwise normal-rank ones; deprecated claims are ignored. */
@@ -296,10 +379,6 @@ export function sitelinkCount(entity: RawEntity): number {
 /** City of an institution: headquarters (P159), then administrative unit (P131), then location (P276). */
 export function cityQid(entity: RawEntity): string | undefined {
   return itemClaims(entity, "P159")[0] ?? itemClaims(entity, "P131")[0] ?? itemClaims(entity, "P276")[0];
-}
-
-export function commonsFileUrl(fileName: string, width = 256): string {
-  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName.replace(/ /g, "_"))}?width=${width}`;
 }
 
 export function wikidataUrl(qid: string): string {

@@ -2,6 +2,7 @@ import { LIMITS } from "@/lib/config/limits";
 import { env } from "@/lib/env";
 import { isNotImplemented } from "@/lib/notImplemented";
 import { haversineM } from "@/lib/sources/geo";
+import { NotAUniversityError } from "@/lib/sources/wikidata";
 import type {
   DegradedFlag,
   FetchedCandidate,
@@ -116,6 +117,18 @@ export async function runProfilePipeline(
       ));
     }
   } catch (error) {
+    if (error instanceof NotAUniversityError) {
+      emit({
+        type: "error",
+        code: error.reason,
+        message:
+          error.reason === "not_found"
+            ? `В Wikidata нет элемента ${error.qid}.`
+            : `${error.qid} в Wikidata — не университет и не вуз, поэтому профиль не строим.`,
+        retryable: false,
+      });
+      return null;
+    }
     emit({
       type: "error",
       code: isNotImplemented(error)

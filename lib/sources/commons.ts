@@ -118,6 +118,11 @@ export const gatherCommons: GatherCommons = async (entity, ctx) => {
 };
 
 const COMMONS_HOST = "commons.wikimedia.org";
+
+/** Thumbnail URL of a Commons file by name (logos from Wikidata P154 / the index). */
+export function commonsFileUrl(fileName: string, width = 256): string {
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName.replace(/ /g, "_"))}?width=${width}`;
+}
 const CAMPUS_RADIUS_M = 1_000;
 const CITY_RADIUS_M = 2_000;
 const MAX_SUBCATEGORIES = 4;
