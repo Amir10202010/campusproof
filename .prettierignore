@@ -10,3 +10,5 @@ eval
 # docs and python are formatted by humans (markdown tables would churn)
 *.md
 scripts/python
+# recorded API responses for offline tests
+tests/data

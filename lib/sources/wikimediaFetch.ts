@@ -28,3 +28,39 @@ export async function wikimediaFetch(
   await new Promise((resolve) => setTimeout(resolve, waitMs));
   return fetch(input, { ...rest, headers: merged });
 }
+
+export class WikimediaError extends Error {
+  readonly status: number;
+
+  constructor(host: string, status: number, detail?: string) {
+    super(`Wikimedia API ${host} failed: ${status}${detail ? ` ${detail}` : ""}`);
+    this.name = "WikimediaError";
+    this.status = status;
+  }
+}
+
+export type WikimediaParams = Record<string, string | number | undefined>;
+
+/** Builds a MediaWiki Action API URL (`https://{host}/w/api.php`, JSON, formatversion 2). */
+export function wikimediaApiUrl(host: string, params: WikimediaParams): URL {
+  const url = new URL(`https://${host}/w/api.php`);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+/**
+ * Calls the MediaWiki Action API through wikimediaFetch and returns the parsed body.
+ * HTTP errors and API-level `error` objects throw WikimediaError: callers degrade, never crash the request.
+ */
+export async function wikimediaApi<T>(host: string, params: WikimediaParams, signal: AbortSignal): Promise<T> {
+  const url = wikimediaApiUrl(host, params);
+  const response = await wikimediaFetch(url, { signal });
+  if (!response.ok) throw new WikimediaError(host, response.status);
+  const body = (await response.json()) as T & { error?: { code?: string } };
+  if (body.error) throw new WikimediaError(host, response.status, body.error.code);
+  return body;
+}
