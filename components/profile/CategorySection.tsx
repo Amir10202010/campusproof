@@ -4,6 +4,7 @@ import { Images } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { CategoryConfig } from "@/lib/config/categories";
+import { LIMITS } from "@/lib/config/limits";
 import type { CategoryCoverage, Photo } from "@/lib/types";
 import { sortForDisplay } from "@/lib/ui/filters";
 import { pluralRu } from "@/lib/ui/format";
@@ -17,16 +18,13 @@ export interface CategorySectionProps {
   onOpenPhoto?: (photo: Photo) => void;
 }
 
-/** Photos shown before «Показать ещё» (docs/architecture.md §5.7). */
-const INITIAL_VISIBLE = 12;
-
 const TIERS = ["verified", "likely", "unconfirmed"] as const;
 
 /** P4 · #3 · title + description from config, counts, grid (2 cols mobile / 4 desktop), honest empty state. */
 export function CategorySection({ category, photos, coverage, onOpenPhoto }: CategorySectionProps) {
   const [expanded, setExpanded] = useState(false);
   const sorted = useMemo(() => sortForDisplay(photos), [photos]);
-  const shown = expanded ? sorted : sorted.slice(0, INITIAL_VISIBLE);
+  const shown = expanded ? sorted : sorted.slice(0, LIMITS.PHOTOS_PER_CATEGORY_DISPLAY);
   const tierCounts = TIERS.map((tier) => ({ tier, count: photos.filter((p) => p.tier === tier).length })).filter(
     ({ count }) => count > 0,
   );
@@ -59,9 +57,9 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto }: Cat
         </ul>
       )}
 
-      {sorted.length > INITIAL_VISIBLE ? (
+      {sorted.length > LIMITS.PHOTOS_PER_CATEGORY_DISPLAY ? (
         <Button variant="outline" size="sm" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-          {expanded ? "Свернуть" : `Показать ещё ${sorted.length - INITIAL_VISIBLE}`}
+          {expanded ? "Свернуть" : `Показать ещё ${sorted.length - LIMITS.PHOTOS_PER_CATEGORY_DISPLAY}`}
         </Button>
       ) : null}
     </section>
