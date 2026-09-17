@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import recorded from "@/tests/data/wikidata-suggestions.json";
 import { replayFetch } from "@/tests/helpers/replayFetch";
+
+// These tests cover the live Wikidata path: the local index (#14) is switched off (tests/index-search.test.ts covers it).
+vi.mock("@/lib/resolver/indexSearch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/resolver/indexSearch")>()),
+  searchIndex: () => [],
+}));
 import { resolveQuery } from "@/lib/resolver/resolve";
 import { editDistance, fuzzySimilarity, MIN_FUZZY_SIMILARITY } from "@/lib/resolver/wikidata";
 import { clearWikidataMemo } from "@/lib/sources/wikidata";
