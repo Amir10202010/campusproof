@@ -18,6 +18,29 @@ export function applyFilters(photos: Photo[], filters: ProfileFilters): Photo[] 
   );
 }
 
+/**
+ * «Официальные vs независимые» lens (product-strategy §4.9) over `sourceTypes`. Independent = everything not
+ * published by the university itself; `unknown` belongs to neither side, so it is visible only under «Все».
+ */
+export const SOURCE_LENSES = [
+  { id: "all", label: "Все источники", sourceTypes: [] },
+  { id: "official", label: "Официальные", sourceTypes: ["official"] },
+  { id: "independent", label: "Независимые", sourceTypes: ["encyclopedic", "news", "independent", "social"] },
+] as const satisfies readonly { id: string; label: string; sourceTypes: readonly SourceType[] }[];
+
+export type SourceLensId = (typeof SOURCE_LENSES)[number]["id"];
+
+/** Which lens the current `sourceTypes` match; anything custom counts as "all". */
+export function lensOf(filters: ProfileFilters): SourceLensId {
+  const selected = [...filters.sourceTypes].sort().join(",");
+  return SOURCE_LENSES.find((lens) => [...lens.sourceTypes].sort().join(",") === selected)?.id ?? "all";
+}
+
+export function withLens(filters: ProfileFilters, id: SourceLensId): ProfileFilters {
+  const lens = SOURCE_LENSES.find((l) => l.id === id) ?? SOURCE_LENSES[0];
+  return { ...filters, sourceTypes: [...lens.sourceTypes] };
+}
+
 const TIER_RANK: Record<Photo["tier"], number> = { verified: 0, likely: 1, unconfirmed: 2 };
 
 /** Display order inside a category: tier, then evidence points. Stable, so ties keep the pipeline's order. */

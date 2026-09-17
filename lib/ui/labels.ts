@@ -54,6 +54,15 @@ export const SOURCE_TYPE_RU: Record<SourceType, string> = {
   unknown: "Тип источника не определён",
 };
 
+/** Short source-type badge on a photo card; `unknown` gets no badge. */
+export const SOURCE_TYPE_SHORT_RU: Record<Exclude<SourceType, "unknown">, string> = {
+  official: "Официальный",
+  encyclopedic: "Энциклопедия",
+  news: "СМИ",
+  independent: "Независимый",
+  social: "Соцсети",
+};
+
 /** Candidate providers (`Photo.provider`); unknown ids are shown as is. */
 export const PROVIDER_RU: Record<string, string> = {
   commons: "Wikimedia Commons",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { samplePhotos } from "@/fixtures/profile.sample";
-import { sortForDisplay } from "@/lib/ui/filters";
+import { applyFilters, DEFAULT_FILTERS, lensOf, sortForDisplay, withLens } from "@/lib/ui/filters";
 import {
   displayHost,
   formatDateRu,
@@ -123,5 +123,26 @@ describe("sortForDisplay", () => {
       expect(rank[a.tier] < rank[b.tier] || (a.tier === b.tier && a.points >= b.points)).toBe(true);
     }
     expect(input[0].id).toBe(samplePhotos.at(-1)?.id);
+  });
+});
+
+describe("source lens", () => {
+  it("maps sourceTypes to a lens and back", () => {
+    const base = { categories: [], sourceTypes: [], showUnconfirmed: false };
+    expect(lensOf(base)).toBe("all");
+    const official = withLens(base, "official");
+    expect(official.sourceTypes).toEqual(["official"]);
+    expect(lensOf(official)).toBe("official");
+    const independent = withLens(official, "independent");
+    expect(independent.sourceTypes).not.toContain("official");
+    expect(independent.sourceTypes).not.toContain("unknown");
+    expect(lensOf({ ...independent, sourceTypes: [...independent.sourceTypes].reverse() })).toBe("independent");
+    expect(lensOf({ ...base, sourceTypes: ["unknown"] })).toBe("all");
+  });
+
+  it("hides official photos under the independent lens", () => {
+    const shown = applyFilters(samplePhotos, withLens(DEFAULT_FILTERS, "independent"));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.every((p) => p.sourceType !== "official")).toBe(true);
   });
 });

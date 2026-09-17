@@ -1,11 +1,20 @@
 "use client";
 
-import type { Photo } from "@/lib/types";
+import { BookOpen, Landmark, MessagesSquare, Newspaper, UserRound, type LucideIcon } from "lucide-react";
+import type { Photo, SourceType } from "@/lib/types";
 import { photoAlt, photoDateText } from "@/lib/ui/format";
-import { PHOTO_LABEL_RU } from "@/lib/ui/labels";
+import { PHOTO_LABEL_RU, SOURCE_TYPE_SHORT_RU } from "@/lib/ui/labels";
 import { cn } from "@/lib/utils";
 import { ExternalImage } from "./ExternalImage";
 import { TierBadge } from "./TierBadge";
+
+const SOURCE_TYPE_ICON: Record<Exclude<SourceType, "unknown">, LucideIcon> = {
+  official: Landmark,
+  encyclopedic: BookOpen,
+  news: Newspaper,
+  independent: UserRound,
+  social: MessagesSquare,
+};
 
 export interface PhotoCardProps {
   photo: Photo;
@@ -26,6 +35,7 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
           className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
         <TierBadge tier={photo.tier} className="absolute top-2 left-2 shadow-sm" />
+        <SourceTypeBadge type={photo.sourceType} />
       </span>
       <span className="block space-y-0.5 px-2.5 py-2 text-xs">
         <span className="block truncate font-medium text-foreground">{photo.sourceDomain}</span>
@@ -56,5 +66,17 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
       {content}
       <span className="sr-only">Открыть доказательства</span>
     </button>
+  );
+}
+
+/** P4 · #29 · who published the photo: the university itself or someone independent. */
+function SourceTypeBadge({ type }: { type: SourceType }) {
+  if (type === "unknown") return null;
+  const Icon = SOURCE_TYPE_ICON[type];
+  return (
+    <span className="absolute bottom-2 left-2 inline-flex h-5 max-w-[calc(100%-1rem)] items-center gap-1 rounded-4xl bg-black/65 px-2 text-[11px] font-medium text-white">
+      <Icon className="size-3 shrink-0" aria-hidden="true" />
+      <span className="truncate">{SOURCE_TYPE_SHORT_RU[type]}</span>
+    </span>
   );
 }
