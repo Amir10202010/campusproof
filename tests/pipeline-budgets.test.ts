@@ -29,6 +29,9 @@ const fetched: FetchedCandidate = {
 
 describe("stage budgets", () => {
   it("gives fetch and vision their own deadlines inside the global one", async () => {
+    // Frozen pipeline clock: stage deadlines are computed from deps.now(), so exact values are deterministic.
+    // Comparing with a later Date.now() was flaky (#60): the wall clock can step back by 1 ms (seen on Windows).
+    const t0 = Date.now();
     let fetchCtx: RunContext | undefined;
     let visionCtx: RunContext | undefined;
     const deps: PipelineDeps = {
@@ -59,9 +62,8 @@ describe("stage budgets", () => {
       describeCampus: async () => null,
       getCachedProfile: async () => null,
       saveProfile: async () => {},
-      now: () => Date.now(),
+      now: () => t0,
     };
-    const started = Date.now();
     const profile = await runProfilePipeline(
       { query: "x", refresh: false, simulate: [], aiAllowed: true },
       deps,
@@ -69,10 +71,13 @@ describe("stage budgets", () => {
       new AbortController().signal,
     );
     expect(profile?.photos).toHaveLength(1);
-    expect(fetchCtx?.deadlineAt).toBeLessThanOrEqual(Date.now() + LIMITS.FETCH_STAGE_TIMEOUT_MS);
-    expect(fetchCtx?.deadlineAt).toBeGreaterThan(started);
-    const globalDeadline = (visionCtx as RunContext).startedAt + LIMITS.GLOBAL_DEADLINE_MS;
-    expect(visionCtx?.deadlineAt).toBeLessThanOrEqual(globalDeadline - LIMITS.ASSEMBLE_RESERVE_MS);
+    const globalDeadline = t0 + LIMITS.GLOBAL_DEADLINE_MS;
+    expect(fetchCtx?.startedAt).toBe(t0);
+    expect(fetchCtx?.deadlineAt).toBe(
+      t0 + Math.min(LIMITS.FETCH_STAGE_TIMEOUT_MS, LIMITS.GLOBAL_DEADLINE_MS - LIMITS.ASSEMBLE_RESERVE_MS),
+    );
+    expect(visionCtx?.startedAt).toBe(t0);
+    expect(visionCtx?.deadlineAt).toBe(globalDeadline - LIMITS.ASSEMBLE_RESERVE_MS);
     expect(fetchCtx?.signal).toBeInstanceOf(AbortSignal);
   });
 });
