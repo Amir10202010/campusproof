@@ -1,4 +1,15 @@
-import { notImplemented } from "@/lib/notImplemented";
+import { normalizeQuery, queryVariants } from "@/lib/resolver/normalize";
+import {
+  entityTerms,
+  instanceOf,
+  loadEntities,
+  loadPlacesFor,
+  sitelinkCount,
+  toCandidateCard,
+  WIKIDATA_HOST,
+  type RawEntity,
+} from "@/lib/sources/wikidata";
+import { wikimediaApi } from "@/lib/sources/wikimediaFetch";
 import type { CandidateCard } from "@/lib/types";
 
 /**
@@ -6,4 +17,191 @@ import type { CandidateCard } from "@/lib/types";
  * Keep only higher-education institutions (P31 → Q38723 / Q3918, or a description that says so).
  */
 export type SearchWikidata = (query: string, signal: AbortSignal) => Promise<CandidateCard[]>;
-export const searchWikidata: SearchWikidata = async () => notImplemented("searchWikidata", "P1", 7);
+
+export const searchWikidata: SearchWikidata = async (query, signal) => {
+  const ranked = await searchWikidataRanked(query, signal);
+  return toCandidateCards(ranked.slice(0, MAX_CARDS), signal);
+};
+
+export const MAX_CARDS = 6;
+const SEARCH_LIMIT = 10;
+const MAX_CANDIDATES = 8;
+
+/**
+ * Classes of higher-education institutions (P31 values). Generic taxonomy — the most used direct
+ * subclasses of Q38723 / Q3918 on Wikidata, not a list of particular universities.
+ */
+export const HIGHER_EDUCATION_CLASSES = new Set([
+  "Q38723", // higher education institution
+  "Q3918", // university
+  "Q875538", // public university
+  "Q902104", // private university
+  "Q15936437", // research university
+  "Q62078547", // public research university
+  "Q265662", // national university
+  "Q4315006", // national research university
+  "Q1371037", // institute of technology
+  "Q189004", // college
+  "Q1663017", // engineering school
+  "Q1143635", // business school
+  "Q162633", // academy
+  "Q1336920", // community college
+  "Q184644", // conservatory
+  "Q917182", // military academy
+  "Q20820271", // graduate school
+  "Q2120173", // school of education
+  "Q1916585", // medical university
+  "Q494230", // medical school
+  "Q1321960", // law school
+  "Q7603893", // state public university
+  "Q131389368", // state private university
+  "Q17028020", // vocational university
+  "Q15407956", // university college
+  "Q7894996", // university college
+  "Q615150", // land-grant university
+  "Q3354859", // collegiate university
+  "Q1767829", // comprehensive university
+  "Q3551775", // university in France
+  "Q847027", // grande école
+  "Q21028957", // Hochschule
+  "Q3889692", // college of music
+  "Q16710795", // specialized higher education institution
+  "Q12420428", // agricultural college
+  "Q1499580", // sports higher education institution
+  "Q130382439", // military university
+  "Q2120466", // pontifical university
+  "Q1407393", // distance education university
+  "Q3698852", // graduate university
+  "Q47531586", // Institute of National Importance
+  "Q98658352", // higher education institution under the Ministry of Education of China
+  "Q16077796", // vice-ministerial level university
+  "Q3520135", // deemed university
+  "Q1620945", // historically black college or university
+]);
+
+/** The most common classes, used as a server-side filter in the full-text search. */
+const SEARCH_FILTER_CLASSES = [...HIGHER_EDUCATION_CLASSES].slice(0, 20);
+
+/** Generic classes that need a name or description saying "university" (e.g. Astana IT University). */
+const GENERIC_EDUCATION_CLASSES = new Set(["Q5341295", "Q2385804", "Q4671277"]);
+const HIGHER_EDUCATION_TEXT = /universit|университет|higher education|высшее учебное|вуз\b/i;
+
+export function isHigherEducation(entity: RawEntity): boolean {
+  const classes = instanceOf(entity);
+  if (classes.some((id) => HIGHER_EDUCATION_CLASSES.has(id))) return true;
+  if (classes.length > 0 && !classes.some((id) => GENERIC_EDUCATION_CLASSES.has(id))) return false;
+  const texts = [...Object.values(entity.labels ?? {}), ...Object.values(entity.descriptions ?? {})];
+  return texts.some((t) => HIGHER_EDUCATION_TEXT.test(t.value));
+}
+
+export interface RankedCandidate {
+  qid: string;
+  entity: RawEntity;
+  /** 0..1 — how well the query matches a label or alias. */
+  match: number;
+  /** 0..1 — log-scaled sitelink count. */
+  popularity: number;
+  score: number;
+}
+
+/**
+ * Prefix search (labels/aliases, all languages) for the query and its transliteration + full-text search
+ * restricted to higher-education classes (catches "Satpaev" → Satbayev University). Then one batched
+ * wbgetentities call to filter by P31 and rank by name match and popularity.
+ */
+export async function searchWikidataRanked(query: string, signal: AbortSignal): Promise<RankedCandidate[]> {
+  const raw = query.trim();
+  const variants = queryVariants(raw);
+  if (variants.length === 0) return [];
+
+  const searches: Promise<string[]>[] = [fullTextSearch(raw, signal), prefixSearch(raw, signal)];
+  if (variants[1]) searches.push(prefixSearch(variants[1], signal));
+  const settled = await Promise.allSettled(searches);
+  if (settled.every((s) => s.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
+
+  const ids = interleave(settled.map((s) => (s.status === "fulfilled" ? s.value : []))).slice(0, MAX_CANDIDATES);
+  if (ids.length === 0) return [];
+
+  const entities = await loadEntities(ids, signal);
+  return rankCandidates(
+    variants,
+    ids.flatMap((id) => {
+      const entity = entities.get(id);
+      return entity && isHigherEducation(entity) ? [entity] : [];
+    }),
+  );
+}
+
+/** Round-robin merge of ranked id lists without duplicates: the best hits of every search survive the cap. */
+export function interleave(lists: string[][]): string[] {
+  const seen = new Set<string>();
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  for (let i = 0; i < longest; i++) for (const list of lists) if (list[i]) seen.add(list[i]);
+  return [...seen];
+}
+
+export function rankCandidates(variants: string[], entities: RawEntity[]): RankedCandidate[] {
+  return entities
+    .map((entity) => {
+      const match = matchQuality(variants, entityTerms(entity));
+      const popularity = Math.min(1, Math.log10(sitelinkCount(entity) + 1) / Math.log10(151));
+      return { qid: entity.id, entity, match, popularity, score: 0.7 * match + 0.3 * popularity };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+/** 1 exact label · 0.95 exact alias · 0.75 one name starts the other · 0.6 all query words present · 0.4 search hit only. */
+export function matchQuality(variants: string[], terms: { text: string; isLabel: boolean }[]): number {
+  let best = 0.4;
+  for (const term of terms) {
+    const name = normalizeQuery(term.text);
+    if (!name) continue;
+    for (const variant of variants) {
+      if (name === variant) best = Math.max(best, term.isLabel ? 1 : 0.95);
+      else if (name.startsWith(`${variant} `) || variant.startsWith(`${name} `)) best = Math.max(best, 0.75);
+      else if (wordsCovered(variant, name)) best = Math.max(best, 0.6);
+    }
+  }
+  return best;
+}
+
+/** Every query word starts some word of the name ("сатпаев" ⊂ "… имени к и сатпаева"). */
+function wordsCovered(query: string, name: string): boolean {
+  const nameWords = name.split(" ");
+  return query.split(" ").every((word) => word.length >= 2 && nameWords.some((w) => w.startsWith(word)));
+}
+
+export async function toCandidateCards(ranked: RankedCandidate[], signal: AbortSignal): Promise<CandidateCard[]> {
+  if (ranked.length === 0) return [];
+  const entities = ranked.map((r) => r.entity);
+  const places = await loadPlacesFor(entities, signal).catch(() => new Map());
+  return entities.map((entity) => toCandidateCard(entity, places));
+}
+
+async function prefixSearch(search: string, signal: AbortSignal): Promise<string[]> {
+  const lang = /\p{Script=Cyrillic}/u.test(search) ? "ru" : "en";
+  const body = await wikimediaApi<{ search?: { id: string }[] }>(
+    WIKIDATA_HOST,
+    { action: "wbsearchentities", type: "item", search, language: lang, uselang: lang, limit: SEARCH_LIMIT },
+    signal,
+  );
+  return (body.search ?? []).map((hit) => hit.id);
+}
+
+async function fullTextSearch(search: string, signal: AbortSignal): Promise<string[]> {
+  const cleaned = search.replace(/["\\]/g, " ").trim();
+  const filter = `haswbstatement:${SEARCH_FILTER_CLASSES.map((id) => `P31=${id}`).join("|")}`;
+  const body = await wikimediaApi<{ query?: { search?: { title: string }[] } }>(
+    WIKIDATA_HOST,
+    {
+      action: "query",
+      list: "search",
+      srsearch: `${cleaned} ${filter}`,
+      srnamespace: 0,
+      srlimit: SEARCH_LIMIT,
+      srprop: "",
+    },
+    signal,
+  );
+  return (body.query?.search ?? []).map((hit) => hit.title).filter((title) => /^Q\d+$/.test(title));
+}

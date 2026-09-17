@@ -1,0 +1,126 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import recorded from "@/tests/data/wikidata-resolver.json";
+import { decide, resolveQuery } from "@/lib/resolver/resolve";
+import { interleave, isHigherEducation, matchQuality, searchWikidata } from "@/lib/resolver/wikidata";
+import { clearWikidataMemo, type RawEntity } from "@/lib/sources/wikidata";
+
+/** Replays real Wikidata responses recorded on 17 Sep 2026 (tests never call live APIs). */
+const responses = recorded as Record<string, unknown>;
+let calls: { url: string; userAgent: string | null }[] = [];
+
+beforeEach(() => {
+  clearWikidataMemo();
+  calls = [];
+  vi.stubGlobal("fetch", async (input: string | URL, init?: RequestInit) => {
+    const url = String(input);
+    calls.push({ url, userAgent: new Headers(init?.headers).get("User-Agent") });
+    const body = responses[url];
+    return body ? Response.json(body) : new Response("not recorded", { status: 404 });
+  });
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
+const signal = () => new AbortController().signal;
+
+describe("resolveQuery (recorded Wikidata responses)", () => {
+  it("resolves an unambiguous abbreviation to a full entity", async () => {
+    const result = await resolveQuery("KBTU", signal());
+    expect(result.status).toBe("resolved");
+    if (result.status !== "resolved") return;
+    expect(result.entity).toMatchObject({
+      qid: "Q1734762",
+      countryCode: "KZ",
+      country: "Казахстан",
+      domains: ["kbtu.kz"],
+      city: { qid: "Q35493", name: "Алма-Ата" },
+    });
+    expect(result.entity.coords?.lat).toBeCloseTo(43.26, 1);
+    expect(result.entity.wikipedia.map((w) => w.lang)).toEqual(["ru", "en", "kk"]);
+    expect(calls.length).toBeLessThanOrEqual(6);
+    expect(calls.every((c) => c.userAgent?.startsWith("CampusProof/"))).toBe(true);
+  });
+
+  it("returns a pick-list for an abbreviation shared by several universities", async () => {
+    const result = await resolveQuery("MSU", signal());
+    expect(result.status).toBe("ambiguous");
+    if (result.status !== "ambiguous") return;
+    expect(result.candidates.length).toBeGreaterThan(1);
+    expect(result.candidates.length).toBeLessThanOrEqual(6);
+    expect(result.candidates.map((c) => c.qid)).toEqual(expect.arrayContaining(["Q13164", "Q270222"]));
+    expect(result.candidates.find((c) => c.qid === "Q13164")).toMatchObject({ city: "Москва", country: "Россия" });
+  });
+
+  it("finds a university by a surname in its full name through full-text search", async () => {
+    const result = await resolveQuery("Satpaev", signal());
+    expect(result).toMatchObject({ status: "resolved", entity: { qid: "Q1513804", countryCode: "KZ" } });
+  });
+
+  it("answers not_found for gibberish", async () => {
+    expect(await resolveQuery("asdfgh", signal())).toEqual({ status: "not_found", query: "asdfgh", suggestions: [] });
+  });
+
+  it("answers not_found without calling Wikimedia for a query without letters or digits", async () => {
+    expect(await resolveQuery("!!!", signal())).toEqual({ status: "not_found", query: "!!!", suggestions: [] });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("throws when Wikidata is unreachable, so callers can degrade", async () => {
+    vi.stubGlobal("fetch", async () => new Response("down", { status: 503 }));
+    await expect(resolveQuery("KBTU", signal())).rejects.toThrow(/Wikimedia API/);
+  });
+
+  it("builds pick-list cards with searchWikidata", async () => {
+    const cards = await searchWikidata("MSU", signal());
+    expect(cards[0]).toEqual(expect.objectContaining({ qid: expect.stringMatching(/^Q\d+$/), country: "Россия" }));
+  });
+});
+
+describe("resolver ranking rules", () => {
+  const entity = (overrides: Partial<RawEntity>): RawEntity => ({ id: "Q1", ...overrides });
+  const p31 = (...ids: string[]) => ({
+    P31: ids.map((id) => ({ mainsnak: { snaktype: "value", datavalue: { value: { id } } }, rank: "normal" as const })),
+  });
+
+  it("keeps only higher-education institutions", () => {
+    expect(isHigherEducation(entity({ claims: p31("Q3918") }))).toBe(true);
+    expect(isHigherEducation(entity({ claims: p31("Q41176") }))).toBe(false); // building
+    expect(
+      isHigherEducation(entity({ claims: p31("Q2385804"), labels: { en: { value: "Astana IT University" } } })),
+    ).toBe(true);
+    expect(isHigherEducation(entity({ claims: p31("Q2385804"), labels: { en: { value: "School No. 5" } } }))).toBe(
+      false,
+    );
+  });
+
+  it("scores exact labels above aliases above partial matches", () => {
+    const variants = ["kbtu", "кбту"];
+    expect(matchQuality(variants, [{ text: "KBTU", isLabel: true }])).toBe(1);
+    expect(matchQuality(variants, [{ text: "КБТУ", isLabel: false }])).toBe(0.95);
+    expect(matchQuality(variants, [{ text: "KBTU Almaty", isLabel: true }])).toBe(0.75);
+    expect(matchQuality(["сатпаев"], [{ text: "Университет имени Сатпаева", isLabel: true }])).toBe(0.6);
+    expect(matchQuality(variants, [{ text: "Something else", isLabel: true }])).toBe(0.4);
+  });
+
+  it("resolves only a clear leader", () => {
+    expect(decide([])).toBe("not_found");
+    expect(decide([{ match: 0.95, score: 0.8 }])).toBe("resolved");
+    expect(decide([{ match: 0.4, score: 0.5 }])).toBe("ambiguous");
+    expect(
+      decide([
+        { match: 0.95, score: 0.94 },
+        { match: 0.95, score: 0.9 },
+      ]),
+    ).toBe("ambiguous");
+    expect(
+      decide([
+        { match: 1, score: 0.9 },
+        { match: 0.4, score: 0.5 },
+      ]),
+    ).toBe("resolved");
+  });
+
+  it("interleaves search results without duplicates", () => {
+    expect(interleave([["a", "b", "c"], ["d", "a"], []])).toEqual(["a", "d", "b", "c"]);
+  });
+});
