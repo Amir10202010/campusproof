@@ -97,6 +97,9 @@ Status: ✅ done (harden only if your issue says so) · 🧩 stub with final sig
 | `components/profile/DescriptionBlock.tsx` | `{ description, ready }` | #4 | 🧩 |
 | `components/search/PickList.tsx`, `NotFound.tsx` | `{ query, candidates \| suggestions, onPick }` | #4 | 🧩 |
 | `components/profile/FilteredOutTray.tsx` | `{ items }` | #27 | 🧩 |
+| `components/profile/CampusMap.tsx` | `{ entity, photos, distanceToCityCenterM?, onOpenPhoto? }` — wired in ProfileView | #28 (moved from P1) | 🧩 |
+| `components/help/ProfileGuide.tsx` | `{ photosCount }` — wired in ProfileView | #37 | 🧩 |
+| New pages and folders (no stubs) | `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` (#35) · `components/layout/*`, `app/layout.tsx`, `app/icon.svg`, `app/opengraph-image.tsx` (#36) · `app/compare`, `components/compare/*`, `lib/ui/compare.ts` (#38) · `scripts/qa/*` (#39) · docs for the final (#41) | #35–#41 | — |
 | `lib/ui/filters.ts` | `applyFilters`, `toggleCategory`, `DEFAULT_FILTERS` | — | ✅ |
 | `app/page.tsx`, `app/how-it-works/page.tsx` | pages | #5 | 📝 plain form |
 

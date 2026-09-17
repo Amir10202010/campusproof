@@ -68,9 +68,9 @@ Other agents: open the matching `SKILL.md` and follow its steps.
 | `lib/resolver/**`, `lib/sources/{wikidata,wikipedia,commons,geo,wikimediaFetch}.ts`, `lib/describe/**`, `lib/cache/**` (`kv.ts` is ready for everyone to use), `lib/pipeline/**`, `lib/client/**`, `hooks/**`, `components/containers/**`, `app/api/**`, `app/search/**`, `app/u/**`, `lib/types.ts`, `package.json`, `.github/**`, `.claude/**`, `vercel.json` | **P1** Pipeline |
 | `lib/images/**`, `lib/sources/webSearch/**`, `lib/sources/{classifyDomain,openverse}.ts`, `lib/vision/{provider,gemini,schema,observeAll}.ts`, `lib/scoring/**`, `lib/config/**` | **P2** Verification |
 | `scripts/python/**`, `data/**`, `eval/**`, `lib/vision/prompt.ts`, `docs/spikes.md`, `app/benchmark/**` | **P3** Data & Eval |
-| `components/profile/**`, `components/search/**`, `lib/ui/**`, `app/page.tsx`, `app/how-it-works/**`, `app/dev/**`, `fixtures/**`, `public/fixtures/**` | **P4** UI & Product |
+| `components/profile/**` (incl. `CampusMap.tsx` #28), `components/search/**`, `components/help/**`, `components/layout/**`, `components/compare/**`, `lib/ui/**`, `app/page.tsx`, `app/how-it-works/**`, `app/compare/**`, `app/layout.tsx`, `app/globals.css`, `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`, `app/icon.svg`, `app/favicon.ico`, `app/opengraph-image.tsx`, `app/dev/**`, `fixtures/**`, `public/fixtures/**`, `scripts/qa/**`, `docs/{pitch,demo-script,judges-qa}.md`, `docs/qa-*.md`, `README.md` | **P4** UI & Product |
 
-- `components/profile/*` and `components/search/*` stay **presentational**: props in, JSX out, no data fetching.
+- `components/profile/*`, `components/search/*` and `components/help/*` stay **presentational**: props in, JSX out, no data fetching. Only exception: `components/compare/CompareView.tsx` may GET `/api/resolve` and `/api/profile/{qid}` (never EventSource, never runs the pipeline).
 - New npm dependency or change to `lib/types.ts` → ask P1 first (lockfile and contract conflicts).
 
 ## Integrity rules (breaking these can disqualify the team)
