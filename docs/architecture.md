@@ -172,13 +172,19 @@ type StreamEvent =
 
 | Stage | Target p50 | Hard cap | Streams |
 |---|---|---|---|
-| Cache + resolve | 0.3–1.0 s | 2.5 s | `resolved` / `ambiguous` / `not_found` |
+| Cache + resolve | 0.3–1.0 s | 4 s | `resolved` / `ambiguous` / `not_found` |
 | Gather (parallel adapters) | 2–4 s | 7 s per adapter | `source` |
 | Pre-filter, fetch, hash | 2–3 s | 3 s per image; 6 s for the stage | `stage` |
 | Dedup + reuse check | <0.3 s | — | `stage` |
 | Vision observations (parallel batches) | 5–8 s | 12 s | `photos` per batch |
 | Score + assemble (description runs in parallel from gather) | <0.5 s | — | `description`, `rejected`, `done` |
 | **Total** | **~12–18 s** | **27 s global deadline** | — |
+
+The resolve cap covers the slowest path, a misspelled query: prefix + full-text search, `wbgetentities`,
+the fuzzy suggestion search, `wbgetentities` again and place labels — five sequential Wikidata round trips,
+measured at 2.0–2.4 s. At 2.5 s "Harvrad" answered with an error instead of offering Harvard. The
+orchestrator wraps `resolveQuery` with one extra `STAGE_GRACE_MS`, so the resolver's own graceful
+"not_found without suggestions" always wins the race against the hard abort.
 
 **Service-level targets:** entity card ≤2 s · first photos ≤10 s · complete profile ≤20 s at p50 and ≤27 s at p90.
 
