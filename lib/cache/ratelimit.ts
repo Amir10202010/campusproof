@@ -4,13 +4,13 @@ import { getRedis } from "@/lib/cache/kv";
 import { env } from "@/lib/env";
 
 /**
- * P1 · issue #13 · @upstash/ratelimit: fresh (non-cached) runs per client (20 / 10 min)
+ * P1 · issue #13 · @upstash/ratelimit: fresh (non-cached) runs per client (FRESH_RUNS_PER_CLIENT / 10 min)
  * + a global daily counter (MAX_FRESH_PROFILES_PER_DAY). Cached views are never limited.
  * Protects the free quotas (Gemini requests/day, Serper credits). Redis missing, down or slow → no limits.
  */
 export type AllowFreshRun = (clientKey: string) => Promise<{ allowed: boolean; reason?: string }>;
 
-export const FRESH_RUNS_PER_CLIENT = 20;
+export const FRESH_RUNS_PER_CLIENT = env.freshRunsPerClient;
 const CLIENT_WINDOW = "10 m";
 const REDIS_TIMEOUT_MS = 1_000;
 

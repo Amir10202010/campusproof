@@ -98,7 +98,9 @@ export async function runProfilePipeline(
     // Fresh runs spend free quotas: rate limit + daily budget. Over the limit → the saved profile or an honest message.
     const gate = deps.beforeFreshRun ? await optional(ctx, "beforeFreshRun", deps.beforeFreshRun) : null;
     if (gate && !gate.allowed) {
-      const cached = canReadCache ? null : await serveCached();
+      // A simulated failure must never be answered with a healthy saved profile: the judge asked
+      // to see what happens when a source is down, so the honest message is the answer.
+      const cached = canReadCache || ctx.simulate.length > 0 ? null : await serveCached();
       if (cached) return cached;
       emit({
         type: "error",
