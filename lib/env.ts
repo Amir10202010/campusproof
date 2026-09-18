@@ -4,13 +4,19 @@
  */
 export const env = {
   /** Google Gemini API, free tier (Google AI Studio key; the account holder must be 18+). */
-  geminiApiKey: process.env.GEMINI_API_KEY,
-  /** Vision model id (spike S4, #22). The 2.5 family is closed to new API keys (404), so the 3.x models are the floor. */
-  visionModel: process.env.VISION_MODEL ?? "gemini-3.6-flash",
+  /** GEMINI_API_KEY may hold several keys separated by commas: the extra ones are spares for a
+   * revoked or blocked key, NOT a way to stretch the free quota (see lib/vision/gemini.ts). */
+  geminiApiKeys: (process.env.GEMINI_API_KEY ?? "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter(Boolean),
+  geminiApiKey: (process.env.GEMINI_API_KEY ?? "").split(",")[0]?.trim() || undefined,
+  /** Vision model id (spike S4, #22). The "-latest" aliases never 404 when Google retires a numbered model. */
+  visionModel: process.env.VISION_MODEL ?? "gemini-flash-lite-latest",
   /** Text model for the campus description (#20). A different model keeps a separate free quota. */
-  descriptionModel: process.env.DESCRIPTION_MODEL ?? "gemini-3.6-flash",
+  descriptionModel: process.env.DESCRIPTION_MODEL ?? "gemini-flash-latest",
   /** Used only when the main vision model is unavailable (503) or gone (404) — not to stretch a quota. */
-  visionModelFallback: process.env.VISION_MODEL_FALLBACK ?? "gemini-3.5-flash-lite",
+  visionModelFallback: process.env.VISION_MODEL_FALLBACK ?? "gemini-flash-latest",
 
   /** Serper: 2,500 free queries, no card. Optional — without a key the web search source is skipped. */
   serperApiKey: process.env.SERPER_API_KEY,
