@@ -1,5 +1,5 @@
 {
-  "$comment": "P4 · #39 · judge-simulation matrix (docs/roadmap.md §9). expect = acceptable terminal events: profile (done), ambiguous, not_found.",
+  "$comment": "P4 · #39 · judge-simulation matrix (docs/roadmap.md §9). expect = acceptable terminal events: profile (done), ambiguous, not_found. A query object may override its group's expect.",
   "groups": [
     {
       "id": "kz-known",
@@ -35,7 +35,7 @@
       "id": "ambiguous",
       "title": "Неоднозначные",
       "expect": ["ambiguous"],
-      "queries": ["MSU", "SDU"]
+      "queries": ["MSU", { "q": "SDU", "expect": ["ambiguous", "profile"] }]
     },
     {
       "id": "misspelled",
