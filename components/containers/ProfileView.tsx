@@ -43,11 +43,15 @@ export function ProfileView(props: ProfileStreamParams) {
     () => state.profile?.coverage ?? computeCoverage(state.photos),
     [state.profile, state.photos],
   );
+  // Every chip shows how many photos it would reveal, so choosing one category never zeroes the others (#92):
+  // count with the other filters applied, but without the category choice itself.
   const counts = useMemo(() => {
     const result: Partial<Record<CategoryId, number>> = {};
-    for (const photo of visible) result[photo.category] = (result[photo.category] ?? 0) + 1;
+    for (const photo of applyFilters(state.photos, { ...filters, categories: [] })) {
+      result[photo.category] = (result[photo.category] ?? 0) + 1;
+    }
     return result;
-  }, [visible]);
+  }, [state.photos, filters]);
   const shownCategories =
     filters.categories.length > 0 ? CATEGORIES.filter((c) => filters.categories.includes(c.id)) : CATEGORIES;
   const pick = (qid: string) => router.push(`/u/${qid}`);
