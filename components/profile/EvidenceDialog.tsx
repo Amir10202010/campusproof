@@ -17,7 +17,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -73,13 +73,28 @@ export function EvidenceDialog({ photo, open, onOpenChange }: EvidenceDialogProp
     () => window.matchMedia(DESKTOP_QUERY).matches,
     () => true,
   );
+  // Radix returns focus to a Dialog.Trigger; ours opens from a PhotoCard (or a map pin), so remember and restore it.
+  const returnFocusTo = useRef<HTMLElement | null>(null);
+  const focusHandlers = {
+    onOpenAutoFocus: () => {
+      returnFocusTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    },
+    onCloseAutoFocus: (event: Event) => {
+      event.preventDefault();
+      returnFocusTo.current?.focus();
+    },
+  };
   if (!photo) return null;
 
   // Sheet and Dialog share the Radix Dialog primitive, so DialogTitle/DialogClose work inside both.
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent showCloseButton={false} className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-2xl">
+        <DialogContent
+          showCloseButton={false}
+          className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-2xl"
+          {...focusHandlers}
+        >
           <EvidenceBody photo={photo} />
         </DialogContent>
       </Dialog>
@@ -87,7 +102,12 @@ export function EvidenceDialog({ photo, open, onOpenChange }: EvidenceDialogProp
   }
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" showCloseButton={false} className="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-2xl">
+      <SheetContent
+        side="bottom"
+        showCloseButton={false}
+        className="max-h-[92dvh] gap-0 overflow-y-auto rounded-t-2xl"
+        {...focusHandlers}
+      >
         <EvidenceBody photo={photo} />
       </SheetContent>
     </Sheet>
@@ -111,6 +131,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
           loading="eager"
           fallbackText="Изображение не загрузилось — его можно посмотреть в источнике"
           className="max-h-[45dvh] w-full object-contain"
+          style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
         />
         <DialogClose asChild>
           <Button variant="secondary" size="icon-sm" className="absolute top-2 right-2 rounded-full shadow-sm">

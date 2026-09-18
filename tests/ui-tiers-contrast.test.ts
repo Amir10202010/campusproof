@@ -55,3 +55,22 @@ describe("tier colors", () => {
     }
   }
 });
+
+describe("theme tokens (P4 · #40)", () => {
+  const root = () => block(":root");
+
+  it("secondary text stays ≥ 4.5:1 on white and on the muted background", () => {
+    const text = oklchVar(root(), "muted-foreground");
+    expect(contrast(text, oklchVar(root(), "background"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(text, oklchVar(root(), "muted"))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("the focus ring at 50% opacity keeps ≥ 3:1 against white", () => {
+    // Browsers blend ring-ring/50 with the page in gamma-encoded sRGB; the ring is neutral, so one channel is enough.
+    const ringLinear = relativeLuminance(oklchVar(root(), "ring"));
+    const encode = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+    const decode = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    const blended = decode(0.5 * encode(ringLinear) + 0.5);
+    expect((1 + 0.05) / (blended + 0.05)).toBeGreaterThanOrEqual(3);
+  });
+});

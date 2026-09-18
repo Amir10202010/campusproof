@@ -24,6 +24,7 @@ export default function CampusMapInner({
   if (!first) return null;
   // One finger should scroll the page on phones, not drag the map (pinch zoom and +/- still work).
   const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   return (
     <div className="isolate overflow-hidden rounded-xl border">
@@ -32,6 +33,9 @@ export default function CampusMapInner({
         zoom={14}
         scrollWheelZoom={false}
         dragging={!coarsePointer}
+        zoomAnimation={!reducedMotion}
+        fadeAnimation={!reducedMotion}
+        markerZoomAnimation={!reducedMotion}
         className="h-72 w-full sm:h-96"
       >
         <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution={OSM_ATTRIBUTION} maxZoom={19} />
