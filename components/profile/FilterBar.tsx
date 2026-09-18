@@ -81,7 +81,9 @@ export function FilterBar({ value, onChange, counts }: FilterBarProps) {
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          <div className="flex shrink-0 items-center gap-2">
+          {/* On phones the row scrolls sideways, so the switch goes first with a short label: behind the edge of the
+              screen nobody found it, while the empty sections tell people to turn it on. */}
+          <div className="order-first flex shrink-0 items-center gap-2 sm:order-none">
             <Switch
               id={switchId}
               checked={value.showUnconfirmed}
@@ -89,7 +91,8 @@ export function FilterBar({ value, onChange, counts }: FilterBarProps) {
               className={FOCUS_RING}
             />
             <Label htmlFor={switchId} className="cursor-pointer font-normal whitespace-nowrap">
-              Показывать неподтверждённые
+              <span className="sm:hidden">Неподтверждённые</span>
+              <span className="hidden sm:inline">Показывать неподтверждённые</span>
             </Label>
           </div>
         </div>
