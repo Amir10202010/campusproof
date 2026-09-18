@@ -32,14 +32,18 @@ export function ProfileView(props: ProfileStreamParams) {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openPhoto, setOpenPhoto] = useState<Photo | null>(null);
 
-  // /search?q=… becomes a shareable /u/<qid> URL without re-running the stream. `simulate` travels with
-  // it: without the flag the link would quietly show a healthy run instead of the outage on screen.
-  // `refresh` is deliberately dropped — reloading a shared link must not spend a free quota again.
+  // The address bar should hold the link worth sharing: /u/<qid>, plus ?simulate= when what is on
+  // screen is a simulated outage — without that flag the copied link would replay as a healthy run.
+  // ?refresh=1 is dropped once the run is over: it stays in the URL after the «Oбновить» button,
+  // and every reload or shared copy of that address would spend another fresh run on the free quota.
   useEffect(() => {
-    if (props.qid || props.replay || !state.entity) return;
+    if (props.replay || !state.entity) return;
+    const fromSearchUrl = !props.qid;
+    const refreshFinished = Boolean(props.refresh) && state.status !== "streaming";
+    if (!fromSearchUrl && !refreshFinished) return;
     const simulate = props.simulate ? `?simulate=${encodeURIComponent(props.simulate)}` : "";
     window.history.replaceState(null, "", `/u/${state.entity.qid}${simulate}`);
-  }, [props.qid, props.replay, props.simulate, state.entity]);
+  }, [props.qid, props.refresh, props.replay, props.simulate, state.entity, state.status]);
 
   const visible = useMemo(() => applyFilters(state.photos, filters), [state.photos, filters]);
   const coverage = useMemo(
