@@ -122,3 +122,47 @@ describe("the visual check reports itself like a source", () => {
     expect(status).toMatchObject({ status: "skipped", note: expect.stringContaining("ЕЭЗ") });
   });
 });
+
+describe("L3 dedup on the model's near_duplicate_of (#19)", () => {
+  const twin = (id: string, nearDuplicateOf: string): VisionObservation =>
+    ({ id, primary_category: "campus", near_duplicate_of: nearDuplicateOf }) as VisionObservation;
+  const second: FetchedCandidate = { ...fetched, id: "b", canonicalUrl: "https://img.test/b.jpg" };
+
+  it("keeps the first shot and sends the same view to the filtered-out tray", async () => {
+    const events: StreamEvent[] = [];
+    await runProfilePipeline(
+      { query: "x", refresh: false, simulate: [], aiAllowed: true },
+      deps({
+        gatherCommons: async () => ({
+          candidates: [candidate, { ...candidate, imageUrl: "https://img.test/b.jpg" }],
+          subcategories: [],
+        }),
+        fetchCandidates: async () => ({ fetched: [fetched, second], failed: [] }),
+        observeAll: async () =>
+          new Map([
+            ["a", twin("a", "")],
+            ["b", twin("b", "a")],
+          ]),
+      }),
+      (event) => events.push(event),
+      new AbortController().signal,
+    );
+    const done = events.find((e) => e.type === "done");
+    expect(done?.type === "done" && done.profile.photos.map((p) => p.id)).toEqual(["a"]);
+    expect(done?.type === "done" && done.profile.rejected).toEqual([
+      expect.objectContaining({ reason: "duplicate", duplicateOf: "a" }),
+    ]);
+  });
+
+  it("ignores a pointer to a photo that was never shown", async () => {
+    const events: StreamEvent[] = [];
+    await runProfilePipeline(
+      { query: "x", refresh: false, simulate: [], aiAllowed: true },
+      deps({ observeAll: async () => new Map([["a", twin("a", "zzz")]]) }),
+      (event) => events.push(event),
+      new AbortController().signal,
+    );
+    const done = events.find((e) => e.type === "done");
+    expect(done?.type === "done" && done.profile.photos.map((p) => p.id)).toEqual(["a"]);
+  });
+});
