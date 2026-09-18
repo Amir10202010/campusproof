@@ -18,6 +18,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { TierBadge } from "@/components/profile/TierBadge";
 import { NotFound } from "@/components/search/NotFound";
 import { PickList } from "@/components/search/PickList";
+import { ProfileError } from "@/components/search/ProfileError";
 import { SearchBox } from "@/components/search/SearchBox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,6 +185,30 @@ export function FixturesWorkbench({
         <PickList query="ДУ" candidates={candidates} onPick={(qid) => setLastAction(`выбран ${qid}`)} />
         <NotFound query="Демо Универ" suggestions={candidates.slice(0, 2)} onPick={(qid) => setLastAction(qid)} />
         <NotFound query="фывапролд" suggestions={[]} onPick={(qid) => setLastAction(qid)} />
+      </Demo>
+
+      <Demo title="ProfileError · лимит новых проверок · обрыв соединения · не вуз">
+        <ProfileError
+          error={{
+            code: "rate_limited",
+            message:
+              "Дневной лимит новых проверок исчерпан: сервис работает на бесплатных квотах. Сохранённые профили доступны, новые — завтра.",
+            retryable: true,
+          }}
+          onRetry={() => setLastAction("повторить: rate_limited")}
+        />
+        <ProfileError
+          error={{ code: "stream_failed", message: "Соединение прервалось. Попробуйте ещё раз.", retryable: true }}
+          entityName={profile.entity.name}
+          onRetry={() => setLastAction("повторить: stream_failed")}
+        />
+        <ProfileError
+          error={{
+            code: "not_a_university",
+            message: "Q42 в Wikidata — не университет и не вуз, поэтому профиль не строим.",
+            retryable: false,
+          }}
+        />
       </Demo>
 
       <Demo title="CompareTable · два сохранённых профиля (на телефоне — вкладки)">

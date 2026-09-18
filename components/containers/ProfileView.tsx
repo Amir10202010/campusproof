@@ -15,6 +15,7 @@ import { PipelineRail } from "@/components/profile/PipelineRail";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { NotFound } from "@/components/search/NotFound";
 import { PickList } from "@/components/search/PickList";
+import { ProfileError } from "@/components/search/ProfileError";
 import { useProfileStream, type ProfileStreamParams } from "@/hooks/useProfileStream";
 import { CATEGORIES } from "@/lib/config/categories";
 import { computeCoverage } from "@/lib/pipeline/coverage";
@@ -60,6 +61,11 @@ export function ProfileView(props: ProfileStreamParams) {
     return <PickList query={state.query ?? ""} candidates={state.candidates} onPick={pick} />;
   if (state.status === "not_found")
     return <NotFound query={state.query ?? ""} suggestions={state.suggestions} onPick={pick} />;
+  // The run failed before any photo arrived: an honest error screen instead of a "searching…" skeleton that never ends.
+  if (state.status === "error" && state.error && state.photos.length === 0)
+    return (
+      <ProfileError error={state.error} entityName={state.entity?.name} onRetry={() => window.location.reload()} />
+    );
 
   return (
     <div className="space-y-4">
@@ -81,7 +87,7 @@ export function ProfileView(props: ProfileStreamParams) {
       />
       <PipelineRail stages={state.stages} sources={state.sources} />
       <DegradedBanner degraded={state.profile?.degraded ?? []} />
-      <DescriptionBlock description={state.description} ready={state.descriptionReady} />
+      <DescriptionBlock description={state.description} ready={state.descriptionReady || state.status === "error"} />
       <FilterBar value={filters} onChange={setFilters} counts={counts} />
       <ProfileGuide photosCount={visible.length} />
       {shownCategories.map((category) => (
