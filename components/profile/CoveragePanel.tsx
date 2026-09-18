@@ -70,7 +70,10 @@ function CoverageRow({
   const showUnconfirmed = () => {
     onShowUnconfirmed?.(category.id);
     requestAnimationFrame(() =>
-      document.getElementById(`category-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      document.getElementById(`category-${category.id}`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      }),
     );
   };
 

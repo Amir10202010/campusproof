@@ -1,7 +1,7 @@
 "use client";
 
 import { ImageOff } from "lucide-react";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 export interface ExternalImageProps {
@@ -10,6 +10,7 @@ export interface ExternalImageProps {
   fallbackSrc?: string;
   alt: string;
   className?: string;
+  style?: CSSProperties;
   loading?: "lazy" | "eager";
   fallbackText?: string;
 }
@@ -23,6 +24,7 @@ export function ExternalImage({
   fallbackSrc,
   alt,
   className,
+  style,
   loading = "lazy",
   fallbackText = "Превью не загрузилось",
 }: ExternalImageProps) {
@@ -39,6 +41,7 @@ export function ExternalImage({
           "flex flex-col items-center justify-center gap-1.5 bg-muted p-3 text-center text-xs text-muted-foreground",
           className,
         )}
+        style={style}
       >
         <ImageOff className="size-5 shrink-0" aria-hidden="true" />
         {fallbackText}
@@ -60,6 +63,7 @@ export function ExternalImage({
       referrerPolicy="no-referrer"
       onError={() => markFailed(current)}
       className={className}
+      style={style}
     />
   );
 }
