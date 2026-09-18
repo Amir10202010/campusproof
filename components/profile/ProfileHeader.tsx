@@ -1,9 +1,11 @@
 "use client";
 
-import { CircleCheck, ExternalLink, Globe, History, LoaderCircle, MapPin, RefreshCw } from "lucide-react";
+import { CircleCheck, ExternalLink, Globe, History, LoaderCircle, MapPin, RefreshCw, Scale } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { ProfileFact, UniversityEntity } from "@/lib/types";
+import { compareHref, isQid } from "@/lib/ui/compare";
 import { displayHost, formatDateTimeRu, formatDistanceRu, formatSecondsRu, safeHttpUrl } from "@/lib/ui/format";
 
 export interface ProfileHeaderProps {
@@ -64,6 +66,15 @@ export function ProfileHeader(props: ProfileHeaderProps) {
               ) : null}
               {props.distanceToCityCenterM !== undefined ? (
                 <span>≈ {formatDistanceRu(props.distanceToCityCenterM)} до центра города по прямой</span>
+              ) : null}
+              {isQid(entity.qid) ? (
+                <Link
+                  href={compareHref(entity.qid)}
+                  className="inline-flex items-center gap-1 underline-offset-3 hover:text-foreground hover:underline"
+                >
+                  <Scale className="size-3.5" aria-hidden="true" />
+                  Сравнить с другим вузом
+                </Link>
               ) : null}
             </div>
           ) : null}
