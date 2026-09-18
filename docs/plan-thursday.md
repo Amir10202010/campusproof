@@ -41,7 +41,7 @@
 | **Ходячий скелет:** все модули пайплайна и UI-компоненты с финальными сигнатурами, оркестратор, SSE, хук стрима, страницы `/search` и `/u/[qid]`, тесты контрактов | [module-map.md](module-map.md) |
 | Регламент работы с нескольких компьютеров и команды агента `/cp-task`, `/cp-ship`, `/cp-sync`, `/cp-handoff`, `/cp-review`, `/cp-standup` | [team-workflow.md](team-workflow.md), `.claude/` |
 | Защита `main` (PR + зелёный CI, squash, auto-merge, без force-push), Prettier, LF-переводы строк для всех ОС | GitHub Settings, `.prettierrc.json`, `.gitattributes` |
-| Проверка здоровья и диагностика стрима и sharp на Vercel | `/api/health`, `/api/dev/sse-check` |
+| Проверка здоровья и доступности источников | `/api/health`, `/api/health?deep=1` |
 | Обёртка для Wikimedia с обязательным User-Agent | `lib/sources/wikimediaFetch.ts` |
 | Черновик vision-промпта и JSON-схемы, общий для TS и Python | `lib/vision/prompt.ts` |
 | Python-скелет: спайки, индекс, разметка, метрики | `scripts/python/*` |
@@ -322,4 +322,4 @@ flowchart LR
 - [#29](https://github.com/Amir10202010/campusproof/issues/29) линза «официальные vs независимые»;
 - [#30](https://github.com/Amir10202010/campusproof/issues/30) `/benchmark`.
 
-**Freeze в 19:00.** Вечером запись видео с прода, README и презентация ([#31](https://github.com/Amir10202010/campusproof/issues/31)). Перед сдачей удалить `app/api/dev/sse-check` (диагностика). Сдача в субботу до 10:30.
+**Freeze в 19:00.** Вечером запись видео с прода, README и презентация ([#31](https://github.com/Amir10202010/campusproof/issues/31)). Диагностический `app/api/dev/sse-check` удалён перед заморозкой; проверка инфраструктуры — `/api/health?deep=1`. Сдача в субботу до 10:30.
