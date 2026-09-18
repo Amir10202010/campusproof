@@ -17,6 +17,7 @@ import { NotFound } from "@/components/search/NotFound";
 import { PickList } from "@/components/search/PickList";
 import { ProfileError } from "@/components/search/ProfileError";
 import { useProfileStream, type ProfileStreamParams } from "@/hooks/useProfileStream";
+import { shareableProfilePath } from "@/lib/client/profileStream";
 import { CATEGORIES } from "@/lib/config/categories";
 import { computeCoverage } from "@/lib/pipeline/coverage";
 import type { CategoryId, Photo } from "@/lib/types";
@@ -32,12 +33,14 @@ export function ProfileView(props: ProfileStreamParams) {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openPhoto, setOpenPhoto] = useState<Photo | null>(null);
 
-  // /search?q=… becomes a shareable /u/<qid> URL without re-running the stream.
+  // /search?q=… and /u/<qid>?refresh=1 become the shareable /u/<qid> without re-running the stream.
   useEffect(() => {
-    if (!props.qid && !props.replay && state.entity) {
-      window.history.replaceState(null, "", `/u/${state.entity.qid}`);
+    if (props.replay || !state.entity) return;
+    const next = shareableProfilePath(window.location.href, state.entity.qid);
+    if (next !== window.location.pathname + window.location.search + window.location.hash) {
+      window.history.replaceState(null, "", next);
     }
-  }, [props.qid, props.replay, state.entity]);
+  }, [props.replay, state.entity]);
 
   const visible = useMemo(() => applyFilters(state.photos, filters), [state.photos, filters]);
   const coverage = useMemo(
