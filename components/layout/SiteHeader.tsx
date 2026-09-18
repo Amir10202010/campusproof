@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
 /**
- * Links appear only once their page is in main: «Сравнение» → /compare (#38), «Бенчмарк» → /benchmark (P3).
+ * Links appear only once their page is in main: «Бенчмарк» → /benchmark (P3) is still to come.
  */
 const NAV_LINKS = [
   { href: "/", label: "Поиск" },
+  { href: "/compare", label: "Сравнение" },
   { href: "/how-it-works", label: "Как мы проверяем" },
 ];
 

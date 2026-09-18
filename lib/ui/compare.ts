@@ -1,5 +1,5 @@
 import { CATEGORIES, REQUIRED_AREAS, type CategoryConfig } from "@/lib/config/categories";
-import type { CategoryCoverage, DegradedFlag, Photo, ProfileFact, UniversityProfile } from "@/lib/types";
+import type { CandidateCard, CategoryCoverage, DegradedFlag, Photo, ProfileFact, UniversityProfile } from "@/lib/types";
 import { sortForDisplay } from "./filters";
 
 /** P4 · #38 · data preparation for /compare (saved profiles only — never runs the pipeline). */
@@ -102,3 +102,14 @@ export function savedProfileResult(httpStatus: number, body: unknown): SavedProf
   if (httpStatus === 501) return { status: "not_implemented" };
   return { status: "error" };
 }
+
+/** Search state of one compare slot (CompareView resolves the query through GET /api/resolve). */
+export type CompareSlotSearch =
+  | { status: "idle" }
+  | { status: "searching"; query: string }
+  | { status: "ambiguous"; query: string; candidates: CandidateCard[] }
+  | { status: "not_found"; query: string; suggestions: CandidateCard[] }
+  | { status: "error"; query: string };
+
+/** What a compare slot currently shows about its university. */
+export type CompareSlotLoad = SavedProfileResult | { status: "empty" } | { status: "loading" };
