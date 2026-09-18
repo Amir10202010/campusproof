@@ -272,7 +272,7 @@ export async function runProfilePipeline(
         continue;
       }
       scored.add(item.id);
-      const out = toPhotoOrRejected(item, result, retrievedAt);
+      const out = toPhotoOrRejected(item, result, retrievedAt, entity.coords);
       if ("photo" in out) batch.push(out.photo);
       else rejected.push(out.rejected);
     }

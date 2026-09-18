@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { sampleProfile } from "@/fixtures/profile.sample";
 import { fetchSavedProfile } from "@/lib/client/profileStream";
+import { toPhotoOrRejected } from "@/lib/pipeline/assemble";
 import { LIMITS } from "@/lib/config/limits";
 import { NotImplementedError } from "@/lib/notImplemented";
 import type { PipelineDeps } from "@/lib/pipeline/deps";
@@ -99,5 +100,25 @@ describe("fetchSavedProfile (stream fallback)", () => {
         throw new TypeError("offline");
       }),
     ).toBeNull();
+  });
+});
+
+describe("photo geo (#87)", () => {
+  it("fills the straight-line distance from the campus", () => {
+    const geotagged: FetchedCandidate = { ...fetched, geo: { lat: 51.0915, lon: 71.3995 } };
+    const scored = {
+      points: 70,
+      tier: "verified" as const,
+      category: "campus" as const,
+      secondary: [],
+      evidence: [],
+      labels: [],
+    };
+    const out = toPhotoOrRejected(geotagged, scored, "2026-09-18T00:00:00.000Z", { lat: 51.09, lon: 71.39944444 });
+    expect("photo" in out && out.photo.geo).toMatchObject({ distanceToCampusM: expect.any(Number) });
+    if ("photo" in out) expect(out.photo.geo?.distanceToCampusM).toBeLessThan(200);
+
+    const withoutCampus = toPhotoOrRejected(geotagged, scored, "2026-09-18T00:00:00.000Z");
+    expect("photo" in withoutCampus && withoutCampus.photo.geo?.distanceToCampusM).toBeUndefined();
   });
 });
