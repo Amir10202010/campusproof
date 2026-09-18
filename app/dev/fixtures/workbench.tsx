@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
+import { CompareTable } from "@/components/compare/CompareTable";
 import { ProfileGuide } from "@/components/help/ProfileGuide";
 import { CampusMap } from "@/components/profile/CampusMap";
 import { CategorySection } from "@/components/profile/CategorySection";
@@ -22,7 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { StageState } from "@/lib/client/profileStream";
 import { CATEGORIES } from "@/lib/config/categories";
+import { computeCoverage } from "@/lib/pipeline/coverage";
 import type { CandidateCard, CategoryId, Photo, SourceStatus, UniversityProfile } from "@/lib/types";
+import { toCompareColumn } from "@/lib/ui/compare";
 import { applyFilters, DEFAULT_FILTERS } from "@/lib/ui/filters";
 
 const STAGES_RUNNING: StageState[] = [
@@ -74,6 +77,18 @@ export function FixturesWorkbench({
   const shownCategories =
     filters.categories.length > 0 ? CATEGORIES.filter((c) => filters.categories.includes(c.id)) : CATEGORIES;
   const brokenPhoto: Photo = { ...profile.photos[0], id: "fx-broken", thumbUrl: "/fixtures/missing.jpg" };
+  // A second fictional university for the compare demo: no library photos → honest empty cell.
+  const compareColumns = useMemo(() => {
+    const otherPhotos = profile.photos.filter((photo) => photo.category !== "library");
+    const other: UniversityProfile = {
+      ...profile,
+      entity: { ...profile.entity, qid: "Q1-FIXTURE", name: "Демо Технический Университет (ФИКСТУРА)" },
+      photos: otherPhotos,
+      coverage: computeCoverage(otherPhotos),
+      distanceToCityCenterM: undefined,
+    };
+    return [toCompareColumn(profile), toCompareColumn(other)] as const;
+  }, [profile]);
 
   return (
     <main className="mx-auto w-full max-w-6xl space-y-10 px-4 py-6 sm:px-6">
@@ -169,6 +184,10 @@ export function FixturesWorkbench({
         <PickList query="ДУ" candidates={candidates} onPick={(qid) => setLastAction(`выбран ${qid}`)} />
         <NotFound query="Демо Универ" suggestions={candidates.slice(0, 2)} onPick={(qid) => setLastAction(qid)} />
         <NotFound query="фывапролд" suggestions={[]} onPick={(qid) => setLastAction(qid)} />
+      </Demo>
+
+      <Demo title="CompareTable · два сохранённых профиля (на телефоне — вкладки)">
+        <CompareTable columns={[compareColumns[0], compareColumns[1]]} onOpenPhoto={setOpenPhoto} />
       </Demo>
 
       <Demo title="Профиль · FilterBar · ProfileGuide · CategorySection · CampusMap · CoveragePanel · FilteredOutTray · EvidenceDialog">
