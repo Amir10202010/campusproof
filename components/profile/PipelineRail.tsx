@@ -68,6 +68,14 @@ const SOURCE_STATUS: Record<SourceStatus["status"], { label: string; icon: Lucid
   simulated_down: { label: "отключён (симуляция)", icon: Ban, className: "border-red-200 bg-red-50 text-red-900" },
 };
 
+/**
+ * Adapters write their own reason in Russian ("нет ключа SERPER_API_KEY", "Опенверс ответил HTTP 429").
+ * Anything else is a developer message that has no place in the interface.
+ */
+function readableNote(source: SourceStatus): string | null {
+  return source.note && /[а-яё]/i.test(source.note) ? source.note : null;
+}
+
 /** A zero is news for these counts ("кандидатов: 0"); for the rest ("не открылись: 0") it is noise. */
 const ZERO_MATTERS = new Set(["candidates", "fetched", "kept", "photos"]);
 
@@ -134,10 +142,11 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
           )}
         </div>
         {problems.length > 0 ? (
-          <ul className="space-y-0.5 text-muted-foreground">
+          <ul className="space-y-1 text-muted-foreground">
             {problems.map((source) => (
               <li key={source.source}>
                 {SOURCE_NAME_RU[source.source] ?? source.source}: {SOURCE_STATUS_HINT_RU[source.status]}.
+                {readableNote(source) ? <span className="block opacity-80">{readableNote(source)}</span> : null}
               </li>
             ))}
           </ul>
@@ -176,7 +185,7 @@ function SourceChip({ source }: { source: SourceStatus }) {
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-64 text-pretty">
           {name}: {hint}
-          {source.note && /[а-яё]/i.test(source.note) ? ` (${source.note})` : ""}
+          {readableNote(source) ? ` (${readableNote(source)})` : ""}
         </TooltipContent>
       </Tooltip>
     </li>
