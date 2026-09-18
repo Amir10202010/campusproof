@@ -24,7 +24,7 @@ export const classifyDomain: ClassifyDomain = (hostname, entity) => {
   const isAggregator = hostInList(host, AGGREGATOR_DOMAINS);
 
   // The university's own domains come from Wikidata (P856), never from a hand-written list.
-  const official = entity.domains.some((domain) => hostMatches(host, domain.toLowerCase().replace(/^www\./, "")));
+  const official = entity.domains.some((domain) => officialHosts(domain).some((own) => hostMatches(host, own)));
 
   const sourceType: SourceType = official
     ? "official"
@@ -40,3 +40,18 @@ export const classifyDomain: ClassifyDomain = (hostname, entity) => {
 
   return { sourceType, isStock, isAggregator };
 };
+
+/** Second levels that only schools and universities can register under a country domain (edu.kz, ac.uk). */
+const ACADEMIC_LEVELS = ["edu", "ac"];
+
+/**
+ * A domain from Wikidata plus its academic twin: "kbtu.kz" → also "kbtu.edu.kz". Wikidata often keeps the old
+ * address after a university moves to edu.CC and redirects the old one there, so the site itself was not official.
+ * Only one direction: a plain "name.CC" is not implied by "name.edu.CC", anyone may register it.
+ */
+export function officialHosts(domain: string): string[] {
+  const clean = domain.toLowerCase().replace(/^www\./, "");
+  const [name, countryCode, ...rest] = clean.split(".");
+  if (rest.length > 0 || !name || !/^[a-z]{2}$/.test(countryCode ?? "")) return [clean];
+  return [clean, ...ACADEMIC_LEVELS.map((level) => `${name}.${level}.${countryCode}`)];
+}
