@@ -23,6 +23,7 @@ import { toPhotoOrRejected } from "./assemble";
 import { createRunContext } from "./context";
 import { computeCoverage } from "./coverage";
 import { elapsedMs, remainingMs, TimeoutError, withTimeout } from "./deadline";
+import { visionFailureReason, visionSkippedReason } from "./reasons";
 import type { PipelineDeps } from "./deps";
 import type { Emit } from "./events";
 
@@ -280,8 +281,19 @@ export async function runProfilePipeline(
     // Vision gets what is left of the global deadline minus a reserve for scoring and assembling.
     const visionStarted = deps.now();
     const visionBudget = remainingMs(ctx, visionStarted) - LIMITS.ASSEMBLE_RESERVE_MS;
+    /** The visual check is reported like a source, so the UI can say *why* it was unavailable. */
+    const visionStatus = (status: SourceStatus["status"], candidates: number, note?: string) => {
+      const entry: SourceStatus = { source: "vision", status, candidates, ms: deps.now() - visionStarted, note };
+      sources.push(entry);
+      emit({ type: "source", status: entry });
+    };
     if (visionDown || visionBudget <= 0) {
       degraded.add("vision_unavailable");
+      visionStatus(
+        ctx.simulate.includes("vision_down") ? "simulated_down" : "skipped",
+        0,
+        visionSkippedReason(input, visionBudget),
+      );
     } else {
       const byId = new Map(kept.map((item) => [item.id, item]));
       const stageDeadline = visionStarted + visionBudget;
@@ -304,9 +316,11 @@ export async function runProfilePipeline(
             },
           ),
         );
+        visionStatus("ok", observations.size);
       } catch (error) {
         degraded.add("vision_unavailable");
         if (!isNotImplemented(error)) log(ctx, "observeAll", error);
+        visionStatus(error instanceof TimeoutError ? "timeout" : "error", 0, visionFailureReason(error));
       }
     }
     scoreAndEmit(kept, observations); // everything not scored per batch (no observation / vision failed)
