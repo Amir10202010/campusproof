@@ -66,7 +66,11 @@ export async function runProfilePipeline(
   try {
     let resolved: UniversityEntity | undefined;
     if (!input.qid) {
-      const result = await withTimeout("resolve", ctx, LIMITS.RESOLVE_TIMEOUT_MS, (s) =>
+      // The stage-grace pattern of §5.0: resolveQuery bounds itself at RESOLVE_TIMEOUT_MS and degrades
+      // to "not_found without suggestions" when the typo search runs long. Racing it with a wrapper of
+      // exactly the same length threw that graceful answer away and showed a hard resolve_timeout
+      // instead, so the hard abort comes STAGE_GRACE_MS later — as it does for fetch and vision.
+      const result = await withTimeout("resolve", ctx, LIMITS.RESOLVE_TIMEOUT_MS + LIMITS.STAGE_GRACE_MS, (s) =>
         deps.resolveQuery(input.query ?? "", s),
       );
       if (result.status === "ambiguous") {

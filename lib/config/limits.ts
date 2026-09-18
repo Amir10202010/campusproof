@@ -4,7 +4,11 @@
  */
 export const LIMITS = {
   GLOBAL_DEADLINE_MS: 27_000,
-  RESOLVE_TIMEOUT_MS: 2_500,
+  // A misspelled query is the slow case: prefix + full-text search, then wbgetentities, then the fuzzy
+  // suggestion search, then wbgetentities again, then place labels — five sequential Wikidata round
+  // trips. Measured at 2.0-2.4 s, which 2.5 s cut off, so "Harvrad" answered with an error instead of
+  // "Harvard University". A resolved query still returns in ~0.3 s: this is a ceiling, not a delay.
+  RESOLVE_TIMEOUT_MS: 4_000,
   ADAPTER_TIMEOUT_MS: 7_000,
 
   // Stage budgets inside the global deadline (docs/architecture.md §5.0). Stages get `ctx.deadlineAt` = their own

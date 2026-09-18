@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { sampleProfile } from "@/fixtures/profile.sample";
 import { NotImplementedError } from "@/lib/notImplemented";
+import { LIMITS } from "@/lib/config/limits";
 import type { PipelineDeps } from "@/lib/pipeline/deps";
 import { runProfilePipeline } from "@/lib/pipeline/orchestrator";
 import type { FetchedCandidate, PipelineInput, StreamEvent, UniversityEntity } from "@/lib/types";
@@ -84,6 +85,32 @@ describe("pipeline walking skeleton", () => {
     );
     expect(profile).toBeNull();
     expect(types).toEqual(["ambiguous"]);
+  });
+
+  it("lets a slow resolver finish inside its grace period instead of failing the request", async () => {
+    // resolveQuery bounds itself at RESOLVE_TIMEOUT_MS and degrades to "not_found" when the typo
+    // search runs long. A wrapper of exactly the same length used to win that race and answer with a
+    // hard resolve_timeout, so "Harvrad" said "не удалось определить" instead of offering Harvard.
+    vi.useFakeTimers();
+    try {
+      const events: StreamEvent[] = [];
+      const pipeline = runProfilePipeline(
+        { query: "Harvrad", refresh: false, simulate: [], aiAllowed: true },
+        deps({
+          resolveQuery: async () => {
+            await new Promise((resolve) => setTimeout(resolve, LIMITS.RESOLVE_TIMEOUT_MS + 100));
+            return { status: "not_found", query: "Harvrad", suggestions: [] };
+          },
+        }),
+        (event) => events.push(event),
+        new AbortController().signal,
+      );
+      await vi.advanceTimersByTimeAsync(LIMITS.RESOLVE_TIMEOUT_MS + LIMITS.STAGE_GRACE_MS);
+      await pipeline;
+      expect(events).toEqual([expect.objectContaining({ type: "not_found", query: "Harvrad" })]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("runs end-to-end with unimplemented lanes marked as skipped and no fake photos", async () => {
