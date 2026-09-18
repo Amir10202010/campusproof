@@ -31,12 +31,14 @@ export function ProfileView(props: ProfileStreamParams) {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openPhoto, setOpenPhoto] = useState<Photo | null>(null);
 
-  // /search?q=… becomes a shareable /u/<qid> URL without re-running the stream.
+  // /search?q=… becomes a shareable /u/<qid> URL without re-running the stream. `simulate` travels with
+  // it: without the flag the link would quietly show a healthy run instead of the outage on screen.
+  // `refresh` is deliberately dropped — reloading a shared link must not spend a free quota again.
   useEffect(() => {
-    if (!props.qid && !props.replay && state.entity) {
-      window.history.replaceState(null, "", `/u/${state.entity.qid}`);
-    }
-  }, [props.qid, props.replay, state.entity]);
+    if (props.qid || props.replay || !state.entity) return;
+    const simulate = props.simulate ? `?simulate=${encodeURIComponent(props.simulate)}` : "";
+    window.history.replaceState(null, "", `/u/${state.entity.qid}${simulate}`);
+  }, [props.qid, props.replay, props.simulate, state.entity]);
 
   const visible = useMemo(() => applyFilters(state.photos, filters), [state.photos, filters]);
   const coverage = useMemo(
