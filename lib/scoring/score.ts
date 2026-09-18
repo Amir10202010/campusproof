@@ -45,7 +45,10 @@ export const scoreCandidate: ScoreCandidate = (candidate, observation, context) 
     points,
     strong: signals.strong,
     negativeVisual: signals.negativeVisual,
-    visionAvailable: context.visionAvailable,
+    // #118 · the stage can report "ok" and still leave images unchecked (the free quota dies between
+    // batches). Tier follows this image, not the stage: signals.ts already labels it
+    // "visual_check_unavailable", so promoting it to "likely" would contradict its own label.
+    visionAvailable: context.visionAvailable && observation !== null,
   });
 
   if (tier === "rejected") {

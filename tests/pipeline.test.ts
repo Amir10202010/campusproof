@@ -163,6 +163,72 @@ describe("pipeline walking skeleton", () => {
     expect(profile?.degraded).toContain("vision_unavailable");
   });
 
+  /** #118 · the free Gemini quota can run out between batches: what comes back is a partial check. */
+  function visionDeps(observed: string[], saveProfile = vi.fn(async () => {})) {
+    const ids = ["a", "b", "c"];
+    const items = ids.map((id) => fetched(id));
+    return {
+      saveProfile,
+      deps: deps({
+        resolveQuery: async () => ({ status: "resolved", entity }),
+        gatherCommons: async () => ({ candidates: items, subcategories: [] }),
+        fetchCandidates: async () => ({ fetched: items, failed: [] }),
+        dedupeCandidates: (list: FetchedCandidate[]) => ({ kept: list, rejected: [] }),
+        observeAll: async () =>
+          new Map(
+            observed.map((id) => [
+              id,
+              { id, image_type: "photo", category: "campus", close_up_portrait: false } as never,
+            ]),
+          ),
+        describeCampus: async () => null,
+        scoreCandidate: () => ({
+          points: 75,
+          tier: "verified" as const,
+          category: "campus" as const,
+          secondary: [],
+          evidence: [],
+          labels: [],
+        }),
+        saveProfile,
+      }),
+    };
+  }
+
+  it("reports a visual check cut short by quota as partial and never caches it", async () => {
+    const { deps: d, saveProfile } = visionDeps(["a"]);
+    const { events, profile } = await run(d);
+    const vision = events.flatMap((e) => (e.type === "source" && e.status.source === "vision" ? [e.status] : []));
+    expect(vision[0]?.status).toBe("partial");
+    expect(vision[0]?.candidates).toBe(1);
+    expect(profile?.degraded).toContain("vision_unavailable");
+    expect(saveProfile).not.toHaveBeenCalled();
+  });
+
+  it("keeps a fully checked profile healthy and cacheable", async () => {
+    const { deps: d, saveProfile } = visionDeps(["a", "b", "c"]);
+    const { events, profile } = await run(d);
+    const vision = events.find((e) => e.type === "source" && e.status.source === "vision");
+    expect(vision).toEqual(expect.objectContaining({ status: expect.objectContaining({ status: "ok" }) }));
+    expect(profile?.degraded).not.toContain("vision_unavailable");
+    expect(saveProfile).toHaveBeenCalled();
+  });
+
+  it("refresh=1 bypasses the cache for reading but still saves the rebuilt profile", async () => {
+    const { deps: d, saveProfile } = visionDeps(["a", "b", "c"]);
+    const getCachedProfile = vi.fn(async () => sampleProfile);
+    const { profile } = await run({ ...d, getCachedProfile }, { refresh: true });
+    expect(getCachedProfile).not.toHaveBeenCalled();
+    expect(profile?.entity.qid).toBe("Q1");
+    expect(saveProfile).toHaveBeenCalled();
+  });
+
+  it("never writes a simulated outage into the cache", async () => {
+    const { deps: d, saveProfile } = visionDeps(["a", "b", "c"]);
+    await run(d, { simulate: ["web_search_down"] });
+    expect(saveProfile).not.toHaveBeenCalled();
+  });
+
   it("serves a cached profile immediately", async () => {
     const { types, events } = await run(
       deps({

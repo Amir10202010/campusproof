@@ -184,6 +184,23 @@ describe("scoreCandidate", () => {
     expect(strong.tier).toBe("likely");
   });
 
+  it("does not promote a photo the model never looked at, even while vision is running (#118)", () => {
+    // Quota can die mid-run: the stage still reports "ok", but this image has no observation.
+    // The label and the tier have to agree — otherwise an unchecked photo reads as "Вероятно".
+    const unchecked = scoreCandidate(
+      candidate({
+        provenance: { sourceType: "independent", pageMentionsName: true },
+        alsoFoundAt: [{ sourcePageUrl: "https://other.kz/a", sourceDomain: "other.kz" }],
+        geo: { lat: 51.16, lon: 71.47 },
+      }),
+      null,
+      { ...context, visionAvailable: true },
+    );
+    expect(unchecked.points).toBe(40);
+    expect(unchecked.labels).toContain("visual_check_unavailable");
+    expect(unchecked.tier).toBe("unconfirmed");
+  });
+
   it("flags a thumbnail-only check and an old photo", () => {
     const result = scoreCandidate(
       candidate({
