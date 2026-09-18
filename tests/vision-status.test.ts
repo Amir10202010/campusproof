@@ -29,6 +29,18 @@ describe("reasons shown instead of a silent degraded profile", () => {
     expect(visionFailureReason(new Error("socket hang up"))).toBe("Ошибка визуальной проверки");
   });
 
+  it("repeats our own Russian reason instead of a generic error", () => {
+    // Without a key the provider says so in plain Russian; the chip must not turn that into "Ошибка".
+    expect(visionFailureReason(new Error("Визуальная проверка не настроена: нет ключа GEMINI_API_KEY"))).toBe(
+      "Визуальная проверка не настроена: нет ключа GEMINI_API_KEY",
+    );
+    expect(visionFailureReason(new Error("Не осталось времени на визуальную проверку"))).toBe(
+      "Не осталось времени на визуальную проверку",
+    );
+    // A quota message stays translated even though it also matches the Russian-passthrough rule.
+    expect(visionFailureReason(new Error("Gemini 429: превышена квота"))).toBe("Исчерпана бесплатная квота Gemini");
+  });
+
   it("explains why it did not run at all", () => {
     const input: PipelineInput = { refresh: false, simulate: [], aiAllowed: true };
     expect(visionSkippedReason({ ...input, aiAllowed: false }, 5000)).toMatch(/ЕЭЗ/);

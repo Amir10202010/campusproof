@@ -33,10 +33,20 @@ export const env = {
     process.env.WIKIMEDIA_USER_AGENT ?? "CampusProof/0.1 (https://github.com/Amir10202010/campusproof)",
 
   pipelineVersion: process.env.PIPELINE_VERSION ?? "0.1.0",
-  maxFreshProfilesPerDay: Number(process.env.MAX_FRESH_PROFILES_PER_DAY ?? 150),
+  maxFreshProfilesPerDay: positiveInt(process.env.MAX_FRESH_PROFILES_PER_DAY, 150),
   /** Judges at one venue often share a single IP, so this is a guard against abuse, not against a queue. */
-  freshRunsPerClient: Number(process.env.FRESH_RUNS_PER_CLIENT ?? 40),
+  freshRunsPerClient: positiveInt(process.env.FRESH_RUNS_PER_CLIENT, 40),
 } as const;
+
+/**
+ * A typo in a Vercel env var must not silently disable a limit: `Number("40 ")` is fine, but
+ * `Number("forty")` is NaN, and Ratelimit(NaN) never refuses anything. Anything that is not a
+ * positive integer falls back to the documented default.
+ */
+export function positiveInt(raw: string | undefined, fallback: number): number {
+  const value = Number(raw);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+}
 
 export function configuredServices() {
   return {

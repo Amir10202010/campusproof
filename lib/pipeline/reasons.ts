@@ -27,6 +27,9 @@ export function visionFailureReason(error: unknown): string {
   }
   if (/\b400\b|INVALID_ARGUMENT/i.test(message)) return "Gemini отклонил запрос (модель или параметры)";
   if (/location|not supported|region/i.test(message)) return "Gemini недоступен из региона этого сервера";
+  // Our own modules already explain in Russian ("нет ключа GEMINI_API_KEY", "не осталось времени"):
+  // repeating that verbatim is more honest than a generic "Ошибка" on the chip.
+  if (/[а-яё]/i.test(message)) return message.slice(0, 140);
   return "Ошибка визуальной проверки";
 }
 

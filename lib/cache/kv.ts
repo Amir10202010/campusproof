@@ -9,11 +9,25 @@ import { env } from "@/lib/env";
  */
 let client: Redis | null | undefined;
 
+/**
+ * Hard ceiling for one Redis round trip. The cache is an optimisation, never a dependency: a slow
+ * Upstash must not eat the pipeline deadline. @upstash/redis otherwise retries 5 times with
+ * exponential backoff (~11 s of waiting alone) and sends every request without an AbortSignal, so a
+ * single stalled call could outlive LIMITS.GLOBAL_DEADLINE_MS. One retry within the budget is enough.
+ */
+const REDIS_TIMEOUT_MS = 1_000;
+
 export function getRedis(): Redis | null {
   if (client === undefined) {
     client =
       env.upstashRedisUrl && env.upstashRedisToken
-        ? new Redis({ url: env.upstashRedisUrl, token: env.upstashRedisToken })
+        ? new Redis({
+            url: env.upstashRedisUrl,
+            token: env.upstashRedisToken,
+            // A factory, not a shared signal: every request needs its own timeout.
+            signal: () => AbortSignal.timeout(REDIS_TIMEOUT_MS),
+            retry: { retries: 1, backoff: () => 50 },
+          })
         : null;
   }
   return client;
