@@ -6,7 +6,7 @@ import { MANDATORY_FILTERS, REQUIRED_AREAS } from "@/lib/config/categories";
 import { TIER_SHORT_RU } from "@/lib/ui/labels";
 
 /** Search examples: an ambiguous abbreviation, a Kazakhstan university, an international one (product-strategy §12). */
-const EXAMPLES = ["MSU", "Назарбаев Университет", "ETH Zurich"];
+const EXAMPLES = ["MSU", "Назарбаев Университет", "Harvard University"];
 
 const TIERS = ["verified", "likely", "unconfirmed"] as const;
 
