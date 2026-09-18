@@ -93,6 +93,7 @@ export function ProfileView(props: ProfileStreamParams) {
           photos={visible.filter((p) => p.category === category.id)}
           coverage={coverage[category.id]}
           onOpenPhoto={setOpenPhoto}
+          loading={state.status === "streaming"}
         />
       ))}
       <CampusMap

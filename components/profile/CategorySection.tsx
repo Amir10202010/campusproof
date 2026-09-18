@@ -3,6 +3,7 @@
 import { Images } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryConfig } from "@/lib/config/categories";
 import { LIMITS } from "@/lib/config/limits";
 import type { CategoryCoverage, Photo } from "@/lib/types";
@@ -16,12 +17,14 @@ export interface CategorySectionProps {
   photos: Photo[]; // already filtered for this category
   coverage: CategoryCoverage;
   onOpenPhoto?: (photo: Photo) => void;
+  /** The run is still going: an empty section means "not checked yet", not "nothing we could confirm". */
+  loading?: boolean;
 }
 
 const TIERS = ["verified", "likely", "unconfirmed"] as const;
 
 /** P4 · #3 · title + description from config, counts, grid (2 cols mobile / 4 desktop), honest empty state. */
-export function CategorySection({ category, photos, coverage, onOpenPhoto }: CategorySectionProps) {
+export function CategorySection({ category, photos, coverage, onOpenPhoto, loading }: CategorySectionProps) {
   const [expanded, setExpanded] = useState(false);
   const sorted = useMemo(() => sortForDisplay(photos), [photos]);
   const shown = expanded ? sorted : sorted.slice(0, LIMITS.PHOTOS_PER_CATEGORY_DISPLAY);
@@ -46,7 +49,11 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto }: Cat
       </div>
 
       {photos.length === 0 ? (
-        <EmptyCategory coverage={coverage} />
+        loading ? (
+          <PendingCategory />
+        ) : (
+          <EmptyCategory coverage={coverage} />
+        )
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {shown.map((photo) => (
@@ -63,6 +70,27 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto }: Cat
         </Button>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * While the run is going, an empty section is not a verdict. Showing the finished wording early made
+ * eight sections look like eight failures at the moment the pipeline was still downloading images.
+ */
+function PendingCategory() {
+  return (
+    <ul aria-busy="true" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {[0, 1, 2, 3].map((index) => (
+        <li key={index} className="overflow-hidden rounded-xl border">
+          <Skeleton className="aspect-4/3 w-full rounded-none" />
+          <div className="space-y-1.5 px-2.5 py-2">
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        </li>
+      ))}
+      <li className="sr-only">Ищем фото для этого раздела…</li>
+    </ul>
   );
 }
 
