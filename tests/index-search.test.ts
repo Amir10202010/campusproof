@@ -26,6 +26,10 @@ describe("resolver v1: local index first", () => {
     ["КазНУ", "Q427677"],
     ["kaznu", "Q427677"],
     ["Букетов", "Q920456"],
+    // #109 · Wikidata has no "ЕНУ" alias: the acronym is generated from the Russian name.
+    ["ЕНУ", "Q127745"],
+    ["ENU", "Q127745"],
+    ["Gumilev", "Q127745"],
   ])("%s → %s without Wikimedia calls", async (query, qid) => {
     const result = await resolveQuery(query, signal());
     expect(result).toMatchObject({ status: "resolved", entity: { qid } });

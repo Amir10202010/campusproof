@@ -40,8 +40,12 @@ export const resolveQuery: ResolveQuery = async (query, signal) => {
   return result;
 };
 
-/** Bump when resolution rules change, so stale cached answers are not served. */
-const RESOLVER_VERSION = 3;
+/**
+ * Bump when resolution rules change, so stale cached answers are not served.
+ * v4 (#109): #64 and #101 changed the rules (higher-education filter, typed abbreviations) but kept v3,
+ * so Redis still answered "ЕНУ" with the not_found it cached before those fixes — for up to 24 h.
+ */
+const RESOLVER_VERSION = 4;
 
 export function resolveCacheKey(normalizedQuery: string): string {
   return `resolve:v${RESOLVER_VERSION}:${normalizedQuery}`;
