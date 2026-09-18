@@ -1,0 +1,58 @@
+{
+  "generatedAt": "2026-09-18T23:25:04.268Z",
+  "base": "https://campusproof.vercel.app",
+  "profiles": 35,
+  "photos": 887,
+  "tiers": {
+    "verified": 216,
+    "likely": 482,
+    "unconfirmed": 189
+  },
+  "photosPerProfile": {
+    "median": 27,
+    "min": 15,
+    "max": 33
+  },
+  "integrity": {
+    "checked": 887,
+    "failures": 0,
+    "examples": []
+  },
+  "officialDomain": {
+    "checked": 247,
+    "verified": 247,
+    "mismatched": 0,
+    "examples": []
+  },
+  "commonsCategory": {
+    "claims": 106,
+    "sampled": 25,
+    "direct": 19,
+    "inSubcategory": 6,
+    "notConfirmed": 0,
+    "examples": []
+  },
+  "images": {
+    "sampled": 50,
+    "load": 50,
+    "broken": 0,
+    "examples": []
+  },
+  "signals": {
+    "visual_consistent": 866,
+    "page_mentions_name": 492,
+    "visible_text_this": 235,
+    "official_domain": 228,
+    "geo_near_campus": 160,
+    "commons_category": 106,
+    "geo_in_city": 99,
+    "low_res": 85,
+    "commons_depicts": 37,
+    "wikipedia_use": 36,
+    "official_domain_weak": 19,
+    "news_mentions_name": 18,
+    "cross_source_match": 8,
+    "visual_inconsistent": 5,
+    "render": 4
+  }
+}
