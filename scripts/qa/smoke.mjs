@@ -211,6 +211,99 @@ export function evaluate({ query, expect }, run, ids) {
 
 // ─── Report ────────────────────────────────────────────────────────────────────
 
+/** Median, min and max of the finite values, or null when there are none. */
+function stats(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return { n: sorted.length, median, min: sorted[0], max: sorted[sorted.length - 1] };
+}
+
+/**
+ * The figures README and the slides quote (issue #108). Timings come from fresh runs only — a saved profile
+ * answers at once and would flatter the median; tiers come from regular profiles, without fault injection.
+ */
+export function summarizeRun(results) {
+  const terminal = (type) => results.filter((r) => r.summary.terminal === type).length;
+  const profiles = results.filter((r) => r.summary.terminal === "done");
+  const regular = profiles.filter((r) => !r.query.simulate);
+  const fresh = profiles.filter((r) => r.summary.cached !== true);
+  const tiers = { verified: 0, likely: 0, unconfirmed: 0 };
+  for (const r of regular) for (const tier of Object.keys(tiers)) tiers[tier] += r.summary.tiers[tier];
+  const vision = {};
+  for (const r of profiles) {
+    const status = r.summary.sources.find((source) => source.source === "vision")?.status ?? "нет данных";
+    vision[status] = (vision[status] ?? 0) + 1;
+  }
+  return {
+    outcomes: {
+      profile: profiles.length,
+      simulated: profiles.length - regular.length,
+      ambiguous: terminal("ambiguous"),
+      notFound: terminal("not_found"),
+      error: terminal("error"),
+    },
+    fresh: fresh.length,
+    cached: profiles.length - fresh.length,
+    resolvedMs: stats(fresh.map((r) => r.summary.resolvedMs)),
+    firstPhotosMs: stats(fresh.map((r) => r.summary.firstPhotosMs)),
+    doneMs: stats(fresh.map((r) => r.summary.doneMs)),
+    regular: regular.length,
+    universities: new Set(regular.map((r) => r.summary.entity?.qid).filter(Boolean)).size,
+    tiers,
+    photos: tiers.verified + tiers.likely + tiers.unconfirmed,
+    perProfile: stats(
+      regular.map((r) => r.summary.tiers.verified + r.summary.tiers.likely + r.summary.tiers.unconfirmed),
+    ),
+    withoutVerified: regular.filter((r) => r.summary.tiers.verified === 0).length,
+    vision,
+    checkedPhotos: profiles.reduce((sum, r) => sum + (r.summary.profile?.photos?.length ?? 0), 0),
+    fails: results.filter((r) => r.status === "FAIL").length,
+  };
+}
+
+/** Russian plural: 1 вуз, 2 вуза, 5 вузов. */
+function plural(n, one, few, many) {
+  const tens = n % 100;
+  const units = n % 10;
+  if (units === 1 && tens !== 11) return one;
+  return units >= 2 && units <= 4 && (tens < 12 || tens > 14) ? few : many;
+}
+const inProfiles = (n) => `${n} ${plural(n, "профиле", "профилях", "профилях")}`;
+
+const decimal = (value) => String(Math.round(value * 10) / 10).replace(".", ",");
+const share = (part, total) => (total > 0 ? `${decimal((100 * part) / total)} %` : "—");
+const range = (s, format) => (s ? `медиана ${format(s.median)}, максимум ${format(s.max)}` : "—");
+
+function renderSummary(results) {
+  const s = summarizeRun(results);
+  const o = s.outcomes;
+  return [
+    "## Сводка",
+    "",
+    "Цифры для README и слайдов. Время — только по свежим прогонам: сохранённый профиль приходит сразу. Уровни — по обычным профилям, без симуляций сбоев.",
+    "",
+    "| Что | Значение |",
+    "|---|---|",
+    `| Исходы | профиль — ${o.profile} (из них симуляций сбоя — ${o.simulated}), выбор — ${o.ambiguous}, не найден — ${o.notFound}, ошибка — ${o.error} |`,
+    `| Свежих прогонов / из кеша | ${s.fresh} / ${s.cached} |`,
+    `| Готовый профиль | ${range(s.doneMs, seconds)} |`,
+    `| Первые фото | ${range(s.firstPhotosMs, seconds)} |`,
+    `| Вуз определён | ${range(s.resolvedMs, seconds)} |`,
+    `| Уровни фото | ${s.photos} фото в ${inProfiles(s.regular)} (${s.universities} ${plural(s.universities, "вуз", "вуза", "вузов")}): ✓ ${s.tiers.verified} (${share(s.tiers.verified, s.photos)}) · ◐ ${s.tiers.likely} (${share(s.tiers.likely, s.photos)}) · ? ${s.tiers.unconfirmed} (${share(s.tiers.unconfirmed, s.photos)}) |`,
+    `| Фото на профиль | ${s.perProfile ? `медиана ${decimal(s.perProfile.median)}, от ${s.perProfile.min} до ${s.perProfile.max}` : "—"} |`,
+    `| Профили без «Проверено» | ${s.withoutVerified} из ${s.regular} |`,
+    `| Визуальная проверка, по профилям | ${
+      Object.entries(s.vision)
+        .map(([status, n]) => `${status} — ${n}`)
+        .join(", ") || "—"
+    } |`,
+    `| Правила честности | ${s.checkedPhotos} фото в ${inProfiles(o.profile)}, FAIL — ${s.fails} |`,
+    "",
+  ];
+}
+
 const seconds = (ms) => (ms === undefined ? "—" : `${(ms / 1000).toFixed(1).replace(".", ",")} с`);
 const cell = (text) => String(text).replace(/\|/g, "\\|").replace(/\n/g, " ");
 const ICON = { PASS: "✅", WARN: "⚠️", FAIL: "❌", SKIP: "⏭️" };
@@ -223,6 +316,9 @@ export function renderReport(results, meta) {
     `> Сгенерирован \`node scripts/qa/smoke.mjs\` (P4 · #39). База: ${meta.base} · refresh: ${meta.refresh ? "да" : "нет (сохранённые профили)"} · запросов: ${results.length} · начало: ${meta.startedAt}.`,
     "",
     `**Итог:** ✅ ${count("PASS")} · ⚠️ ${count("WARN")} · ❌ ${count("FAIL")} · ⏭️ ${count("SKIP")}`,
+    "",
+    ...renderSummary(results),
+    "## Запросы",
     "",
     "| Группа | Запрос | Итог | resolved | первые фото | done | Фото ✓ / ◐ / ? | Источники | Деградация | Кеш | Статус |",
     "|---|---|---|---|---|---|---|---|---|---|---|",

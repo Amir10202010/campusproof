@@ -11,6 +11,7 @@ import {
   splitSseBuffer,
   streamUrl,
   summarize,
+  summarizeRun,
 } from "@/scripts/qa/smoke.mjs";
 
 const ids = categoryIds();
@@ -109,6 +110,41 @@ describe("evaluate and report", () => {
     expect(report).toContain(`| Тест | replay | профиль: ${sampleProfile.entity.name} (${sampleProfile.entity.qid}) |`);
     expect(streamUrl("https://x.app", { q: "KBTU", simulate: "vision_down" }, false)).toBe(
       "https://x.app/api/profile/stream?q=KBTU&simulate=vision_down",
+    );
+  });
+
+  it("summarizes the run for README: fresh timings, tiers of regular profiles, outcomes", () => {
+    const profile = evaluate({ query: { q: "replay" }, expect: ["profile"] }, { events: replay }, ids);
+    const notFound = evaluate(
+      { query: { q: "asdfgh" }, expect: ["not_found"] },
+      { events: [{ type: "not_found", payload: { suggestions: [] }, t: 5 }] },
+      ids,
+    );
+    const results = [
+      { group: "Тест", query: { q: "replay" }, ...profile },
+      { group: "Тест", query: { q: "replay", simulate: "vision_down" }, ...profile },
+      { group: "Тест", query: { q: "asdfgh" }, ...notFound },
+    ];
+    const summary = summarizeRun(results);
+    const { verified, likely, unconfirmed } = profile.summary.tiers;
+    expect(summary.outcomes).toEqual({ profile: 2, simulated: 1, ambiguous: 0, notFound: 1, error: 0 });
+    expect(summary.regular).toBe(1);
+    expect(summary.photos).toBe(verified + likely + unconfirmed);
+    expect(summary.doneMs).toEqual({
+      n: 2,
+      median: profile.summary.doneMs,
+      min: profile.summary.doneMs,
+      max: profile.summary.doneMs,
+    });
+    const report = renderReport(results, {
+      date: "2026-09-18",
+      base: "http://localhost:3000",
+      refresh: false,
+      startedAt: "2026-09-18 10:00 UTC",
+    });
+    expect(report).toContain("## Сводка");
+    expect(report).toContain(
+      "| Исходы | профиль — 2 (из них симуляций сбоя — 1), выбор — 0, не найден — 1, ошибка — 0 |",
     );
   });
 });
