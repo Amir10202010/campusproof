@@ -70,10 +70,12 @@ const SOURCE_STATUS: Record<SourceStatus["status"], { label: string; icon: Lucid
 
 /**
  * Adapters write their own reason in Russian ("нет ключа SERPER_API_KEY", "Опенверс ответил HTTP 429").
- * Anything else is a developer message that has no place in the interface.
+ * Anything else is a developer message that has no place in the interface. A simulated outage is
+ * skipped too: SOURCE_STATUS_HINT_RU already says it better than the adapter's "Симуляция …".
  */
 function readableNote(source: SourceStatus): string | null {
-  return source.note && /[а-яё]/i.test(source.note) ? source.note : null;
+  if (source.status === "simulated_down" || !source.note) return null;
+  return /[а-яё]/i.test(source.note) ? source.note : null;
 }
 
 /** A zero is news for these counts ("кандидатов: 0"); for the rest ("не открылись: 0") it is noise. */
