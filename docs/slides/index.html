@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>CampusProof — презентация</title>
+    <!--
+      P4 · #107 · 8 слайдов для сдачи. Текст — docs/pitch.md, цифры — только измеренные (docs/qa-report-*.md).
+      Скриншоты с прода:  node scripts/qa/slides.mjs shots
+      PDF:                node scripts/qa/slides.mjs pdf   → docs/slides/CampusProof.pdf
+      Слайд 16:9 = 13,333 × 7,5 дюйма (1280 × 720 px); самый мелкий текст — 27 px, это 20 pt.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+      :root {
+        --fg: #171717;
+        --muted: #525252;
+        --line: #e5e5e5;
+        --panel: #f5f5f4;
+        --green: oklch(0.508 0.118 165.612);
+        --green-soft: oklch(0.95 0.052 163.051);
+        --amber: oklch(0.962 0.059 95.617);
+        --amber-fg: oklch(0.279 0.077 45.635);
+        --amber-line: oklch(0.879 0.169 91.605);
+        --red-soft: #fef2f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #d4d4d4;
+        color: var(--fg);
+        font-family: "Geist", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .slide {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        margin: 24px auto;
+        padding: 44px 64px 76px;
+        background: #fff;
+        overflow: hidden;
+        font-size: 28px;
+        line-height: 1.32;
+        display: flex;
+        flex-direction: column;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide > * {
+        flex-shrink: 0;
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .slide {
+          margin: 0;
+        }
+      }
+      .footer {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 27px;
+        color: var(--muted);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .brand svg {
+        width: 34px;
+        height: 34px;
+      }
+      .brand b {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .kicker {
+        font-size: 27px;
+        font-weight: 600;
+        color: var(--green);
+        letter-spacing: 0.01em;
+        margin: 0 0 6px;
+      }
+      h1 {
+        font-size: 50px;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        font-weight: 700;
+        margin: 0 0 26px;
+        text-wrap: balance;
+      }
+      h1.small {
+        font-size: 44px;
+      }
+      ul.points {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 16px;
+      }
+      ul.points li {
+        position: relative;
+        padding-left: 30px;
+      }
+      ul.points li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.5em;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 27px;
+        line-height: 1.3;
+      }
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.08);
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+      }
+      .caption {
+        font-size: 27px;
+        line-height: 1.25;
+        margin-top: 10px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 16px;
+        border-radius: 999px;
+        font-size: 27px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .chip.verified {
+        background: var(--green);
+        color: #fff;
+      }
+      .chip.likely {
+        background: var(--amber);
+        color: var(--amber-fg);
+        border: 1px solid var(--amber-line);
+      }
+      .chip.unconfirmed {
+        border: 2px dashed #a3a3a3;
+        color: #404040;
+      }
+      .mono {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      /* 1 · problem */
+      .problem {
+        display: grid;
+        grid-template-columns: 1fr 430px;
+        gap: 56px;
+        align-items: start;
+      }
+      .questions {
+        display: grid;
+        gap: 18px;
+        margin-top: 8px;
+      }
+      .question {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px 22px;
+        background: var(--panel);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .question span {
+        flex: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px dashed #a3a3a3;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .answer {
+        font-size: 27px;
+        color: var(--green);
+        font-weight: 600;
+        padding-left: 4px;
+      }
+
+      /* 2 · solution */
+      .solution {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: start;
+      }
+      .tiers {
+        display: grid;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .tiers div {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 27px;
+      }
+      .crop-left {
+        height: 392px;
+        overflow: hidden;
+      }
+      .crop-left img {
+        width: 200%;
+        max-width: none;
+      }
+
+      /* 3 · screens */
+      .screens {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px 36px;
+      }
+      .screens .col {
+        display: grid;
+        gap: 18px;
+        align-content: start;
+      }
+      .crop-home {
+        height: 180px;
+        overflow: hidden;
+      }
+      .crop-home img {
+        width: 140%;
+        max-width: none;
+        margin: -11.6% 0 0 -20%;
+      }
+
+      /* 4 · verification */
+      .verify {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 40px;
+        min-height: 0;
+        flex: 1;
+      }
+      .signals {
+        display: grid;
+        grid-template-columns: 84px 1fr;
+        gap: 2px 14px;
+        font-size: 27px;
+        margin: 0 0 16px;
+      }
+      .signals .pts {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-weight: 500;
+        text-align: right;
+        color: var(--green);
+      }
+      .signals .pts.minus {
+        color: #b91c1c;
+      }
+      .ladder {
+        display: grid;
+        gap: 10px;
+        font-size: 27px;
+        margin-bottom: 14px;
+      }
+      .ladder div {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .tall-shot {
+        height: 584px;
+        margin-top: -10px;
+      }
+
+      /* 5 · architecture */
+      .pipeline {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+        margin: 4px 0 26px;
+      }
+      .step {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px 12px 14px;
+        background: var(--panel);
+        font-size: 27px;
+        line-height: 1.2;
+      }
+      .step b {
+        display: block;
+        font-weight: 600;
+      }
+      .step .muted {
+        display: block;
+        margin-top: 4px;
+      }
+      .step:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: -15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--green);
+        font-weight: 700;
+        font-size: 24px;
+        background: #fff;
+        line-height: 1;
+        z-index: 1;
+      }
+      .arch-bottom {
+        display: grid;
+        grid-template-columns: 1fr 600px;
+        gap: 36px;
+        align-items: start;
+      }
+
+      /* 6 · results */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        margin: 2px 0 22px;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px 22px 18px;
+        background: var(--panel);
+      }
+      .stat .num {
+        font-size: 64px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        color: var(--green);
+      }
+      .stat .label {
+        font-size: 27px;
+        line-height: 1.25;
+        margin-top: 6px;
+      }
+      .bar {
+        display: flex;
+        height: 58px;
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 27px;
+        font-weight: 600;
+        margin: 8px 0 6px;
+      }
+      .bar div {
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        white-space: nowrap;
+      }
+      .bar .v {
+        background: var(--green);
+        color: #fff;
+      }
+      .bar .l {
+        background: var(--amber);
+        color: var(--amber-fg);
+      }
+      .bar .u {
+        background: #e5e5e5;
+        color: #404040;
+        justify-content: flex-end;
+      }
+      .footnote {
+        font-size: 27px;
+        line-height: 1.28;
+        color: var(--muted);
+        margin-top: auto;
+      }
+
+      /* 7 · team */
+      .team {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+      .member {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px 22px 18px;
+      }
+      .member .role {
+        font-size: 27px;
+        font-weight: 600;
+        color: var(--green);
+      }
+      .member .name {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 2px 0 4px;
+      }
+      .todo {
+        background: #fef9c3;
+        outline: 2px dashed #ca8a04;
+        border-radius: 6px;
+        padding: 0 8px;
+      }
+
+      /* 8 · next */
+      .links {
+        margin-top: 22px;
+        border-radius: 18px;
+        padding: 16px 24px;
+        background: var(--fg);
+        color: #fff;
+        font-size: 27px;
+        line-height: 1.3;
+        display: grid;
+        grid-template-columns: 0.8fr 1.35fr 0.55fr;
+        gap: 24px;
+      }
+      .links .label {
+        color: #a3a3a3;
+      }
+      .goal {
+        margin-top: 26px;
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        text-wrap: balance;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="logo">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#171717" />
+        <path
+          d="M8 13V9a1 1 0 0 1 1-1h4M19 8h4a1 1 0 0 1 1 1v4M24 19v4a1 1 0 0 1-1 1h-4M13 24H9a1 1 0 0 1-1-1v-4"
+          fill="none"
+          stroke="#fafafa"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <path
+          d="m11.5 16.2 3 3 6-6.4"
+          fill="none"
+          stroke="#34d399"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </template>
+
+    <!-- 1 · Проблема -->
+    <section class="slide">
+      <p class="kicker">Проблема</p>
+      <div class="problem">
+        <div>
+          <h1>Абитуриент не может съездить в каждый вуз — и не знает, каким фото верить</h1>
+          <ul class="points">
+            <li>Официальный сайт — отретушированный маркетинг</li>
+            <li>Настоящие фото разбросаны по десяткам источников: дубли, старые снимки, чужие вузы, стоки и рендеры</li>
+            <li>Поиск картинок не говорит, откуда фото и можно ли ему доверять</li>
+          </ul>
+        </div>
+        <div class="questions">
+          <div class="question"><span>?</span>Откуда это фото?</div>
+          <div class="question"><span>?</span>Когда оно снято?</div>
+          <div class="question"><span>?</span>Это точно этот вуз?</div>
+          <p class="answer">CampusProof отвечает на все три — для каждого снимка</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>1 / 8</span>
+      </div>
+    </section>
+
+    <!-- 2 · Решение -->
+    <section class="slide">
+      <p class="kicker">Решение</p>
+      <h1>CampusProof — доказательства, а не картинки</h1>
+      <div class="solution">
+        <div>
+          <ul class="points">
+            <li>Название вуза → профиль: кампус, общежития, аудитории, библиотеки, город</li>
+            <li>У каждого фото — источник, дата и уровень доверия</li>
+            <li>Честное «не нашли» лучше чужого фото</li>
+          </ul>
+          <div class="tiers">
+            <div><span class="chip verified">✓ Проверено</span> сильное доказательство</div>
+            <div><span class="chip likely">◐ Вероятно</span> доказательств меньше</div>
+            <div><span class="chip unconfirmed">? Не подтверждено</span> скрыто</div>
+          </div>
+        </div>
+        <div>
+          <div class="shot crop-left">
+            <img src="img/photos.jpg" alt="Раздел «Кампус» КБТУ: фото с уровнями, источником и датой" />
+          </div>
+          <p class="caption muted">КБТУ на проде, 18.09: уровень, источник и дата у каждого фото</p>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>2 / 8</span>
+      </div>
+    </section>
+
+    <!-- 3 · Экраны -->
+    <section class="slide">
+      <p class="kicker">Экраны продукта</p>
+      <h1 class="small">От названия до профиля — у пользователя на глазах</h1>
+      <div class="screens">
+        <div class="col">
+          <div>
+            <div class="shot crop-home"><img src="img/home.png" alt="Главная страница" /></div>
+            <p class="caption">Одно поле поиска</p>
+          </div>
+          <div>
+            <div class="shot"><img src="img/gaps.png" alt="Пустые разделы с объяснением" /></div>
+            <p class="caption">Честный пустой раздел</p>
+          </div>
+        </div>
+        <div class="col">
+          <div>
+            <div class="shot"><img src="img/profile-top.png" alt="Шапка профиля: таймер, этапы, источники" /></div>
+            <p class="caption">Живой таймер, этапы и источники</p>
+          </div>
+          <div>
+            <div class="shot"><img src="img/map.jpg" alt="Карта: кампус и точки фото с геометкой" /></div>
+            <p class="caption">Кампус и геометки фото на карте</p>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>3 / 8</span>
+      </div>
+    </section>
+
+    <!-- 4 · Как работает проверка -->
+    <section class="slide">
+      <p class="kicker">Как работает проверка</p>
+      <div class="verify">
+        <div>
+          <h1 class="small">Уровень ставит код, а не нейросеть «на глаз»</h1>
+          <div class="signals">
+            <span class="pts">+45</span><span>на Commons отмечено: на фото этот вуз</span> <span class="pts">+40</span
+            ><span>в категории вуза на Commons</span> <span class="pts">+35</span
+            ><span>геометка до 1,5 км от кампуса</span> <span class="pts">+30</span
+            ><span>Википедия, сайт вуза, название на снимке</span> <span class="pts minus">−40</span
+            ><span>рендер; <b>−25</b> — сцена не похожа на вуз</span>
+          </div>
+          <div class="ladder">
+            <div><span class="chip verified">✓ Проверено</span> ≥ 60 и сильное доказательство</div>
+            <div><span class="chip likely">◐ Вероятно</span> ≥ 35 очков</div>
+          </div>
+          <p class="small muted">
+            Сразу отклоняем: дубликаты, фотобанки, геометку дальше 50 км, портреты, другой вуз на снимке
+          </p>
+        </div>
+        <div class="shot tall-shot"><img src="img/evidence.jpg" alt="Диалог доказательств для фото КБТУ" /></div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>4 / 8</span>
+      </div>
+    </section>
+
+    <!-- 5 · Технологии -->
+    <section class="slide">
+      <p class="kicker">Технологии и архитектура</p>
+      <h1 class="small">Потоковый пайплайн на бесплатных API</h1>
+      <div class="pipeline">
+        <div class="step"><b>Вуз</b><span class="muted">Wikidata</span></div>
+        <div class="step"><b>Сбор</b><span class="muted">4 источника</span></div>
+        <div class="step"><b>Дубли</b><span class="muted">dHash</span></div>
+        <div class="step"><b>Взгляд</b><span class="muted">Gemini</span></div>
+        <div class="step"><b>Очки</b><span class="muted">код, не ИИ</span></div>
+        <div class="step"><b>Профиль</b><span class="muted">поток SSE</span></div>
+      </div>
+      <div class="arch-bottom">
+        <ul class="points small">
+          <li>Next.js 16 на Vercel: этапы и фото приходят потоком</li>
+          <li>Только официальные API и открытые данные</li>
+          <li>Сбой источника — баннер, а не ошибка</li>
+        </ul>
+        <div>
+          <div class="shot"><img src="img/degraded.png" alt="Профиль при отключённом веб-поиске" /></div>
+          <p class="caption muted"><span class="mono">?simulate=web_search_down</span></p>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>5 / 8</span>
+      </div>
+    </section>
+
+    <!-- 6 · Результаты -->
+    <section class="slide">
+      <p class="kicker">Результаты</p>
+      <h1 class="small">Точность важнее количества</h1>
+      <div class="stats">
+        <div class="stat">
+          <div class="num">3,3 с</div>
+          <div class="label">медиана до профиля; максимум 6,0 с при цели 30 с</div>
+        </div>
+        <div class="stat">
+          <div class="num">0</div>
+          <div class="label">нарушений честности на 603 фото</div>
+        </div>
+        <div class="stat">
+          <div class="num">3 из 3</div>
+          <div class="label">симуляций сбоя дают профиль с баннером</div>
+        </div>
+      </div>
+      <p class="small">Уровни фото в 18 профилях, 534 фото:</p>
+      <div class="bar">
+        <div class="v" style="width: 13.1%">✓ 13,1 %</div>
+        <div class="l" style="width: 70.2%">◐ Вероятно — 70,2 %</div>
+        <div class="u" style="width: 16.7%">? 16,7 %</div>
+      </div>
+      <p class="footnote">
+        Smoke-тест прода: 27 запросов, 18.09.2026, 23:18 по Астане, без визуальной проверки. Точность «Проверено» на
+        размеченной выборке не измерена.
+      </p>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>6 / 8</span>
+      </div>
+    </section>
+
+    <!-- 7 · Команда -->
+    <section class="slide">
+      <p class="kicker">Команда</p>
+      <h1 class="small">Четыре роли — один пайплайн</h1>
+      <div class="team">
+        <div class="member">
+          <div class="role">P1 · Пайплайн</div>
+          <div class="name"><span class="todo">[имя]</span></div>
+          <div class="small muted">Резолвер, пайплайн и стриминг, кеш, интеграция</div>
+        </div>
+        <div class="member">
+          <div class="role">P2 · Проверка</div>
+          <div class="name"><span class="todo">[имя]</span></div>
+          <div class="small muted">Поиск изображений, дубликаты, визуальная проверка, скоринг</div>
+        </div>
+        <div class="member">
+          <div class="role">P3 · Данные и оценка</div>
+          <div class="name"><span class="todo">[имя]</span></div>
+          <div class="small muted">Индекс вузов, спайки, разметка, метрики</div>
+        </div>
+        <div class="member">
+          <div class="role">P4 · Интерфейс и продукт</div>
+          <div class="name"><span class="todo">[имя]</span></div>
+          <div class="small muted">Интерфейс, тексты, QA, README, слайды и видео</div>
+        </div>
+      </div>
+      <p class="small">Контракты типов, «ходячий скелет», маленькие PR с автопроверками</p>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>7 / 8</span>
+      </div>
+    </section>
+
+    <!-- 8 · Что дальше -->
+    <section class="slide">
+      <p class="kicker">План развития</p>
+      <h1>Что дальше</h1>
+      <ul class="points">
+        <li>Детектор повторов: тот же кадр на стоке или у другого вуза</li>
+        <li>Размеченная выборка и публичная страница метрик</li>
+        <li>Больше локальных источников для Казахстана и Центральной Азии</li>
+        <li>Жалобы пользователей на фото как сигнал в оценке</li>
+      </ul>
+      <p class="goal">Цель — чтобы любое фото вуза в интернете можно было проверить за 30 секунд</p>
+      <div class="links">
+        <div><span class="label">Продукт</span><br />campusproof.vercel.app</div>
+        <div><span class="label">Код</span><br />github.com/Amir10202010/campusproof</div>
+        <div><span class="label">LOCUS 2026</span><br />Кейс 01</div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>8 / 8</span>
+      </div>
+    </section>
+
+    <script>
+      // One logo definition for every footer.
+      const logo = document.getElementById("logo").content;
+      for (const brand of document.querySelectorAll("[data-logo]")) brand.prepend(logo.cloneNode(true));
+    </script>
+  </body>
+</html>
