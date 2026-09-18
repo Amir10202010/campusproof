@@ -49,7 +49,7 @@ describe("openverse adapter (#33)", () => {
     });
     // The English and Russian names are two separate queries (LIMITS.OPENVERSE_MAX_QUERIES).
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(String(fetchMock.mock.calls[0][0])).toContain("q=Nazarbayev+University");
+    expect(String((fetchMock.mock.calls[0] as unknown as unknown[])[0])).toContain("q=Nazarbayev+University");
   });
 
   it("drops rows that never name the university, are not photos, mature or tiny", () => {
