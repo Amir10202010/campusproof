@@ -1,10 +1,15 @@
-import type { FetchedCandidate, Photo, RejectedItem, ScoreResult } from "@/lib/types";
+import { haversineM } from "@/lib/sources/geo";
+import type { FetchedCandidate, GeoPoint, Photo, RejectedItem, ScoreResult } from "@/lib/types";
 
-/** Turns a scored candidate into what the UI renders: a Photo, or a RejectedItem with a reason. */
+/**
+ * Turns a scored candidate into what the UI renders: a Photo, or a RejectedItem with a reason.
+ * `campus` (entity coordinates) turns a geotag into a distance the evidence dialog can show (#87).
+ */
 export function toPhotoOrRejected(
   candidate: FetchedCandidate,
   result: ScoreResult,
   retrievedAt: string,
+  campus?: GeoPoint,
 ): { photo: Photo } | { rejected: RejectedItem } {
   if (result.reject || result.tier === "rejected") {
     return {
@@ -32,7 +37,7 @@ export function toPhotoOrRejected(
       date: candidate.date,
       retrievedAt,
       license: candidate.license,
-      geo: candidate.geo,
+      geo: withDistance(candidate.geo, campus),
       category: result.category,
       secondary: result.secondary,
       tier: result.tier,
@@ -43,4 +48,11 @@ export function toPhotoOrRejected(
       dHash: candidate.prepared.dHash,
     },
   };
+}
+
+/** Straight-line distance from the campus, rounded to whole meters. */
+function withDistance(geo: FetchedCandidate["geo"], campus?: GeoPoint): Photo["geo"] {
+  if (!geo) return undefined;
+  if (!campus) return geo;
+  return { ...geo, distanceToCampusM: Math.round(haversineM(campus, geo)) };
 }
