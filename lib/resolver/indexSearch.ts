@@ -37,6 +37,19 @@ export function isIndexedUniversity(qid: string): boolean {
   return indexedQids.has(qid);
 }
 
+let indexedNames: Map<string, string> | undefined;
+
+/** Name of an indexed university as its profile shows it (see indexEntity), without a Wikimedia call. */
+export function indexedUniversityName(qid: string): string | undefined {
+  indexedNames ??= new Map(
+    (rawIndex as UniversityIndexEntry[]).map((entry) => [
+      entry.qid,
+      entry.names.ru ?? entry.names.en ?? entry.names.kk ?? entry.qid,
+    ]),
+  );
+  return indexedNames.get(qid);
+}
+
 interface IndexDocument {
   id: string;
   names: string;
