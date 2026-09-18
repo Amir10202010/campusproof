@@ -24,13 +24,34 @@ interface GeminiPart {
 export function createGeminiVisionProvider(): VisionProvider {
   // Remembered for the lifetime of the instance: discovery costs one extra call, not one per batch.
   let working: string | undefined;
-  // Spare keys exist for a revoked or blocked key, never to get around a spent quota.
+  // Which key of GEMINI_API_KEY is current. Team decision: keys rotate on a spent quota too.
   let keyIndex = 0;
+
+  /** One request, with the model swapped out if the current one is overloaded (503) or retired (404). */
+  async function askWithModelFallback(apiKey: string, body: string, signal: AbortSignal): Promise<string> {
+    try {
+      return await askModel(working ?? env.visionModel, body, apiKey, signal);
+    } catch (error) {
+      if (!isModelUnavailable(error)) throw error;
+      for (const candidate of await usableModels(apiKey, signal)) {
+        if (candidate === (working ?? env.visionModel)) continue;
+        try {
+          const answer = await askModel(candidate, body, apiKey, signal);
+          working = candidate;
+          console.error(JSON.stringify({ at: "vision", switchedTo: candidate, after: String(error).slice(0, 160) }));
+          return answer;
+        } catch (next) {
+          if (!isModelUnavailable(next)) throw next;
+        }
+      }
+      throw error;
+    }
+  }
 
   return {
     async observe(items, context, signal) {
-      if (env.geminiApiKeys.length === 0) throw new Error("Визуальная проверка не настроена: нет ключа GEMINI_API_KEY");
-      const apiKey = env.geminiApiKeys[keyIndex] ?? env.geminiApiKeys[0];
+      const keys = env.geminiApiKeys;
+      if (keys.length === 0) throw new Error("Визуальная проверка не настроена: нет ключа GEMINI_API_KEY");
       if (items.length === 0) return [];
 
       const parts: GeminiPart[] = [{ text: contextBlock(context) }];
@@ -47,33 +68,37 @@ export function createGeminiVisionProvider(): VisionProvider {
         generationConfig: { temperature: 0, responseMimeType: "application/json" },
       });
 
-      const text = await askModel(working ?? env.visionModel, body, apiKey, signal).catch(async (error: unknown) => {
-        // A dead key (revoked, blocked, wrong project) costs one attempt on the next spare key.
-        if (isKeyRejected(error) && keyIndex + 1 < env.geminiApiKeys.length) {
-          keyIndex += 1;
-          console.error(JSON.stringify({ at: "vision", switchedKey: keyIndex, after: String(error).slice(0, 160) }));
-          return askModel(working ?? env.visionModel, body, env.geminiApiKeys[keyIndex], signal);
+      let lastError: unknown;
+      // Each key gets one attempt; a refused key (400/401/403) and a spent quota (429) both move on
+      // to the next one. When every key is out, the caller degrades the profile honestly.
+      for (let attempt = 0; attempt < keys.length; attempt++) {
+        const index = (keyIndex + attempt) % keys.length;
+        try {
+          const text = await askWithModelFallback(keys[index], body, signal);
+          keyIndex = index;
+          return parseVisionObservations(text);
+        } catch (error) {
+          lastError = error;
+          if (!isKeyRejected(error) && !isQuotaSpent(error)) throw error;
+          console.error(
+            JSON.stringify({
+              at: "vision",
+              keyOut: index + 1,
+              of: keys.length,
+              reason: isQuotaSpent(error) ? "quota" : "rejected",
+            }),
+          );
         }
-        // The model can be overloaded (503) or retired for new keys (404). Rather than guessing a
-        // replacement, ask the API which models this key may actually use and remember the answer.
-        if (!isModelUnavailable(error)) throw error;
-        for (const candidate of await usableModels(apiKey, signal)) {
-          if (candidate === (working ?? env.visionModel)) continue;
-          try {
-            const answer = await askModel(candidate, body, apiKey, signal);
-            working = candidate;
-            console.error(JSON.stringify({ at: "vision", switchedTo: candidate, after: String(error).slice(0, 160) }));
-            return answer;
-          } catch (next) {
-            if (!isModelUnavailable(next)) throw next;
-          }
-        }
-        throw error;
-      });
-
-      return parseVisionObservations(text);
+      }
+      throw lastError;
     },
   };
+}
+
+/** The free quota of this key is spent for now. */
+export function isQuotaSpent(error: unknown): boolean {
+  const text = error instanceof Error ? error.message : String(error);
+  return /Gemini 429\b|RESOURCE_EXHAUSTED|quota/i.test(text);
 }
 
 /** The key itself is refused: invalid, revoked or without access to this API. */

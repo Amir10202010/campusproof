@@ -22,7 +22,7 @@ function cacheKey(context: VisionContext, item: VisionItem): string {
   return `vision:${env.visionModel}:${context.entity.qid}:${item.id}`;
 }
 
-/** Quota is gone (HTTP 429) — every further batch would fail too, so we stop asking. */
+/** Every key is out of quota (the provider rotates them) — further batches would fail too. */
 function isQuotaError(error: unknown): boolean {
   const text = error instanceof Error ? error.message : String(error);
   return /\b429\b|quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(text);
