@@ -30,6 +30,14 @@ export function visionFailureReason(error: unknown): string {
   return "Ошибка визуальной проверки";
 }
 
+/**
+ * #118 · the run ended before every image was looked at (usually the free quota, sometimes the
+ * deadline). The profile stays honest: unchecked photos are scored as in degraded mode.
+ */
+export function visionPartialReason(checked: number, total: number): string {
+  return `Проверено ${checked} фото из ${total}: проверка прервалась (обычно исчерпана бесплатная квота)`;
+}
+
 /** Short Russian reason for a source chip: adapters already explain in Russian, HTTP codes are translated. */
 export function sourceFailureReason(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);

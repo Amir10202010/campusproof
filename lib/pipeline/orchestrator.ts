@@ -23,7 +23,7 @@ import { toPhotoOrRejected } from "./assemble";
 import { createRunContext } from "./context";
 import { computeCoverage } from "./coverage";
 import { elapsedMs, remainingMs, TimeoutError, withTimeout } from "./deadline";
-import { sourceFailureReason, visionFailureReason, visionSkippedReason } from "./reasons";
+import { sourceFailureReason, visionFailureReason, visionPartialReason, visionSkippedReason } from "./reasons";
 import type { PipelineDeps } from "./deps";
 import type { Emit } from "./events";
 
@@ -57,7 +57,10 @@ export async function runProfilePipeline(
 
   // ── 1 · Resolve ──────────────────────────────────────────────────────────────
   const resolveStarted = deps.now();
-  const cacheable = !input.refresh && ctx.simulate.length === 0;
+  // docs/architecture.md §4: refresh=1 *bypasses* the cache, only simulate= is "never cached".
+  // Reading and writing were one flag, so a refresh could never repair a bad entry (#118).
+  const canReadCache = !input.refresh && ctx.simulate.length === 0;
+  const canWriteCache = ctx.simulate.length === 0;
   let entity: UniversityEntity;
   let facts: ProfileFact[] = [];
   try {
@@ -87,7 +90,7 @@ export async function runProfilePipeline(
       }
       return cached;
     };
-    if (cacheable) {
+    if (canReadCache) {
       const cached = await serveCached();
       if (cached) return cached;
     }
@@ -95,7 +98,7 @@ export async function runProfilePipeline(
     // Fresh runs spend free quotas: rate limit + daily budget. Over the limit → the saved profile or an honest message.
     const gate = deps.beforeFreshRun ? await optional(ctx, "beforeFreshRun", deps.beforeFreshRun) : null;
     if (gate && !gate.allowed) {
-      const cached = cacheable ? null : await serveCached();
+      const cached = canReadCache ? null : await serveCached();
       if (cached) return cached;
       emit({
         type: "error",
@@ -343,7 +346,16 @@ export async function runProfilePipeline(
             },
           ),
         );
-        visionStatus("ok", observations.size);
+        // #118 · observeAll returns what it managed to get: when the quota dies between batches the
+        // rest of `kept` comes back unchecked. Only the caller knows how many were sent, so partial
+        // coverage is detected here — the chip turns amber, the banner shows, nothing is cached.
+        const unchecked = kept.length - observations.size;
+        if (unchecked > 0) {
+          degraded.add("vision_unavailable");
+          visionStatus("partial", observations.size, visionPartialReason(observations.size, kept.length));
+        } else {
+          visionStatus("ok", observations.size);
+        }
       } catch (error) {
         degraded.add("vision_unavailable");
         if (!isNotImplemented(error)) log(ctx, "observeAll", error);
@@ -385,7 +397,7 @@ export async function runProfilePipeline(
   profile.timings.totalMs = elapsedMs(ctx, deps.now());
 
   // Only complete, healthy profiles are cached: a degraded result must not live for 14 days.
-  if (cacheable && degraded.size === 0 && scoringImplemented) {
+  if (canWriteCache && degraded.size === 0 && scoringImplemented) {
     await optional(ctx, "saveProfile", () => deps.saveProfile(profile));
   }
 
