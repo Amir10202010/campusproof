@@ -11,7 +11,7 @@
  * Exit code 1 when any FAIL. FAIL = an honesty rule is broken or the site did not answer; WARN = suspicious data.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -304,7 +304,12 @@ async function main() {
         .flatMap((group) =>
           group.queries.map((raw) => {
             const query = typeof raw === "string" ? { q: raw } : raw;
-            return { group: group.title, query, expect: group.expect, url: streamUrl(args.base, query, args.refresh) };
+            return {
+              group: group.title,
+              query,
+              expect: query.expect ?? group.expect,
+              url: streamUrl(args.base, query, args.refresh),
+            };
           }),
         );
   if (plan.length === 0) throw new Error(`Нет запросов${args.only ? ` в группе «${args.only}»` : ""}`);
@@ -331,7 +336,7 @@ async function main() {
   const out = args.out ?? (args.replay ? "-" : join("docs", `qa-report-${date}.md`));
   if (out === "-") process.stdout.write(report);
   else {
-    writeFileSync(join(ROOT, out), report);
+    writeFileSync(resolve(ROOT, out), report);
     console.error(`Отчёт: ${out}`);
   }
   process.exitCode = results.some((r) => r.status === "FAIL") ? 1 : 0;
