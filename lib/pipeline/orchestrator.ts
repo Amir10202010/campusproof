@@ -253,6 +253,8 @@ export async function runProfilePipeline(
   const retrievedAt = new Date(deps.now()).toISOString();
   const scoringContext: ScoringContext = { entity, visionAvailable: !visionDown };
   const scored = new Set<string>();
+  /** Ids already shown as photos: a near-duplicate is only dropped in favour of a photo the user can see. */
+  const shown = new Set<string>();
   let scoringImplemented = true;
 
   const scoreAndEmit = (items: FetchedCandidate[], observations: Map<string, VisionObservation> | null) => {
@@ -260,9 +262,25 @@ export async function runProfilePipeline(
     const batch: Photo[] = [];
     for (const item of items) {
       if (scored.has(item.id)) continue;
+      const observation = observations?.get(item.id) ?? null;
+
+      // L3 dedup (docs/architecture.md §5.4): the model saw the same scene in an earlier image of the batch.
+      const twin = observation?.near_duplicate_of;
+      if (twin && twin !== item.id && shown.has(twin)) {
+        scored.add(item.id);
+        rejected.push({
+          thumbUrl: item.thumbUrl ?? item.imageUrl,
+          sourcePageUrl: item.sourcePageUrl,
+          reason: "duplicate",
+          detail: "Тот же вид, что и на уже показанном фото",
+          duplicateOf: twin,
+        });
+        continue;
+      }
+
       let result: ScoreResult;
       try {
-        result = deps.scoreCandidate(item, observations?.get(item.id) ?? null, scoringContext);
+        result = deps.scoreCandidate(item, observation, scoringContext);
       } catch (error) {
         if (isNotImplemented(error)) {
           scoringImplemented = false; // no tiers → no photos: never show unscored images
@@ -273,8 +291,10 @@ export async function runProfilePipeline(
       }
       scored.add(item.id);
       const out = toPhotoOrRejected(item, result, retrievedAt, entity.coords);
-      if ("photo" in out) batch.push(out.photo);
-      else rejected.push(out.rejected);
+      if ("photo" in out) {
+        batch.push(out.photo);
+        shown.add(out.photo.id);
+      } else rejected.push(out.rejected);
     }
     if (batch.length > 0) {
       firstPhotoMs ??= elapsedMs(ctx, deps.now());
