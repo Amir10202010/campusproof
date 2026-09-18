@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { LIMITS } from "@/lib/config/limits";
 import type { RunContext, VisionObservation } from "@/lib/types";
-import { contextBlock } from "@/lib/vision/gemini";
+import { contextBlock, isModelUnavailable } from "@/lib/vision/gemini";
 import { observeAll } from "@/lib/vision/observeAll";
 import type { VisionContext, VisionItem, VisionProvider } from "@/lib/vision/provider";
 import { parseVisionObservations } from "@/lib/vision/schema";
@@ -185,5 +185,20 @@ describe("contextBlock", () => {
     expect(block).toContain("Астана, Казахстан");
     expect(block).toContain("nu.edu.kz");
     expect(block).toContain("Library of Nazarbayev University");
+  });
+});
+
+describe("isModelUnavailable", () => {
+  it("switches to the fallback model only on availability problems", () => {
+    for (const message of [
+      "Gemini 503: high demand",
+      "Gemini 404: this model is no longer available to new users",
+      "Gemini 500: internal",
+    ]) {
+      expect(isModelUnavailable(new Error(message)), message).toBe(true);
+    }
+    for (const message of ["Gemini 429: RESOURCE_EXHAUSTED", "Gemini 400: API key not valid", "boom"]) {
+      expect(isModelUnavailable(new Error(message)), message).toBe(false);
+    }
   });
 });

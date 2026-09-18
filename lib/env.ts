@@ -9,6 +9,8 @@ export const env = {
   visionModel: process.env.VISION_MODEL ?? "gemini-3.6-flash",
   /** Text model for the campus description (#20). A different model keeps a separate free quota. */
   descriptionModel: process.env.DESCRIPTION_MODEL ?? "gemini-3.6-flash",
+  /** Used only when the main vision model is unavailable (503) or gone (404) — not to stretch a quota. */
+  visionModelFallback: process.env.VISION_MODEL_FALLBACK ?? "gemini-3.5-flash-lite",
 
   /** Serper: 2,500 free queries, no card. Optional — without a key the web search source is skipped. */
   serperApiKey: process.env.SERPER_API_KEY,
