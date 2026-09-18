@@ -29,3 +29,14 @@ export function visionFailureReason(error: unknown): string {
   if (/location|not supported|region/i.test(message)) return "Gemini недоступен из региона этого сервера";
   return "Ошибка визуальной проверки";
 }
+
+/** Short Russian reason for a source chip: adapters already explain in Russian, HTTP codes are translated. */
+export function sourceFailureReason(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/[а-яё]/i.test(message)) return message.slice(0, 140);
+  const status = message.match(/\b([45]\d\d)\b/)?.[1];
+  if (status === "429") return "Источник ограничил частоту запросов";
+  if (status === "401" || status === "403") return "Источник не принял ключ доступа";
+  if (status) return `Источник ответил ошибкой HTTP ${status}`;
+  return "Источник недоступен";
+}

@@ -7,8 +7,12 @@ import type { SearchQuery, WebImageSearchProvider } from "./types";
 
 /**
  * P2 · issue #16 · POST https://google.serper.dev/images  (header X-API-KEY = env.serperApiKey)
- * body { q, gl, hl, num } → images[] → Candidate (imageUrl, thumbnailUrl, link → sourcePageUrl, domain, title).
+ * body { q, gl, hl } → images[] → Candidate (imageUrl, thumbnailUrl, link → sourcePageUrl, domain, title).
  * The free plan has 2,500 credits in total, so every response is cached for LIMITS.SEARCH_CACHE_TTL_S.
+ *
+ * Locale handling (#83): Serper answered HTTP 400 to every localized request while the same query without
+ * `gl`/`hl` worked. So a 400 is retried once with the bare query and this instance keeps using that shape —
+ * one wasted credit per instance instead of a dead source.
  */
 const ENDPOINT = "https://google.serper.dev/images";
 
@@ -67,6 +71,25 @@ export function toCandidates(body: unknown, query: SearchQuery): Candidate[] {
   return candidates;
 }
 
+/** Set once per instance when Serper rejects localized requests (see the note above). */
+let localeRejected = false;
+
+/** Test hook: forget what this instance learned about the accepted request shape. */
+export function resetSerperRequestShape() {
+  localeRejected = false;
+}
+
+async function askSerper(query: SearchQuery, apiKey: string, signal: AbortSignal, localized: boolean) {
+  const body = localized ? { q: query.q, gl: query.countryCode, hl: query.lang } : { q: query.q };
+  const response = await fetch(ENDPOINT, {
+    method: "POST",
+    signal,
+    headers: { "X-API-KEY": apiKey, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return response;
+}
+
 export const serperProvider: WebImageSearchProvider = {
   id: "serper",
   async search(query, signal) {
@@ -79,17 +102,17 @@ export const serperProvider: WebImageSearchProvider = {
     const cached = await kvGet<Candidate[]>(cacheKey);
     if (cached) return cached;
 
-    const response = await fetch(ENDPOINT, {
-      method: "POST",
-      signal,
-      headers: { "X-API-KEY": env.serperApiKey, "content-type": "application/json" },
-      // Minimal body: every extra field is one more thing a 400 can complain about.
-      body: JSON.stringify({ q: query.q, gl: query.countryCode, hl: query.lang }),
-    });
+    // Serper rejected every localized request with 400 while the same query without gl/hl worked (#83),
+    // so a 400 is retried once with the bare query and this instance keeps the shape that works.
+    let response = await askSerper(query, env.serperApiKey, signal, !localeRejected);
+    if (response.status === 400 && !localeRejected) {
+      localeRejected = true;
+      response = await askSerper(query, env.serperApiKey, signal, false);
+    }
     if (!response.ok) {
       // Serper's own message is the only way to tell a bad key (403) from a bad parameter (400).
-      const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 200);
-      throw new Error(`Serper ${response.status} для "${query.q}": ${detail}`);
+      const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200).trim();
+      throw new Error(`Serper ответил HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
     }
 
     const candidates = toCandidates(await response.json(), query);

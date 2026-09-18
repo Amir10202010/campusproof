@@ -23,7 +23,7 @@ import { toPhotoOrRejected } from "./assemble";
 import { createRunContext } from "./context";
 import { computeCoverage } from "./coverage";
 import { elapsedMs, remainingMs, TimeoutError, withTimeout } from "./deadline";
-import { visionFailureReason, visionSkippedReason } from "./reasons";
+import { sourceFailureReason, visionFailureReason, visionSkippedReason } from "./reasons";
 import type { PipelineDeps } from "./deps";
 import type { Emit } from "./events";
 
@@ -419,10 +419,10 @@ function sourceRunner(
       return value;
     } catch (error) {
       if (isNotImplemented(error)) finish("skipped", 0, error.message);
-      else if (error instanceof TimeoutError) finish("timeout", 0);
+      else if (error instanceof TimeoutError) finish("timeout", 0, "Источник не ответил к дедлайну этапа");
       else {
         log(ctx, name, error);
-        finish("error", 0);
+        finish("error", 0, sourceFailureReason(error));
       }
       return null;
     }
