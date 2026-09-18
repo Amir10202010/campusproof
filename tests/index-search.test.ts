@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { indexEntity, searchIndex } from "@/lib/resolver/indexSearch";
-import { resolveQuery } from "@/lib/resolver/resolve";
+import { resolveFromIndex, resolveQuery } from "@/lib/resolver/resolve";
 import type { UniversityIndexEntry } from "@/lib/types";
 
 /** Runs on the real committed index (data/universities.min.json, P3 #24). Network is forbidden here. */
@@ -34,6 +34,16 @@ describe("resolver v1: local index first", () => {
     const result = await resolveQuery(query, signal());
     expect(result).toMatchObject({ status: "resolved", entity: { qid } });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["КазНМУ", "Q1513804"],
+    ["KazNMU", "Q1513804"],
+    ["КазНК", "Q1513804"],
+    ["КазНУИ", "Q427677"],
+  ])("%s is not resolved to %s by an initial or a shorter acronym in its name", (query, wrongQid) => {
+    const result = resolveFromIndex(query);
+    expect(result?.status === "resolved" ? result.entity.qid : null).not.toBe(wrongQid);
   });
 
   it("returns a pick-list when several indexed universities share an abbreviation", async () => {

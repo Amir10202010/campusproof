@@ -102,6 +102,17 @@ describe("resolver ranking rules", () => {
     expect(matchQuality(variants, [{ text: "Something else", isLabel: true }])).toBe(0.4);
   });
 
+  it("does not let an initial or a shorter acronym cover a longer query word", () => {
+    const satbayev = { text: "Казахский национальный технический университет им. К. И. Сатпаева", isLabel: false };
+    // "КазНМУ" (the medical university) starts with the initial "К." of Satbayev's name — not a match.
+    expect(matchQuality(["казнму", "kaznmu"], [satbayev])).toBe(0.4);
+    // "КазНУИ" (the university of arts) extends the acronym "КазНУ" — a different university.
+    expect(matchQuality(["казнуи", "kaznui"], [{ text: "КазНУ", isLabel: false }])).toBe(0.4);
+    // Inflected names still match: the query word extends a real word of the name.
+    expect(matchQuality(["нархоза", "narkhoza"], [{ text: "Университет Нархоз", isLabel: true }])).toBe(0.6);
+    expect(matchQuality(["назарбаева", "nazarbaeva"], [{ text: "Назарбаев Университет", isLabel: true }])).toBe(0.6);
+  });
+
   it("resolves only a clear leader", () => {
     expect(decide([])).toBe("not_found");
     expect(decide([{ match: 0.95, score: 0.8 }])).toBe("resolved");

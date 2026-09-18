@@ -241,8 +241,15 @@ function wordsCovered(query: string, name: string): boolean {
   return query.split(" ").every((word) => word.length >= 2 && nameWords.some((nameWord) => sameWord(word, nameWord)));
 }
 
+/**
+ * Shortest name word a longer query word may extend («Нархоза» → «нархоз»). Initials («им. К. И. Сатпаева») and
+ * acronyms («КазНУ») are shorter: "КазНМУ" starts with "к" and "КазНУИ" with "казну", yet they name other universities.
+ */
+const MIN_EXTENDED_WORD = 6;
+
 function sameWord(word: string, nameWord: string): boolean {
-  if (nameWord.startsWith(word) || word.startsWith(nameWord)) return true;
+  if (nameWord.startsWith(word)) return true;
+  if (nameWord.length >= MIN_EXTENDED_WORD && word.startsWith(nameWord)) return true;
   if (word.length < STEM_PREFIX || nameWord.length < STEM_PREFIX) return false;
   let common = 0;
   while (common < word.length && common < nameWord.length && word[common] === nameWord[common]) common += 1;
