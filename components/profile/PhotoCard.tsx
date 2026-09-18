@@ -28,7 +28,7 @@ export interface PhotoCardProps {
 export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
   const content = (
     <>
-      <span className="relative block aspect-4/3 overflow-hidden bg-muted">
+      <span className="relative block aspect-4/3 shrink-0 overflow-hidden bg-muted">
         <ExternalImage
           src={photo.thumbUrl}
           alt={photoAlt(photo)}
@@ -49,8 +49,10 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
     </>
   );
 
+  // A flex column, not a block: a <button> centers its content vertically, so in a grid row of cards with
+  // different caption lengths the shorter cards' images slid down out of line.
   const cardClass =
-    "group block h-full w-full overflow-hidden rounded-xl border bg-card text-left text-card-foreground";
+    "group flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card text-left text-card-foreground";
   if (!onOpen) return <div className={cardClass}>{content}</div>;
 
   return (
