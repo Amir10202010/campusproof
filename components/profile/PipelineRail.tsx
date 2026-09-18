@@ -56,6 +56,7 @@ const SOURCE_NAME_RU: Record<string, string> = {
   commons: "Wikimedia Commons",
   web_search: "Веб-поиск",
   openverse: "Openverse",
+  vision: "Визуальная проверка",
 };
 
 const SOURCE_STATUS: Record<SourceStatus["status"], { label: string; icon: LucideIcon; className: string }> = {
