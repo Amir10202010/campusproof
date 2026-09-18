@@ -5,10 +5,10 @@
 export const env = {
   /** Google Gemini API, free tier (Google AI Studio key; the account holder must be 18+). */
   geminiApiKey: process.env.GEMINI_API_KEY,
-  /** Vision model id — decided by spike S4 (issue #22). Must be a model with a free tier. */
-  visionModel: process.env.VISION_MODEL ?? "gemini-2.5-flash-lite",
+  /** Vision model id (spike S4, #22). The 2.5 family is closed to new API keys (404), so the 3.x models are the floor. */
+  visionModel: process.env.VISION_MODEL ?? "gemini-3.6-flash",
   /** Text model for the campus description (#20). A different model keeps a separate free quota. */
-  descriptionModel: process.env.DESCRIPTION_MODEL ?? "gemini-2.5-flash",
+  descriptionModel: process.env.DESCRIPTION_MODEL ?? "gemini-3.6-flash",
 
   /** Serper: 2,500 free queries, no card. Optional — without a key the web search source is skipped. */
   serperApiKey: process.env.SERPER_API_KEY,
