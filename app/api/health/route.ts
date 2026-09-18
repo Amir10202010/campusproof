@@ -65,26 +65,56 @@ async function runProbes(withSearch: boolean): Promise<Record<string, Probe>> {
   return { wikidata, redis, gemini, serper };
 }
 
-/** One "ping" generation on the vision model: proves the key works from this region, costs a few tokens. */
+/**
+ * One "ping" generation per configured key (a few tokens each). GEMINI_API_KEY may hold several keys
+ * and both the visual check and the description rotate over them, so probing only the first one
+ * reported "down" while the service was in fact working on a spare — and hid a dead spare when the
+ * first key answered. The probe is up when any key answers, and says how many did.
+ */
 async function geminiProbe(): Promise<Probe> {
-  const apiKey = env.geminiApiKey;
-  if (!apiKey) return { status: "not_configured" };
+  const keys = env.geminiApiKeys;
+  if (keys.length === 0) return { status: "not_configured" };
+  const started = Date.now();
+  const results = await Promise.all(keys.map(pingGeminiKey));
+  const working = results.filter((result) => result.ok);
+  const ms = Date.now() - started;
+  const counted = keys.length > 1 ? `рабочих ключей: ${working.length} из ${keys.length}` : undefined;
+
+  if (working.length > 0) {
+    return { status: "up", ms, key: working[0].key, ...(counted ? { reason: counted } : {}) };
+  }
+  // Every key failed: report the first one's answer, which is what the pipeline would hit first.
+  return {
+    status: "down",
+    ms,
+    reason: counted ? `${results[0].reason} (${counted})` : results[0].reason,
+    key: results[0].key,
+  };
+}
+
+interface KeyProbe {
+  ok: boolean;
+  reason: string;
+  /** Format checks of this key: never the key itself. */
+  key: NonNullable<Probe["key"]>;
+}
+
+async function pingGeminiKey(apiKey: string): Promise<KeyProbe> {
   const key = {
     length: apiKey.length,
     // Google AI Studio keys look like AIza… — an OAuth token or a service-account JSON is rejected with 401.
     looksLikeApiKey: /^AIza[\w-]{30,}$/.test(apiKey),
     hasWhitespace: apiKey.trim() !== apiKey || /\s/.test(apiKey),
   };
-  const started = Date.now();
   try {
     await new GoogleGenAI({ apiKey }).models.generateContent({
       model: env.visionModel,
       contents: "ping",
       config: { maxOutputTokens: 1, abortSignal: AbortSignal.timeout(PROBE_TIMEOUT_MS * 3) },
     });
-    return { status: "up", ms: Date.now() - started, key };
+    return { ok: true, reason: "", key };
   } catch (error) {
-    return { status: "down", ms: Date.now() - started, reason: visionFailureReason(error), key };
+    return { ok: false, reason: visionFailureReason(error), key };
   }
 }
 

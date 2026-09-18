@@ -23,6 +23,18 @@ export interface DescribeInput {
  */
 export type DescribeCampus = (input: DescribeInput, signal: AbortSignal) => Promise<Description | null>;
 
+/**
+ * Another key of GEMINI_API_KEY may still work: a spent quota (429), a revoked key (401/403), or a
+ * mistyped one — Google answers those with 400 API_KEY_INVALID, which is why the status alone is not
+ * enough. A 400 about the model or the parameters is not the key's fault, and a second key spent on
+ * it would be waste; neither is a 500, which is the model's problem.
+ */
+export function isKeyLevelFailure(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  if (error.status === 429 || error.status === 401 || error.status === 403) return true;
+  return error.status === 400 && /API_KEY_INVALID|API key not valid/i.test(error.message);
+}
+
 export const describeCampus: DescribeCampus = async (input, signal) => {
   const sources = buildSources(input);
   if (sources.length === 0) return null;
@@ -35,15 +47,15 @@ export const describeCampus: DescribeCampus = async (input, signal) => {
       if (described) return described;
       break; // the model answered, it just said nothing we could cite
     } catch (error) {
-      const status = error instanceof ApiError ? error.status : 0;
+      const quota = error instanceof ApiError && error.status === 429;
       console.error(
         JSON.stringify({
           at: "describeCampus",
           qid: input.entity.qid,
-          error: status === 429 ? "gemini_quota" : error instanceof Error ? error.message : String(error),
+          error: quota ? "gemini_quota" : error instanceof Error ? error.message : String(error),
         }),
       );
-      if (!KEY_LEVEL_STATUS.has(status)) break;
+      if (!isKeyLevelFailure(error)) break;
     }
   }
   return wikipediaQuote(input.summaries);
@@ -105,9 +117,6 @@ const modelOutput = z.object({
 });
 
 const MAX_SENTENCES = 5;
-
-/** Spent quota, revoked key, key without access: another key of GEMINI_API_KEY may still work. */
-const KEY_LEVEL_STATUS = new Set([429, 401, 403]);
 
 async function describeWithGemini(
   apiKey: string,

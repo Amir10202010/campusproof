@@ -33,7 +33,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
 vi.mock("@/lib/cache/kv", () => ({ kvGet: async () => null, kvSet: async () => {}, getRedis: () => null }));
 
 const { ApiError } = await import("@google/genai");
-const { assembleDescription, buildSources, describeCampus, splitSentences, wikipediaQuote } =
+const { assembleDescription, buildSources, describeCampus, isKeyLevelFailure, splitSentences, wikipediaQuote } =
   await import("@/lib/describe/description");
 
 const ru: WikipediaSummary = {
@@ -132,6 +132,25 @@ describe("describeCampus", () => {
     gemini.generateContent.mockRejectedValue(new ApiError({ message: "boom", status: 500 }));
     expect((await describeCampus(input, signal()))?.citations[0].url).toBe(ru.url);
     expect(gemini.generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats Google's 400 API_KEY_INVALID as a key problem, and any other 400 as ours", async () => {
+    // What a revoked or mistyped key actually returns — the status alone does not say whose fault it is.
+    expect(isKeyLevelFailure(new ApiError({ message: '{"error":{"status":"API_KEY_INVALID"}}', status: 400 }))).toBe(
+      true,
+    );
+    expect(isKeyLevelFailure(new ApiError({ message: 'Unknown name "thinkingConfig"', status: 400 }))).toBe(false);
+    expect(isKeyLevelFailure(new ApiError({ message: "quota", status: 429 }))).toBe(true);
+    expect(isKeyLevelFailure(new Error("socket hang up"))).toBe(false);
+
+    gemini.keys = ["revoked-key", "spare-key"];
+    gemini.generateContent
+      .mockRejectedValueOnce(new ApiError({ message: "API key not valid. Please pass a valid API key.", status: 400 }))
+      .mockResolvedValueOnce({
+        text: JSON.stringify({ sentences: [{ text: "Вуз в Астане.", sources: [1] }] }),
+      });
+    expect((await describeCampus(input, signal()))?.text).toBe("Вуз в Астане. [1]");
+    expect(gemini.generateContent).toHaveBeenCalledTimes(2);
   });
 
   it("returns null without any sources", async () => {
