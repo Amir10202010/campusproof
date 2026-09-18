@@ -55,7 +55,7 @@ export const observeAll: ObserveAll = async (items, context, provider, ctx, onBa
       fromCache.push({ ...hit, id: item.id });
     } else pending.push(item);
   });
-  if (fromCache.length > 0) onBatch?.(fromCache);
+  if (fromCache.length > 0) report(onBatch, fromCache);
   if (pending.length === 0) return observations;
 
   // 2 · everything else goes to the model in batches
@@ -103,7 +103,7 @@ export const observeAll: ObserveAll = async (items, context, provider, ctx, onBa
       observations.set(observation.id, observation);
       void kvSet(cacheKey(context, { id: observation.id } as VisionItem), observation, LIMITS.VISION_CACHE_TTL_S);
     }
-    if (result.length > 0) onBatch?.(result);
+    if (result.length > 0) report(onBatch, result);
   };
 
   let index = 0;
@@ -122,3 +122,15 @@ export const observeAll: ObserveAll = async (items, context, provider, ctx, onBa
   }
   return observations;
 };
+
+/**
+ * The consumer scores and streams the batch. If it throws on one photo, that must not take the whole
+ * visual check down with it: the rest of the observations are still good evidence.
+ */
+function report(onBatch: ((observations: VisionObservation[]) => void) | undefined, batch: VisionObservation[]): void {
+  try {
+    onBatch?.(batch);
+  } catch (error) {
+    console.error(JSON.stringify({ at: "observeAll.onBatch", error: String(error).slice(0, 300) }));
+  }
+}
