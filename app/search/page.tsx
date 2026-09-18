@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { ProfileView } from "@/components/containers/ProfileView";
 import { devFeaturesEnabled } from "@/lib/devOnly";
+import { sanitizeQuery } from "@/lib/pipeline/context";
 
 /** /search?q=… (&refresh=1, &simulate=…, &replay=1 on preview/dev) → streams a profile. Owner: P1 · #11. */
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const params = await searchParams;
-  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const q = typeof params.q === "string" ? sanitizeQuery(params.q) : "";
   if (!q) redirect("/");
 
   return (

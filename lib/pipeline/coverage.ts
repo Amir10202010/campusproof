@@ -7,7 +7,12 @@ export function computeCoverage(photos: Photo[]): Record<CategoryId, CategoryCov
     CATEGORIES.map((c) => [c.id, { verified: 0, likely: 0, unconfirmed: 0, status: "none" }]),
   ) as Record<CategoryId, CategoryCoverage>;
 
-  for (const photo of photos) coverage[photo.category][photo.tier] += 1;
+  for (const photo of photos) {
+    // Runs in the browser on a profile that may come from Redis, written by another deployment:
+    // one unknown category id must not blank the page it is supposed to summarise.
+    const entry = coverage[photo.category];
+    if (entry && typeof entry[photo.tier] === "number") entry[photo.tier] += 1;
+  }
 
   for (const entry of Object.values(coverage)) {
     const shown = entry.verified + entry.likely;

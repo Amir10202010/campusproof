@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { allowFreshRun, clientKeyFromHeaders } from "@/lib/cache/ratelimit";
-import { LIMITS } from "@/lib/config/limits";
-import { parseSimulate } from "@/lib/pipeline/context";
+import { parseSimulate, sanitizeQuery } from "@/lib/pipeline/context";
 import { createDefaultDeps } from "@/lib/pipeline/deps";
 import { eventStreamResponse } from "@/lib/pipeline/events";
 import { runProfilePipeline } from "@/lib/pipeline/orchestrator";
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const qidParam = params.get("qid");
   const input: PipelineInput = {
-    query: params.get("q")?.trim().slice(0, LIMITS.QUERY_MAX_LENGTH) || undefined,
+    query: sanitizeQuery(params.get("q")) || undefined,
     qid: qidParam && QID.test(qidParam) ? qidParam : undefined,
     refresh: params.get("refresh") === "1",
     simulate: parseSimulate(params.get("simulate")),

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
-import { LIMITS } from "@/lib/config/limits";
 import { isNotImplemented } from "@/lib/notImplemented";
+import { sanitizeQuery } from "@/lib/pipeline/context";
 import { resolveQuery } from "@/lib/resolver/resolve";
 
 /**
@@ -8,7 +8,7 @@ import { resolveQuery } from "@/lib/resolver/resolve";
  * The route is final; the logic lives in lib/resolver/resolve.ts.
  */
 export async function GET(request: NextRequest) {
-  const query = (request.nextUrl.searchParams.get("q") ?? "").trim().slice(0, LIMITS.QUERY_MAX_LENGTH);
+  const query = sanitizeQuery(request.nextUrl.searchParams.get("q"));
   if (!query) return Response.json({ error: "empty_query" }, { status: 400 });
 
   try {
