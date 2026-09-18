@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { indexEntity, searchIndex } from "@/lib/resolver/indexSearch";
+import { indexedUniversityName, indexEntity, searchIndex } from "@/lib/resolver/indexSearch";
 import { resolveFromIndex, resolveQuery } from "@/lib/resolver/resolve";
 import type { UniversityIndexEntry } from "@/lib/types";
 
@@ -70,6 +70,12 @@ describe("resolver v1: local index first", () => {
 });
 
 describe("index search", () => {
+  it("names an indexed university for the browser tab without a network call", () => {
+    expect(indexedUniversityName("Q1734762")).toBe("Казахстанско-Британский технический университет");
+    expect(indexedUniversityName("Q42")).toBeUndefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("tolerates a typo in a long word but not in an abbreviation", () => {
     expect(searchIndex("Nazarbaev")[0]?.entry.qid).toBe("Q2783344");
     expect(searchIndex("KSTU").map((hit) => hit.entry.qid)).not.toContain("Q1734762");
