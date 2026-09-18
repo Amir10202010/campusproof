@@ -34,6 +34,8 @@ export const env = {
 
   pipelineVersion: process.env.PIPELINE_VERSION ?? "0.1.0",
   maxFreshProfilesPerDay: Number(process.env.MAX_FRESH_PROFILES_PER_DAY ?? 150),
+  /** Judges at one venue often share a single IP, so this is a guard against abuse, not against a queue. */
+  freshRunsPerClient: Number(process.env.FRESH_RUNS_PER_CLIENT ?? 40),
 } as const;
 
 export function configuredServices() {
