@@ -35,7 +35,7 @@ describe("allowFreshRun", () => {
     expect(await allowFreshRun("client")).toEqual({ allowed: true });
   });
 
-  it("blocks a client over 20 fresh runs per 10 minutes with an honest reason", async () => {
+  it("blocks a client over FRESH_RUNS_PER_CLIENT fresh runs per 10 minutes with an honest reason", async () => {
     const daily = vi.fn(() => ({ success: true }));
     const { allowFreshRun, RATE_LIMITED_MESSAGE } = await loadWithLimiter({
       "rl:fresh:client": () => ({ success: false }),
