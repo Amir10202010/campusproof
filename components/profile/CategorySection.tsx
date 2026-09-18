@@ -34,7 +34,12 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto, loadi
   const titleId = `category-${category.id}-title`;
 
   return (
-    <section id={`category-${category.id}`} aria-labelledby={titleId} className="scroll-mt-28 space-y-3">
+    <section
+      id={`category-${category.id}`}
+      aria-labelledby={titleId}
+      aria-busy={photos.length === 0 && loading ? true : undefined}
+      className="scroll-mt-28 space-y-3"
+    >
       <div className="space-y-0.5">
         <h2 id={titleId} className="flex items-baseline gap-2 text-lg font-semibold tracking-tight">
           {category.labelRu}
@@ -79,18 +84,21 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto, loadi
  */
 function PendingCategory() {
   return (
-    <ul aria-busy="true" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {[0, 1, 2, 3].map((index) => (
-        <li key={index} className="overflow-hidden rounded-xl border">
-          <Skeleton className="aspect-4/3 w-full rounded-none" />
-          <div className="space-y-1.5 px-2.5 py-2">
-            <Skeleton className="h-3 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
+    <>
+      {/* Same shape as DescriptionBlock's placeholder: the tiles are decoration, the sentence is the state. */}
+      <p className="sr-only">Ищем фото для этого раздела…</p>
+      <div aria-hidden="true" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((index) => (
+          <div key={index} className="overflow-hidden rounded-xl border">
+            <Skeleton className="aspect-4/3 w-full rounded-none" />
+            <div className="space-y-1.5 px-2.5 py-2">
+              <Skeleton className="h-3 w-2/3" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
           </div>
-        </li>
-      ))}
-      <li className="sr-only">Ищем фото для этого раздела…</li>
-    </ul>
+        ))}
+      </div>
+    </>
   );
 }
 
