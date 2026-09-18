@@ -8,6 +8,8 @@ export interface CommonsGatherResult {
   candidates: Candidate[];
   /** Subcategory names (e.g. "Library of …") — passed to the vision model as context. */
   subcategories: string[];
+  /** true → some Commons queries did not answer in time; the candidates collected so far are still returned. */
+  partial?: boolean;
 }
 
 /**
@@ -22,7 +24,9 @@ export interface CommonsGatherResult {
 export type GatherCommons = (entity: UniversityEntity, ctx: RunContext) => Promise<CommonsGatherResult>;
 
 export const gatherCommons: GatherCommons = async (entity, ctx) => {
-  const { signal } = ctx;
+  // Each query aborts a moment before the stage deadline, so slow ones never cost the whole source (#85).
+  const budget = Math.max(MIN_QUERY_BUDGET_MS, ctx.deadlineAt - Date.now() - QUERY_RESERVE_MS);
+  const signal = AbortSignal.any([ctx.signal, AbortSignal.timeout(budget)]);
   const category = entity.commonsCategory;
 
   const subcategoryNames = category ? listSubcategories(category, signal) : Promise.resolve([]);
@@ -100,10 +104,14 @@ export const gatherCommons: GatherCommons = async (entity, ctx) => {
     subcategories: value(subcategories, [])
       .filter((name) => !PEOPLE.test(name))
       .slice(0, 10),
+    partial: settled.some((result) => result.status === "rejected"),
   };
 };
 
 const COMMONS_HOST = "commons.wikimedia.org";
+/** Leaves the stage enough time to map what arrived; a tiny budget is still better than no query at all. */
+const QUERY_RESERVE_MS = 400;
+const MIN_QUERY_BUDGET_MS = 500;
 
 /** Thumbnail URL of a Commons file by name (logos from Wikidata P154 / the index). */
 export function commonsFileUrl(fileName: string, width = 256): string {

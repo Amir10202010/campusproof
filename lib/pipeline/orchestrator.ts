@@ -165,23 +165,30 @@ export async function runProfilePipeline(
       ),
     ),
   );
+  // Sources see the stage deadline, not the global one: a slow adapter must return what it has in time.
+  const sourceCtx = (s: AbortSignal): RunContext => ({
+    ...ctx,
+    signal: s,
+    deadlineAt: Math.min(ctx.deadlineAt, deps.now() + LIMITS.ADAPTER_TIMEOUT_MS),
+  });
   const [commons, web, openverse, summaries] = await Promise.all([
     source(
       "commons",
       wikimediaDown,
-      (s) => deps.gatherCommons(entity, { ...ctx, signal: s }),
+      (s) => deps.gatherCommons(entity, sourceCtx(s)),
       (v) => v.candidates.length,
+      (v) => v.partial === true,
     ),
     source(
       "web_search",
       webSearchDown,
-      (s) => deps.gatherWebSearch(entity, { ...ctx, signal: s }),
+      (s) => deps.gatherWebSearch(entity, sourceCtx(s)),
       (v) => v.length,
     ),
     source(
       "openverse",
       false,
-      (s) => deps.gatherOpenverse(entity, { ...ctx, signal: s }),
+      (s) => deps.gatherOpenverse(entity, sourceCtx(s)),
       (v) => v.length,
     ),
     summariesPromise,
@@ -399,6 +406,7 @@ function sourceRunner(
     simulatedDown: boolean,
     task: (signal: AbortSignal) => Promise<T>,
     count: (value: T) => number,
+    isPartial?: (value: T) => boolean,
   ): Promise<T | null> {
     const started = deps.now();
     const finish = (status: SourceStatus["status"], candidates: number, note?: string) => {
@@ -414,8 +422,9 @@ function sourceRunner(
       return null;
     }
     try {
-      const value = await withTimeout(name, ctx, LIMITS.ADAPTER_TIMEOUT_MS, task);
-      finish("ok", count(value));
+      const value = await withTimeout(name, ctx, LIMITS.ADAPTER_TIMEOUT_MS + LIMITS.STAGE_GRACE_MS, task);
+      const partial = isPartial?.(value) === true;
+      finish(partial ? "partial" : "ok", count(value), partial ? "Часть запросов не успела к дедлайну" : undefined);
       return value;
     } catch (error) {
       if (isNotImplemented(error)) finish("skipped", 0, error.message);
