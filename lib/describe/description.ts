@@ -27,19 +27,23 @@ export const describeCampus: DescribeCampus = async (input, signal) => {
   const sources = buildSources(input);
   if (sources.length === 0) return null;
 
-  if (input.aiAllowed && env.geminiApiKey) {
+  // Keys rotate the way the visual check rotates them (#125): a revoked or spent key must not cost
+  // every profile its description while a spare key still works. Only a key-level failure moves on.
+  for (const apiKey of input.aiAllowed ? env.geminiApiKeys : []) {
     try {
-      const described = await describeWithGemini(input.entity, sources, signal);
+      const described = await describeWithGemini(apiKey, input.entity, sources, signal);
       if (described) return described;
+      break; // the model answered, it just said nothing we could cite
     } catch (error) {
-      const quota = error instanceof ApiError && error.status === 429;
+      const status = error instanceof ApiError ? error.status : 0;
       console.error(
         JSON.stringify({
           at: "describeCampus",
           qid: input.entity.qid,
-          error: quota ? "gemini_quota" : error instanceof Error ? error.message : String(error),
+          error: status === 429 ? "gemini_quota" : error instanceof Error ? error.message : String(error),
         }),
       );
+      if (!KEY_LEVEL_STATUS.has(status)) break;
     }
   }
   return wikipediaQuote(input.summaries);
@@ -102,7 +106,11 @@ const modelOutput = z.object({
 
 const MAX_SENTENCES = 5;
 
+/** Spent quota, revoked key, key without access: another key of GEMINI_API_KEY may still work. */
+const KEY_LEVEL_STATUS = new Set([429, 401, 403]);
+
 async function describeWithGemini(
+  apiKey: string,
   entity: UniversityEntity,
   sources: NumberedSource[],
   signal: AbortSignal,
@@ -122,7 +130,7 @@ async function describeWithGemini(
     ...sources.map((s) => `[${s.n}] ${s.title}\n${s.text}`),
   ].join("\n");
 
-  const response = await new GoogleGenAI({ apiKey: env.geminiApiKey }).models.generateContent({
+  const response = await new GoogleGenAI({ apiKey }).models.generateContent({
     model,
     contents: prompt,
     config: {

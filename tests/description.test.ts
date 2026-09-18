@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WikipediaSummary } from "@/lib/types";
 
 /** Gemini SDK and env are mocked: tests never call the real (quota-limited) API. */
-const gemini = vi.hoisted(() => ({ generateContent: vi.fn(), apiKey: "test-key" as string | undefined }));
+const gemini = vi.hoisted(() => ({
+  generateContent: vi.fn(),
+  apiKey: "test-key" as string | undefined,
+  /** GEMINI_API_KEY may hold several comma-separated keys (lib/env.ts); the description rotates over them. */
+  keys: ["test-key"] as string[],
+}));
 vi.mock("@google/genai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@google/genai")>();
   return {
@@ -17,7 +22,11 @@ vi.mock("@/lib/env", async (importOriginal) => {
   return {
     ...actual,
     env: new Proxy(actual.env, {
-      get: (target, key) => (key === "geminiApiKey" ? gemini.apiKey : Reflect.get(target, key)),
+      get: (target, key) => {
+        if (key === "geminiApiKey") return gemini.apiKey;
+        if (key === "geminiApiKeys") return gemini.keys;
+        return Reflect.get(target, key);
+      },
     }),
   };
 });
@@ -60,6 +69,7 @@ const signal = () => new AbortController().signal;
 beforeEach(() => {
   gemini.generateContent.mockReset();
   gemini.apiKey = "test-key";
+  gemini.keys = ["test-key"];
 });
 
 describe("describeCampus", () => {
@@ -94,15 +104,34 @@ describe("describeCampus", () => {
 
   it("falls back to the Wikipedia quote without a key, on quota errors and on invalid output", async () => {
     gemini.apiKey = undefined;
+    gemini.keys = [];
     expect((await describeCampus(input, signal()))?.text).toMatch(/\[1\]$/);
     expect(gemini.generateContent).not.toHaveBeenCalled();
 
     gemini.apiKey = "test-key";
+    gemini.keys = ["test-key"];
     gemini.generateContent.mockRejectedValueOnce(new ApiError({ message: "quota", status: 429 }));
     expect((await describeCampus(input, signal()))?.citations[0].url).toBe(ru.url);
 
     gemini.generateContent.mockResolvedValueOnce({ text: "not json" });
     expect((await describeCampus(input, signal()))?.citations[0].url).toBe(ru.url);
+  });
+
+  it("moves to the spare key when the first one is spent, but not on a model error", async () => {
+    gemini.keys = ["spent-key", "spare-key"];
+    gemini.generateContent
+      .mockRejectedValueOnce(new ApiError({ message: "quota", status: 429 }))
+      .mockResolvedValueOnce({
+        text: JSON.stringify({ sentences: [{ text: "Вуз в Астане.", sources: [1] }] }),
+      });
+    expect((await describeCampus(input, signal()))?.text).toBe("Вуз в Астане. [1]");
+    expect(gemini.generateContent).toHaveBeenCalledTimes(2);
+
+    // A 500 is the model's problem, not the key's: spending a second key on it would be waste.
+    gemini.generateContent.mockReset();
+    gemini.generateContent.mockRejectedValue(new ApiError({ message: "boom", status: 500 }));
+    expect((await describeCampus(input, signal()))?.citations[0].url).toBe(ru.url);
+    expect(gemini.generateContent).toHaveBeenCalledTimes(1);
   });
 
   it("returns null without any sources", async () => {
