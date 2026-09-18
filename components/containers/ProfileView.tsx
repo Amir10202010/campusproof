@@ -14,6 +14,7 @@ import { FilterBar } from "@/components/profile/FilterBar";
 import { PipelineRail } from "@/components/profile/PipelineRail";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { NotFound } from "@/components/search/NotFound";
+import { ProfileError } from "@/components/search/ProfileError";
 import { PickList } from "@/components/search/PickList";
 import { useProfileStream, type ProfileStreamParams } from "@/hooks/useProfileStream";
 import { CATEGORIES } from "@/lib/config/categories";
@@ -62,6 +63,17 @@ export function ProfileView(props: ProfileStreamParams) {
     return <PickList query={state.query ?? ""} candidates={state.candidates} onPick={pick} />;
   if (state.status === "not_found")
     return <NotFound query={state.query ?? ""} suggestions={state.suggestions} onPick={pick} />;
+  // The run ended before the university was identified: there is no profile to lay out, so the error
+  // box used to sit above an empty skeleton that still said "Ищем университет…". A run that failed
+  // later keeps its layout — the photos that did arrive are evidence and stay on screen.
+  if (state.error && !state.entity)
+    return (
+      <ProfileError
+        error={state.error}
+        query={state.query}
+        onRetry={state.error.retryable ? () => window.location.reload() : undefined}
+      />
+    );
 
   return (
     <div className="space-y-4">
