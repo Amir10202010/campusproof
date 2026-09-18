@@ -11,7 +11,6 @@ import type { SearchQuery, WebImageSearchProvider } from "./types";
  * The free plan has 2,500 credits in total, so every response is cached for LIMITS.SEARCH_CACHE_TTL_S.
  */
 const ENDPOINT = "https://google.serper.dev/images";
-const RESULTS_PER_QUERY = 20;
 
 /** One image row of the Serper response; every field is checked because the API may change. */
 interface SerperImage {
@@ -84,9 +83,14 @@ export const serperProvider: WebImageSearchProvider = {
       method: "POST",
       signal,
       headers: { "X-API-KEY": env.serperApiKey, "content-type": "application/json" },
-      body: JSON.stringify({ q: query.q, gl: query.countryCode, hl: query.lang, num: RESULTS_PER_QUERY }),
+      // Minimal body: every extra field is one more thing a 400 can complain about.
+      body: JSON.stringify({ q: query.q, gl: query.countryCode, hl: query.lang }),
     });
-    if (!response.ok) throw new Error(`Serper ${response.status} for "${query.q}"`);
+    if (!response.ok) {
+      // Serper's own message is the only way to tell a bad key (403) from a bad parameter (400).
+      const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 200);
+      throw new Error(`Serper ${response.status} для "${query.q}": ${detail}`);
+    }
 
     const candidates = toCandidates(await response.json(), query);
     await kvSet(cacheKey, candidates, LIMITS.SEARCH_CACHE_TTL_S);
