@@ -164,6 +164,19 @@ export function buildStreamUrl(params: {
 }
 
 /**
+ * The address to show once the university is known: /u/<qid>, so the link can be shared. The spent `q` goes, and so
+ * does `refresh=1` — otherwise a reload or a forwarded link starts another fresh run on the free quotas; `simulate`
+ * stays, so a reload repeats the simulated outage the person asked for.
+ */
+export function shareableProfilePath(current: string, qid: string): string {
+  const url = new URL(current, "http://localhost");
+  url.pathname = `/u/${qid}`;
+  url.searchParams.delete("q");
+  url.searchParams.delete("refresh");
+  return url.pathname + url.search + url.hash;
+}
+
+/**
  * Fallback when the stream breaks before a terminal event (docs/architecture.md §4): the saved final profile
  * from GET /api/profile/{qid}, or null when there is none. Never throws.
  */
