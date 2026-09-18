@@ -113,6 +113,12 @@ export const observeAll: ObserveAll = async (items, context, provider, ctx, onBa
   await Promise.all(lanes);
 
   // Nothing at all came back: let the orchestrator degrade the profile honestly.
-  if (succeeded === 0 && observations.size === 0 && lastError) throw lastError;
+  if (succeeded === 0 && observations.size === 0 && lastError) {
+    // The UI shows a short, friendly note, so the raw provider message only lives here.
+    console.error(
+      JSON.stringify({ at: "observeAll", qid: context.entity.qid, error: String(lastError).slice(0, 400) }),
+    );
+    throw lastError;
+  }
   return observations;
 };
