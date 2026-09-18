@@ -34,34 +34,49 @@ export function createGeminiVisionProvider(): VisionProvider {
         parts.push({ inlineData: { mimeType: "image/jpeg", data: item.jpeg.toString("base64") } });
       }
 
-      const response = await fetch(`${ENDPOINT}/${env.visionModel}:generateContent`, {
-        method: "POST",
-        signal,
-        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: VISION_SYSTEM_PROMPT }] },
-          contents: [{ role: "user", parts }],
-          // Only responseMimeType: a strict schema is rejected by some free models, and
-          // lib/vision/schema.ts validates the answer anyway.
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
+      const body = JSON.stringify({
+        systemInstruction: { parts: [{ text: VISION_SYSTEM_PROMPT }] },
+        contents: [{ role: "user", parts }],
+        // Only responseMimeType: a strict schema is rejected by some free models, and
+        // lib/vision/schema.ts validates the answer anyway.
+        generationConfig: { temperature: 0, responseMimeType: "application/json" },
       });
 
-      if (!response.ok) {
-        throw new Error(`Gemini ${response.status}: ${(await response.text()).replace(/\s+/g, " ").slice(0, 300)}`);
-      }
+      const text = await askModel(env.visionModel, body, apiKey, signal).catch((error: unknown) => {
+        // The model itself can be overloaded (503) or retired (404): the same request on the
+        // fallback model still gives the judges a visual check instead of a degraded profile.
+        if (!isModelUnavailable(error) || env.visionModelFallback === env.visionModel) throw error;
+        return askModel(env.visionModelFallback, body, apiKey, signal);
+      });
 
-      const body = (await response.json()) as {
-        candidates?: { content?: { parts?: { text?: string }[] } }[];
-      };
-      const text = (body.candidates?.[0]?.content?.parts ?? [])
-        .map((part) => part.text ?? "")
-        .join("")
-        .trim();
-      if (!text) throw new Error("Vision-модель вернула пустой ответ");
       return parseVisionObservations(text);
     },
   };
+}
+
+/** A model can be overloaded or retired — both are worth one attempt on the fallback model. */
+export function isModelUnavailable(error: unknown): boolean {
+  const text = error instanceof Error ? error.message : String(error);
+  return /Gemini (?:503|404|500|502)\b|UNAVAILABLE|overloaded|high demand|no longer available/i.test(text);
+}
+
+async function askModel(model: string, body: string, apiKey: string, signal: AbortSignal): Promise<string> {
+  const response = await fetch(`${ENDPOINT}/${model}:generateContent`, {
+    method: "POST",
+    signal,
+    headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+    body,
+  });
+  if (!response.ok) {
+    throw new Error(`Gemini ${response.status}: ${(await response.text()).replace(/\s+/g, " ").slice(0, 300)}`);
+  }
+  const answer = (await response.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const text = (answer.candidates?.[0]?.content?.parts ?? [])
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
+  if (!text) throw new Error(`Модель ${model} вернула пустой ответ`);
+  return text;
 }
 
 /** What the model needs to tell "this university" from any other one, plus the answer format. */
