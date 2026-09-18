@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyDomain } from "@/lib/sources/classifyDomain";
+import { classifyDomain, officialHosts } from "@/lib/sources/classifyDomain";
 import { withProvenance } from "@/lib/sources/webSearch";
 import { planQueries } from "@/lib/sources/webSearch/queryPlan";
 import { toCandidates } from "@/lib/sources/webSearch/serper";
@@ -58,6 +58,21 @@ describe("classifyDomain", () => {
   it("recognizes the university's own domain and its subdomains", () => {
     expect(classifyDomain("nu.edu.kz", kazakh).sourceType).toBe("official");
     expect(classifyDomain("www.news.nu.edu.kz", kazakh).sourceType).toBe("official");
+  });
+
+  it("treats the academic twin of a plain country domain as official, but not the other way round", () => {
+    // Wikidata keeps kbtu.kz, which redirects to the university's site on kbtu.edu.kz.
+    const moved = { ...kazakh, domains: ["kbtu.kz"] };
+    expect(classifyDomain("kbtu.edu.kz", moved).sourceType).toBe("official");
+    expect(classifyDomain("www.kbtu.edu.kz", moved).sourceType).toBe("official");
+    expect(classifyDomain("dormitory.kbtu.ac.kz", moved).sourceType).toBe("official");
+    expect(classifyDomain("kbtu.com", moved).sourceType).toBe("independent");
+    expect(classifyDomain("kbtu.edu.kg", moved).sourceType).toBe("independent");
+    // nu.edu.kz does not make the plain nu.kz official: anyone may register that one.
+    expect(classifyDomain("nu.kz", kazakh).sourceType).toBe("independent");
+    expect(officialHosts("ethz.ch")).toEqual(["ethz.ch", "ethz.edu.ch", "ethz.ac.ch"]);
+    expect(officialHosts("harvard.edu")).toEqual(["harvard.edu"]);
+    expect(officialHosts("satbayev.university")).toEqual(["satbayev.university"]);
   });
 
   it("labels encyclopedias, news, social networks, stock banks and the rest", () => {
