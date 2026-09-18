@@ -10,7 +10,7 @@
  * Without --refresh saved profiles are used (no free quota spent). --refresh forces fresh runs — use consciously.
  * Exit code 1 when any FAIL. FAIL = an honesty rule is broken or the site did not answer; WARN = suspicious data.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -359,6 +359,20 @@ export function reportDate(when) {
   return when.toLocaleDateString("en-CA", { timeZone: TEAM_TIMEZONE });
 }
 
+/**
+ * Where the report goes: docs/qa-report-<date>.md, or …-<HHMM>.md when that file already exists — a second run the
+ * same day must not overwrite the report README and the slides may already cite.
+ */
+export function reportPath(when, exists = (path) => existsSync(resolve(ROOT, path))) {
+  const date = reportDate(when);
+  const daily = join("docs", `qa-report-${date}.md`);
+  if (!exists(daily)) return daily;
+  const time = when
+    .toLocaleTimeString("ru-RU", { timeZone: TEAM_TIMEZONE, hour: "2-digit", minute: "2-digit" })
+    .replace(":", "");
+  return join("docs", `qa-report-${date}-${time}.md`);
+}
+
 /** "2026-09-18 23:30 UTC (04:30 по Астане)" for the report header. */
 export function startedAtText(when) {
   const local = when.toLocaleTimeString("ru-RU", { timeZone: TEAM_TIMEZONE, hour: "2-digit", minute: "2-digit" });
@@ -442,7 +456,7 @@ async function main() {
     refresh: args.refresh,
     startedAt: startedAtText(startedAt),
   });
-  const out = args.out ?? (args.replay ? "-" : join("docs", `qa-report-${date}.md`));
+  const out = args.out ?? (args.replay ? "-" : reportPath(startedAt));
   if (out === "-") process.stdout.write(report);
   else {
     writeFileSync(resolve(ROOT, out), report);
