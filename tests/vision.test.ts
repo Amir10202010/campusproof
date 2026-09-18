@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { LIMITS } from "@/lib/config/limits";
 import type { RunContext, VisionObservation } from "@/lib/types";
-import { contextBlock, isModelUnavailable } from "@/lib/vision/gemini";
+import { contextBlock, isModelUnavailable, rankModels } from "@/lib/vision/gemini";
 import { observeAll } from "@/lib/vision/observeAll";
 import type { VisionContext, VisionItem, VisionProvider } from "@/lib/vision/provider";
 import { parseVisionObservations } from "@/lib/vision/schema";
@@ -200,5 +200,23 @@ describe("isModelUnavailable", () => {
     for (const message of ["Gemini 429: RESOURCE_EXHAUSTED", "Gemini 400: API key not valid", "boom"]) {
       expect(isModelUnavailable(new Error(message)), message).toBe(false);
     }
+  });
+});
+
+describe("rankModels", () => {
+  it("prefers flash-lite, skips previews and anything that cannot generate", () => {
+    const ranked = rankModels([
+      { name: "models/gemini-3.6-flash", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.5-flash-lite", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.9-flash-preview", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/text-embedding-004", supportedGenerationMethods: ["embedContent"] },
+      { name: "models/gemini-3.1-flash-lite", supportedGenerationMethods: ["generateContent"] },
+    ]);
+    expect(ranked.filter((id) => id.includes("flash-lite"))).toEqual([
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ]);
+    expect(ranked).toContain("gemini-3.6-flash");
+    expect(ranked.some((id) => id.includes("preview") || id.includes("embedding"))).toBe(false);
   });
 });
