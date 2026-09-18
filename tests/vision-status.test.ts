@@ -5,7 +5,14 @@ import { TimeoutError } from "@/lib/pipeline/deadline";
 import type { PipelineDeps } from "@/lib/pipeline/deps";
 import { runProfilePipeline } from "@/lib/pipeline/orchestrator";
 import { visionFailureReason, visionSkippedReason } from "@/lib/pipeline/reasons";
-import type { Candidate, FetchedCandidate, SourceStatus, StreamEvent, VisionObservation } from "@/lib/types";
+import type {
+  Candidate,
+  FetchedCandidate,
+  PipelineInput,
+  SourceStatus,
+  StreamEvent,
+  VisionObservation,
+} from "@/lib/types";
 
 describe("reasons shown instead of a silent degraded profile", () => {
   it("explains why the visual check failed", () => {
@@ -23,7 +30,7 @@ describe("reasons shown instead of a silent degraded profile", () => {
   });
 
   it("explains why it did not run at all", () => {
-    const input = { refresh: false, simulate: [], aiAllowed: true } as const;
+    const input: PipelineInput = { refresh: false, simulate: [], aiAllowed: true };
     expect(visionSkippedReason({ ...input, aiAllowed: false }, 5000)).toMatch(/ЕЭЗ/);
     expect(visionSkippedReason({ ...input, simulate: ["vision_down"] }, 5000)).toMatch(/Симуляция/);
     expect(visionSkippedReason(input, 0)).toMatch(/дедлайна/);
