@@ -90,7 +90,8 @@ export function resolveFromIndex(query: string): ResolveResult | null {
     .map(({ entry }) => {
       const match = matchQuality(variants, indexTerms(entry));
       const popularity = popularityOf(entry.sitelinks);
-      return { entry, match, popularity, score: 0.7 * match + 0.3 * popularity };
+      // Index entries always carry data (P3 builds them from Wikidata with coordinates, Commons and sitelinks).
+      return { entry, match, popularity, stub: false, score: 0.7 * match + 0.3 * popularity };
     })
     .filter((candidate) => candidate.match >= MIN_MATCH_TO_RESOLVE)
     .sort((a, b) => b.score - a.score);
@@ -116,11 +117,16 @@ export const MIN_LEAD_TO_RESOLVE = 0.1;
 /** An exact name or alias match (≥ EXACT_MATCH) beats partial matches regardless of popularity. */
 export const EXACT_MATCH = 0.95;
 
-export function decide(ranked: Pick<RankedCandidate, "match" | "score">[]): ResolveResult["status"] {
+export function decide(
+  ranked: (Pick<RankedCandidate, "match" | "score"> & { stub?: boolean })[],
+): ResolveResult["status"] {
   const [top, second] = ranked;
   if (!top) return "not_found";
   if (top.match < MIN_MATCH_TO_RESOLVE) return "ambiguous";
+  // An item with no article, no Commons category and no coordinates is auto-selected only on an exact name,
+  // and never just because the name is exact: an empty Wikidata duplicate must not beat a documented university (#86).
+  if (top.stub && top.match < EXACT_MATCH) return "ambiguous";
   if (!second || top.score - second.score >= MIN_LEAD_TO_RESOLVE) return "resolved";
-  if (top.match >= EXACT_MATCH && second.match < EXACT_MATCH) return "resolved";
+  if (top.match >= EXACT_MATCH && second.match < EXACT_MATCH && !top.stub) return "resolved";
   return "ambiguous";
 }

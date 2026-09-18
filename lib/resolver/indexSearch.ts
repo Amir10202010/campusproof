@@ -41,6 +41,7 @@ interface IndexDocument {
   id: string;
   names: string;
   aliases: string;
+  acronyms: string;
 }
 
 export function getIndex() {
@@ -51,10 +52,10 @@ export function getIndex() {
 export function buildIndex(index: UniversityIndexEntry[]) {
   const entries = new Map(index.map((entry) => [entry.qid, entry]));
   const search = new MiniSearch<IndexDocument>({
-    fields: ["names", "aliases"],
+    fields: ["names", "aliases", "acronyms"],
     processTerm: (term) => foldText(term) || null,
     searchOptions: {
-      boost: { names: 2 },
+      boost: { names: 2, acronyms: 1.5 },
       // Abbreviations are short and exact ("KBTU" must not match "KSTU"); longer words tolerate typos.
       fuzzy: (term) => (term.length >= 5 ? 0.2 : false),
       prefix: (term) => term.length >= 4,
@@ -66,19 +67,44 @@ export function buildIndex(index: UniversityIndexEntry[]) {
       id: entry.qid,
       names: Object.values(entry.names).filter(Boolean).join(" | "),
       aliases: entry.aliases.join(" | "),
+      acronyms: acronymsOf(entry).join(" "),
     })),
   );
   return { search, entries };
 }
 
-/** Labels and aliases of an index entry, in the shape used by the resolver's name matching. */
-export function indexTerms(entry: UniversityIndexEntry): { text: string; isLabel: boolean }[] {
+/** Labels, aliases and generated acronyms of an index entry, in the shape used by name matching. */
+export function indexTerms(entry: UniversityIndexEntry): { text: string; isLabel: boolean; generated?: boolean }[] {
   return [
     ...Object.values(entry.names)
       .filter((name): name is string => Boolean(name))
       .map((text) => ({ text, isLabel: true })),
     ...entry.aliases.map((text) => ({ text, isLabel: false })),
+    ...acronymsOf(entry).map((text) => ({ text, isLabel: false, generated: true })),
   ];
+}
+
+/** Words that end the "name part" of a title: everything after them is a person, not the name (#86). */
+const ACRONYM_STOP = new Set(["имени", "им", "атындагы", "of", "the", "named", "after"]);
+
+/**
+ * Abbreviations people actually type ("ЕНУ", "КБТУ") are often missing from Wikidata aliases, so they are
+ * generated from the official names: initials of the words before "имени"/"named after". Generated matches
+ * count a little below real aliases, so a real "МГУ" still beats a generated one.
+ */
+export function acronymsOf(entry: UniversityIndexEntry): string[] {
+  const acronyms = new Set<string>();
+  for (const name of Object.values(entry.names)) {
+    if (!name) continue;
+    const words: string[] = [];
+    for (const word of foldText(name).split(" ")) {
+      if (ACRONYM_STOP.has(word)) break;
+      if (word.length > 1) words.push(word);
+    }
+    const acronym = words.map((word) => word[0]).join("");
+    if (acronym.length >= 3 && acronym.length <= 6) acronyms.add(acronym);
+  }
+  return [...acronyms];
 }
 
 const WIKIPEDIA_ORDER = ["ru", "en", "kk"];

@@ -1,11 +1,13 @@
 import { normalizeQuery, queryVariants } from "@/lib/resolver/normalize";
 import {
+  coordinateClaim,
   entityTerms,
   HIGHER_EDUCATION_CLASSES,
   isHigherEducation,
   loadEntities,
   loadPlacesFor,
   sitelinkCount,
+  stringClaims,
   toCandidateCard,
   WIKIDATA_HOST,
   type RawEntity,
@@ -40,6 +42,8 @@ export interface RankedCandidate {
   match: number;
   /** 0..1 — log-scaled sitelink count. */
   popularity: number;
+  /** true → an item with a name and nothing else: a duplicate or a fresh stub, never the better answer (#86). */
+  stub: boolean;
   score: number;
 }
 
@@ -172,24 +176,55 @@ export function popularityOf(sitelinks: number): number {
   return Math.min(1, Math.log10(sitelinks + 1) / Math.log10(151));
 }
 
+/**
+ * No Wikipedia article, no Commons category and no coordinates: an empty duplicate or a fresh draft
+ * (a website alone documents nothing). Such an item can be offered in the pick-list, never auto-selected.
+ */
+export function isDataStub(entity: RawEntity): boolean {
+  return (
+    sitelinkCount(entity) === 0 &&
+    stringClaims(entity, "P373").length === 0 &&
+    entity.sitelinks?.commonswiki === undefined &&
+    coordinateClaim(entity) === undefined
+  );
+}
+
+/** Small demotion: a documented university with a decent match should at least reach the pick-list. */
+const STUB_PENALTY = 0.1;
+
 export function rankCandidates(variants: string[], entities: RawEntity[]): RankedCandidate[] {
   return entities
     .map((entity) => {
       const match = matchQuality(variants, entityTerms(entity));
       const popularity = popularityOf(sitelinkCount(entity));
-      return { qid: entity.id, entity, match, popularity, score: 0.7 * match + 0.3 * popularity };
+      const stub = isDataStub(entity);
+      return {
+        qid: entity.id,
+        entity,
+        match,
+        popularity,
+        stub,
+        score: 0.7 * match + 0.3 * popularity - (stub ? STUB_PENALTY : 0),
+      };
     })
     .sort((a, b) => b.score - a.score);
 }
 
-/** 1 exact label · 0.95 exact alias · 0.75 one name starts the other · 0.6 all query words present · 0.4 search hit only. */
-export function matchQuality(variants: string[], terms: { text: string; isLabel: boolean }[]): number {
+/**
+ * 1 exact label · 0.95 exact alias · 0.9 exact generated acronym · 0.75 one name starts the other ·
+ * 0.6 all query words present · 0.4 search hit only.
+ */
+export function matchQuality(
+  variants: string[],
+  terms: { text: string; isLabel: boolean; generated?: boolean }[],
+): number {
   let best = 0.4;
   for (const term of terms) {
     const name = normalizeQuery(term.text);
     if (!name) continue;
+    const exact = term.generated ? 0.9 : term.isLabel ? 1 : 0.95;
     for (const variant of variants) {
-      if (name === variant) best = Math.max(best, term.isLabel ? 1 : 0.95);
+      if (name === variant) best = Math.max(best, exact);
       else if (name.startsWith(`${variant} `) || variant.startsWith(`${name} `)) best = Math.max(best, 0.75);
       else if (wordsCovered(variant, name)) best = Math.max(best, 0.6);
     }
@@ -197,10 +232,21 @@ export function matchQuality(variants: string[], terms: { text: string; isLabel:
   return best;
 }
 
-/** Every query word starts some word of the name ("сатпаев" ⊂ "… имени к и сатпаева"). */
+/** Shortest prefix two long words must share to count as the same word ("караганда" ≈ "карагандинский"). */
+const STEM_PREFIX = 7;
+
+/** Every query word matches a word of the name: as a prefix, or as the same long stem (names inflect). */
 function wordsCovered(query: string, name: string): boolean {
   const nameWords = name.split(" ");
-  return query.split(" ").every((word) => word.length >= 2 && nameWords.some((w) => w.startsWith(word)));
+  return query.split(" ").every((word) => word.length >= 2 && nameWords.some((nameWord) => sameWord(word, nameWord)));
+}
+
+function sameWord(word: string, nameWord: string): boolean {
+  if (nameWord.startsWith(word) || word.startsWith(nameWord)) return true;
+  if (word.length < STEM_PREFIX || nameWord.length < STEM_PREFIX) return false;
+  let common = 0;
+  while (common < word.length && common < nameWord.length && word[common] === nameWord[common]) common += 1;
+  return common >= STEM_PREFIX;
 }
 
 export async function toCandidateCards(ranked: RankedCandidate[], signal: AbortSignal): Promise<CandidateCard[]> {

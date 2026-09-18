@@ -127,6 +127,20 @@ describe("resolver ranking rules", () => {
     ).toBe("resolved");
   });
 
+  it("does not let an empty Wikidata duplicate win over a documented university", () => {
+    // A lone exact match with no data behind it is still the only answer there is.
+    expect(decide([{ match: 1, score: 0.6, stub: true }])).toBe("resolved");
+    // A partial match on an empty item is a guess — ask instead.
+    expect(decide([{ match: 0.75, score: 0.42, stub: true }])).toBe("ambiguous");
+    // An exact but empty item does not beat a documented one by exactness alone.
+    expect(
+      decide([
+        { match: 1, score: 0.6, stub: true },
+        { match: 0.6, score: 0.58 },
+      ]),
+    ).toBe("ambiguous");
+  });
+
   it("interleaves search results without duplicates", () => {
     expect(interleave([["a", "b", "c"], ["d", "a"], []])).toEqual(["a", "d", "b", "c"]);
   });
