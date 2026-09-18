@@ -22,6 +22,9 @@ interface GeminiPart {
 }
 
 export function createGeminiVisionProvider(): VisionProvider {
+  // Remembered for the lifetime of the instance: discovery costs one extra call, not one per batch.
+  let working: string | undefined;
+
   return {
     async observe(items, context, signal) {
       const apiKey = env.geminiApiKey;
@@ -42,11 +45,22 @@ export function createGeminiVisionProvider(): VisionProvider {
         generationConfig: { temperature: 0, responseMimeType: "application/json" },
       });
 
-      const text = await askModel(env.visionModel, body, apiKey, signal).catch((error: unknown) => {
-        // The model itself can be overloaded (503) or retired (404): the same request on the
-        // fallback model still gives the judges a visual check instead of a degraded profile.
-        if (!isModelUnavailable(error) || env.visionModelFallback === env.visionModel) throw error;
-        return askModel(env.visionModelFallback, body, apiKey, signal);
+      const text = await askModel(working ?? env.visionModel, body, apiKey, signal).catch(async (error: unknown) => {
+        // The model can be overloaded (503) or retired for new keys (404). Rather than guessing a
+        // replacement, ask the API which models this key may actually use and remember the answer.
+        if (!isModelUnavailable(error)) throw error;
+        for (const candidate of await usableModels(apiKey, signal)) {
+          if (candidate === (working ?? env.visionModel)) continue;
+          try {
+            const answer = await askModel(candidate, body, apiKey, signal);
+            working = candidate;
+            console.error(JSON.stringify({ at: "vision", switchedTo: candidate, after: String(error).slice(0, 160) }));
+            return answer;
+          } catch (next) {
+            if (!isModelUnavailable(next)) throw next;
+          }
+        }
+        throw error;
       });
 
       return parseVisionObservations(text);
@@ -54,7 +68,34 @@ export function createGeminiVisionProvider(): VisionProvider {
   };
 }
 
-/** A model can be overloaded or retired — both are worth one attempt on the fallback model. */
+/** Models this key may actually call, best first: the configured fallback, then Flash-Lite, then Flash. */
+export async function usableModels(apiKey: string, signal: AbortSignal): Promise<string[]> {
+  try {
+    const response = await fetch(ENDPOINT, { signal, headers: { "x-goog-api-key": apiKey } });
+    if (!response.ok) return [env.visionModelFallback];
+    const body = (await response.json()) as {
+      models?: { name?: string; supportedGenerationMethods?: string[] }[];
+    };
+    return rankModels(body.models ?? []);
+  } catch {
+    return [env.visionModelFallback];
+  }
+}
+
+export function rankModels(models: { name?: string; supportedGenerationMethods?: string[] }[]): string[] {
+  const ids = models
+    .filter((model) => (model.supportedGenerationMethods ?? []).includes("generateContent"))
+    .map((model) => (model.name ?? "").replace(/^models\//, ""))
+    .filter((id) => /^gemini-[\d.]+-flash/.test(id) && !/preview|exp|thinking|image|tts|native-audio/.test(id));
+
+  // Flash-Lite first: cheapest and least likely to be overloaded, and it sees images just as well.
+  const weight = (id: string) => (id.includes("flash-lite") ? 0 : 1);
+  return [...new Set([env.visionModelFallback, ...ids])]
+    .filter((id) => ids.includes(id) || id === env.visionModelFallback)
+    .sort((a, b) => weight(a) - weight(b) || b.localeCompare(a));
+}
+
+/** A model can be overloaded or retired — both are worth one attempt on another model. */
 export function isModelUnavailable(error: unknown): boolean {
   const text = error instanceof Error ? error.message : String(error);
   return /Gemini (?:503|404|500|502)\b|UNAVAILABLE|overloaded|high demand|no longer available/i.test(text);
