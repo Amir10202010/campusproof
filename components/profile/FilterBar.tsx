@@ -77,7 +77,7 @@ export function FilterBar({ value, onChange, counts }: FilterBarProps) {
                 key={lens.id}
                 value={lens.id}
                 title={lens.id === "independent" ? "Энциклопедии, СМИ, независимые сайты и соцсети" : undefined}
-                className={cn("h-8 px-3", PRESSED, FOCUS_RING)}
+                className={cn("h-9 px-3.5 text-sm", PRESSED, FOCUS_RING)}
               >
                 {lens.label}
               </ToggleGroupItem>
@@ -92,7 +92,7 @@ export function FilterBar({ value, onChange, counts }: FilterBarProps) {
               onCheckedChange={(checked) => onChange({ ...value, showUnconfirmed: checked })}
               className={FOCUS_RING}
             />
-            <Label htmlFor={switchId} className="cursor-pointer text-[0.8125rem] font-normal whitespace-nowrap">
+            <Label htmlFor={switchId} className="cursor-pointer text-sm font-normal whitespace-nowrap">
               <span className="sm:hidden">Неподтверждённые</span>
               <span className="hidden sm:inline">Показывать неподтверждённые</span>
             </Label>
@@ -110,11 +110,11 @@ function FilterChip(props: { pressed: boolean; count?: number; onPress: () => vo
       size="sm"
       pressed={props.pressed}
       onPressedChange={props.onPress}
-      className={cn("h-8 shrink-0 rounded-full px-3 text-[0.8125rem]", PRESSED, FOCUS_RING)}
+      className={cn("h-9 shrink-0 rounded-md px-3.5 text-sm", PRESSED, FOCUS_RING)}
     >
       {props.children}
       {props.count !== undefined ? (
-        <span className="min-w-5 rounded-full bg-muted px-1.5 font-mono text-[0.6875rem] text-muted-foreground tabular-nums group-data-[state=on]/toggle:bg-primary-foreground/20 group-data-[state=on]/toggle:text-primary-foreground">
+        <span className="min-w-5 rounded-sm bg-muted px-1.5 font-mono text-xs text-muted-foreground tabular-nums group-data-[state=on]/toggle:bg-primary-foreground/20 group-data-[state=on]/toggle:text-primary-foreground">
           {props.count}
         </span>
       ) : null}

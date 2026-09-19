@@ -50,7 +50,7 @@ export function CategoryNav({ categories, coverage, counts }: CategoryNavProps) 
                 href={`#${id}`}
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
-                  "-ml-px flex items-center gap-2 border-l py-1.5 pl-3 text-[0.8125rem] transition-colors",
+                  "-ml-px flex items-center gap-2.5 border-l py-2 pl-3 text-sm transition-colors",
                   "rounded-r-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
                   isActive
                     ? "border-foreground font-medium text-foreground"
@@ -59,7 +59,7 @@ export function CategoryNav({ categories, coverage, counts }: CategoryNavProps) 
               >
                 <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate">{category.labelRu}</span>
-                <span className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">{count}</span>
+                <span className="font-mono text-xs text-muted-foreground tabular-nums">{count}</span>
                 <span className="sr-only">
                   — {STATUS_LABEL[status]}, показано {count}
                 </span>

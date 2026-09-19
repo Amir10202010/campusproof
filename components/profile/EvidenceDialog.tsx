@@ -134,7 +134,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
           style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
         />
         <DialogClose asChild>
-          <Button variant="secondary" size="icon-sm" className="absolute top-2 right-2 rounded-full shadow-sm">
+          <Button variant="secondary" size="icon-sm" className="absolute top-2 right-2 rounded-md shadow-sm">
             <X aria-hidden="true" />
             <span className="sr-only">Закрыть</span>
           </Button>
@@ -271,7 +271,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
                   <li key={place.sourcePageUrl}>
                     {href ? (
                       <a
-                        className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 transition-colors hover:bg-accent"
+                        className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 transition-colors hover:bg-accent"
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -280,7 +280,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
                         <ExternalLink className="size-3" aria-hidden="true" />
                       </a>
                     ) : (
-                      <span className="rounded-full border px-2.5 py-1">{label}</span>
+                      <span className="rounded-md border px-2.5 py-1">{label}</span>
                     )}
                   </li>
                 );

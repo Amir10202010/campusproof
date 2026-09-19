@@ -17,7 +17,7 @@ const LINK = "underline-offset-4 transition-colors hover:text-foreground hover:u
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t bg-surface">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 text-sm sm:grid-cols-[1.6fr_1fr_1fr] sm:px-6">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 text-[0.9375rem] sm:grid-cols-[1.6fr_1fr_1fr] sm:px-6">
         <div className="space-y-3">
           <Logo />
           <p className="max-w-xs leading-relaxed text-muted-foreground">

@@ -1,5 +1,4 @@
 import { Check, CircleQuestionMark, Contrast, type LucideIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Tier } from "@/lib/types";
 import { TIER_LABEL_RU, TIER_VERDICT_RU } from "@/lib/ui/labels";
@@ -26,7 +25,11 @@ const TIER_STYLE: Record<TierBadgeProps["tier"], { icon: LucideIcon; className: 
   },
 };
 
-/** P4 · #3 · verified → ✓ «Проверено», likely → ◐ «Вероятно», unconfirmed → ? «Не подтверждено». Icon + text, never color only. */
+/**
+ * P4 · #3 · verified → ✓ «Проверено», likely → ◐ «Вероятно», unconfirmed → ? «Не подтверждено».
+ * Icon + text, never colour alone. Set as a hard-edged stamp rather than a pill — it is a verdict
+ * applied to the frame, and the whole interface reads as generated the moment everything is oval.
+ */
 export function TierBadge({ tier, className }: TierBadgeProps) {
   const { icon: Icon, className: tone } = TIER_STYLE[tier];
   // P4 · #37 · hover hint with the plain-language meaning. The trigger stays a non-focusable span: the badge often
@@ -34,10 +37,10 @@ export function TierBadge({ tier, className }: TierBadgeProps) {
   return (
     <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
-        <Badge variant="outline" data-tier={tier} className={cn(tone, className)}>
-          <Icon aria-hidden="true" strokeWidth={2.5} />
+        <span data-tier={tier} className={cn("stamp", tone, className)}>
+          <Icon className="size-3.5 shrink-0" aria-hidden="true" strokeWidth={3} />
           {TIER_LABEL_RU[tier]}
-        </Badge>
+        </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-64 text-pretty">
         {TIER_VERDICT_RU[tier]}

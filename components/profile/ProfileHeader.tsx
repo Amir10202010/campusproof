@@ -64,7 +64,7 @@ export function ProfileHeader(props: ProfileHeaderProps) {
             {website ? (
               <a href={website} target="_blank" rel="noopener noreferrer" className={META_LINK}>
                 <Globe className="size-3.5 shrink-0" aria-hidden="true" />
-                <span className="font-mono text-[0.8125rem]">{displayHost(website)}</span>
+                <span className="font-mono text-sm">{displayHost(website)}</span>
               </a>
             ) : null}
             {props.distanceToCityCenterM !== undefined ? (
@@ -125,7 +125,7 @@ function RunStatus({ startedAt, finishedMs, cached, generatedAt, originalTotalMs
 
   if (finishedMs !== null) {
     return (
-      <p className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-ok-border bg-ok-surface px-3 py-1.5 text-sm text-ok">
+      <p className="inline-flex shrink-0 items-center gap-2 self-start rounded-md border border-ok-border bg-ok-surface px-3 py-1.5 text-sm text-ok">
         <CircleCheck className="size-4 shrink-0" aria-hidden="true" />
         Собрано за <span className="font-mono font-medium tabular-nums">{formatSecondsRu(finishedMs)}</span>
       </p>
@@ -134,7 +134,7 @@ function RunStatus({ startedAt, finishedMs, cached, generatedAt, originalTotalMs
 
   if (startedAt === null) return null;
   return (
-    <p className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border bg-surface px-3 py-1.5 text-sm text-muted-foreground">
+    <p className="inline-flex shrink-0 items-center gap-2 self-start rounded-md border bg-surface px-3 py-1.5 text-sm text-muted-foreground">
       <LoaderCircle className="size-4 shrink-0 animate-spin" aria-hidden="true" />
       Собираем профиль
       <LiveTimer key={startedAt} startedAt={startedAt} />
@@ -164,7 +164,7 @@ function FactChip({ fact }: { fact: ProfileFact }) {
       <span className="font-medium tabular-nums">{fact.value}</span>
     </>
   );
-  const chipClass = "inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-[0.8125rem]";
+  const chipClass = "inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5 text-sm";
   if (!href) return <span className={chipClass}>{content}</span>;
   return (
     <a
