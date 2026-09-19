@@ -131,3 +131,17 @@ describe("orchestrator gate before fresh runs", () => {
     expect(events.at(-1)).toMatchObject({ type: "done", cached: false });
   });
 });
+
+describe("allowDeepHealthProbe", () => {
+  it("allows deep probes without Redis, blocks a full window and fails open when Redis errors", async () => {
+    expect(await (await loadWithLimiter({}, null)).allowDeepHealthProbe()).toBe(true);
+    const full = await loadWithLimiter({ "rl:health:deep": () => ({ success: false }) });
+    expect(await full.allowDeepHealthProbe()).toBe(false);
+    const broken = await loadWithLimiter({
+      "rl:health:deep": () => {
+        throw new Error("redis down");
+      },
+    });
+    expect(await broken.allowDeepHealthProbe()).toBe(true);
+  });
+});

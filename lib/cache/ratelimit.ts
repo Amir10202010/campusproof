@@ -60,6 +60,35 @@ export const allowFreshRun: AllowFreshRun = async (clientKey) => {
   }
 };
 
+/**
+ * /api/health?deep=1 makes a Gemini call and, with &search=1, spends a Serper credit (2,500 in total) — anyone can
+ * open that URL, so all deep probes share one small window. Redis missing, down or slow → allowed.
+ */
+export const DEEP_PROBES_PER_WINDOW = 10;
+const DEEP_PROBE_WINDOW = "10 m";
+let deepProbeLimiter: Ratelimit | null | undefined;
+
+export async function allowDeepHealthProbe(): Promise<boolean> {
+  if (deepProbeLimiter === undefined) {
+    const redis = getRedis();
+    deepProbeLimiter = redis
+      ? new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(DEEP_PROBES_PER_WINDOW, DEEP_PROBE_WINDOW),
+          prefix: "rl:health:deep",
+          timeout: REDIS_TIMEOUT_MS,
+        })
+      : null;
+  }
+  if (!deepProbeLimiter) return true;
+  try {
+    return (await deepProbeLimiter.limit("global")).success;
+  } catch (error) {
+    console.error(JSON.stringify({ at: "allowDeepHealthProbe", error: String(error) }));
+    return true;
+  }
+}
+
 /** Hashed client IP (Vercel sets x-forwarded-for): raw IPs are never stored or logged. */
 export function clientKeyFromHeaders(headers: Headers): string {
   const ip = headers.get("x-forwarded-for")?.split(",")[0]?.trim() || headers.get("x-real-ip")?.trim() || "unknown";

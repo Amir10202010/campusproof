@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { NextRequest } from "next/server";
 import { getRedis } from "@/lib/cache/kv";
+import { allowDeepHealthProbe, DEEP_PROBES_PER_WINDOW } from "@/lib/cache/ratelimit";
 import { configuredServices, env } from "@/lib/env";
 import { visionFailureReason } from "@/lib/pipeline/reasons";
 import { wikimediaApiUrl, wikimediaFetch } from "@/lib/sources/wikimediaFetch";
@@ -17,7 +18,9 @@ const PROBE_TIMEOUT_MS = 3_000;
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const deep = params.get("deep") === "1";
+  const deepRequested = params.get("deep") === "1";
+  // Deep probes spend free quotas, so they share a small global window (lib/cache/ratelimit.ts).
+  const deep = deepRequested && (await allowDeepHealthProbe());
   const probes = deep ? await runProbes(params.get("search") === "1") : undefined;
   return Response.json({
     ok: probes ? Object.values(probes).every((p) => p.status !== "down") : true,
@@ -34,6 +37,9 @@ export async function GET(request: NextRequest) {
     visionModel: env.visionModel,
     descriptionModel: env.descriptionModel,
     ...(probes ? { probes } : {}),
+    ...(deepRequested && !deep
+      ? { deep: `пропущено: не больше ${DEEP_PROBES_PER_WINDOW} глубоких проверок за 10 минут на всех` }
+      : {}),
   });
 }
 
