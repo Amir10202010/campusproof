@@ -1,4 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import universities from "@/data/universities.min.json";
 import { LIMITS } from "@/lib/config/limits";
@@ -44,6 +43,8 @@ const SYSTEM_PROMPT = `Ты помогаешь абитуриенту выбра
 - Если запрос слишком общий, всё равно предложи разумные варианты и скажи в reason, по какому признаку выбрал.
 - Верни только JSON по схеме.`;
 
+const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+
 const OUTPUT_SCHEMA = {
   type: "object",
   properties: {
@@ -64,26 +65,46 @@ const OUTPUT_SCHEMA = {
 const modelOutput = z.object({ picks: z.array(z.object({ qid: z.string(), reason: z.string() })) });
 
 /** `null` — модель недоступна или ответила мусором; вызывающий показывает честную ошибку, а не пустой список. */
-export async function suggestUniversities(request: string, signal: AbortSignal): Promise<Suggestion[] | null> {
-  if (!request.trim() || !env.geminiApiKey) return null;
+export async function suggestUniversities(
+  request: string,
+  signal: AbortSignal,
+): Promise<{ picks: Suggestion[] | null; detail?: string }> {
+  if (!request.trim() || !env.geminiApiKey) return { picks: null, detail: "нет ключа" };
 
   const catalogue = CATALOGUE.map((row) => `${row.qid}|${row.name}|${row.city ?? "—"}|${row.country}`).join("\n");
   const prompt = `Запрос абитуриента:\n${request.trim().slice(0, 600)}\n\nКаталог (qid|название|город|страна):\n${catalogue}`;
 
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: OUTPUT_SCHEMA,
+      temperature: 0.2,
+      maxOutputTokens: 1024,
+    },
+  });
+
   try {
-    const response = await new GoogleGenAI({ apiKey: env.geminiApiKey }).models.generateContent({
-      model: env.descriptionModel,
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseJsonSchema: OUTPUT_SCHEMA,
-        temperature: 0.2,
-        maxOutputTokens: 1024,
-        abortSignal: AbortSignal.any([signal, AbortSignal.timeout(LIMITS.DESCRIPTION_TIMEOUT_MS)]),
-      },
+    // Тот же путь, что и в lib/vision/gemini.ts: REST с x-goog-api-key. SDK на Vercel не видит ключ.
+    const response = await fetch(`${ENDPOINT}/${env.descriptionModel}:generateContent`, {
+      method: "POST",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(LIMITS.DESCRIPTION_TIMEOUT_MS)]),
+      headers: { "content-type": "application/json", "x-goog-api-key": env.geminiApiKey },
+      body,
     });
-    const parsed = modelOutput.parse(JSON.parse(response.text ?? ""));
+    if (!response.ok) {
+      return {
+        picks: null,
+        detail: `Gemini ${response.status}: ${(await response.text()).replace(/\s+/g, " ").slice(0, 200)}`,
+      };
+    }
+    const answer = (await response.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const text = (answer.candidates?.[0]?.content?.parts ?? [])
+      .map((part) => part.text ?? "")
+      .join("")
+      .trim();
+    const parsed = modelOutput.parse(JSON.parse(text));
     const seen = new Set<string>();
     const picks: Suggestion[] = [];
     for (const pick of parsed.picks) {
@@ -92,8 +113,8 @@ export async function suggestUniversities(request: string, signal: AbortSignal):
       seen.add(row.qid);
       picks.push({ ...row, reason: pick.reason.trim().slice(0, 200) });
     }
-    return picks.length > 0 ? picks : null;
-  } catch {
-    return null;
+    return picks.length > 0 ? { picks } : { picks: null, detail: "модель не выбрала ни одного вуза из каталога" };
+  } catch (error) {
+    return { picks: null, detail: String(error).replace(/\s+/g, " ").slice(0, 200) };
   }
 }
