@@ -42,16 +42,14 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
       </span>
       {/* The margin annotation. Fixed leading keeps every frame in the grid the same height. */}
       <span className="flex grow flex-col gap-1 px-2.5 py-2">
-        <span className="block truncate font-mono text-[0.6875rem] leading-4 text-foreground">
-          {photo.sourceDomain}
-        </span>
-        <span className="block text-[0.6875rem] leading-4 text-muted-foreground">{photoDateText(photo)}</span>
+        <span className="block truncate font-mono text-xs leading-5 text-foreground">{photo.sourceDomain}</span>
+        <span className="block text-[0.8125rem] leading-5 text-muted-foreground">{photoDateText(photo)}</span>
         {photo.labels.length > 0 ? (
           <span className="mt-0.5 flex flex-wrap gap-1">
             {photo.labels.map((label) => (
               <span
                 key={label}
-                className="inline-flex items-center gap-1 rounded-full bg-warn-surface px-1.5 py-0.5 text-[0.625rem] leading-3.5 font-medium text-warn"
+                className="inline-flex items-center gap-1 rounded-sm bg-warn-surface px-1.5 py-0.5 text-xs leading-4 font-medium text-warn"
               >
                 <TriangleAlert className="size-2.5 shrink-0" aria-hidden="true" />
                 {PHOTO_LABEL_RU[label]}
@@ -90,7 +88,7 @@ function SourceTypeBadge({ type }: { type: SourceType }) {
   if (type === "unknown") return null;
   const Icon = SOURCE_TYPE_ICON[type];
   return (
-    <span className="absolute bottom-2 left-2 inline-flex h-5 max-w-[calc(100%-1rem)] items-center gap-1 rounded-4xl bg-black/70 px-2 text-[0.6875rem] font-medium text-white backdrop-blur-[2px]">
+    <span className="absolute bottom-2 left-2 inline-flex h-6 max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-[3px] bg-black/75 px-2 text-xs font-medium text-white backdrop-blur-[2px]">
       <Icon className="size-3 shrink-0" aria-hidden="true" />
       <span className="truncate">{SOURCE_TYPE_SHORT_RU[type]}</span>
     </span>

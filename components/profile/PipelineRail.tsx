@@ -108,10 +108,10 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
           const summary = stageSummary(stage);
           return (
             <li key={stage.stage} className="flex min-w-0 flex-col gap-1.5">
-              <span className={cn("h-1 rounded-full transition-colors duration-300", status.bar)} aria-hidden="true" />
+              <span className={cn("h-1 rounded-[1px] transition-colors duration-300", status.bar)} aria-hidden="true" />
               <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
                 <Icon className={cn("size-3.5 shrink-0", status.iconClass)} aria-hidden="true" />
-                <span className="max-w-full truncate text-[0.6875rem] font-medium sm:text-[0.8125rem]">
+                <span className="max-w-full truncate text-xs font-medium sm:text-sm">
                   {STAGE_LABEL_RU[stage.stage]}
                 </span>
                 <span className="sr-only">
@@ -120,10 +120,7 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
                 </span>
               </span>
               {summary ? (
-                <span
-                  className="hidden font-mono text-[0.6875rem] leading-4 text-muted-foreground sm:block"
-                  aria-hidden="true"
-                >
+                <span className="hidden font-mono text-xs leading-4 text-muted-foreground sm:block" aria-hidden="true">
                   {summary}
                 </span>
               ) : null}
@@ -132,12 +129,12 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
         })}
       </ol>
       {latest ? (
-        <p className="font-mono text-[0.6875rem] text-muted-foreground sm:hidden" aria-hidden="true">
+        <p className="font-mono text-xs text-muted-foreground sm:hidden" aria-hidden="true">
           {STAGE_LABEL_RU[latest.stage]}: {stageSummary(latest)}
         </p>
       ) : null}
 
-      <div className="space-y-2 border-t pt-3 text-xs">
+      <div className="space-y-2 border-t pt-3 text-sm">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="annotation">Источники</span>
           {sources.length === 0 ? (
@@ -177,7 +174,7 @@ function SourceChip({ source }: { source: SourceStatus }) {
           <button
             type="button"
             className={cn(
-              "inline-flex cursor-help items-center gap-1 rounded-full border px-2 py-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
+              "inline-flex cursor-help items-center gap-1.5 rounded-md border px-2 py-1 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
               status.className,
             )}
           >

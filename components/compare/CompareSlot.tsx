@@ -74,7 +74,7 @@ export function CompareSlot({ label, qid, name, search, load, onSearch, onPick, 
         <p className="text-sm text-muted-foreground">
           {[entity.city?.name, entity.country].filter(Boolean).join(", ")}
           {" · "}сохранённый профиль от{" "}
-          <time dateTime={generatedAt} className="font-mono text-[0.8125rem]" suppressHydrationWarning>
+          <time dateTime={generatedAt} className="font-mono text-sm" suppressHydrationWarning>
             {formatDateTimeRu(generatedAt)}
           </time>
         </p>

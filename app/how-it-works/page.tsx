@@ -134,18 +134,18 @@ export default function HowItWorksPage() {
       </div>
 
       <Section eyebrow="Шаг за шагом" title="Путь от названия до профиля">
-        <ol className="space-y-5 border-l pl-6">
+        <ol className="space-y-6 border-l pl-7">
           {STEPS.map((step, index) => (
             <li key={step.title} className="relative space-y-1">
               {/* The numbers are the pipeline's real order, not decoration: each step needs the one before it. */}
               <span
                 aria-hidden="true"
-                className="absolute top-0.5 -left-[2.0625rem] flex size-6 items-center justify-center rounded-full bg-foreground font-mono text-[0.6875rem] text-background"
+                className="absolute top-0.5 -left-[2.125rem] flex size-7 items-center justify-center rounded-[4px] bg-foreground font-mono text-xs font-medium text-background"
               >
                 {index + 1}
               </span>
-              <p className="font-medium">{step.title}</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+              <p className="font-display text-title font-semibold">{step.title}</p>
+              <p className="text-[0.9375rem] leading-relaxed text-muted-foreground">{step.text}</p>
             </li>
           ))}
         </ol>

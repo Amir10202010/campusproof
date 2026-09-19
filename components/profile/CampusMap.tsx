@@ -36,10 +36,10 @@ export function CampusMap({ entity, photos, distanceToCityCenterM, onOpenPhoto }
   return (
     <section aria-labelledby={titleId} className="scroll-mt-40 space-y-4">
       <div className="space-y-0.5 border-b pb-2.5">
-        <h2 id={titleId} className="font-display text-lg font-semibold tracking-tight">
+        <h2 id={titleId} className="font-display text-title font-semibold">
           Карта
         </h2>
-        <p className="text-[0.8125rem] text-muted-foreground">
+        <p className="text-[0.9375rem] text-muted-foreground">
           {points.pins.length > 0
             ? `Фото с геометкой: ${points.pins.length}. Нажмите на точку, чтобы открыть доказательства.`
             : "У показанных фото нет геометок — на карте только кампус и город."}

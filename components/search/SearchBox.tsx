@@ -36,8 +36,8 @@ export function SearchBox({ defaultValue, loading = false, examples = [], onSubm
           submit(value);
         }}
       >
-        <div className="flex h-13 items-center gap-1 rounded-xl border border-input bg-card pr-1.5 pl-3.5 shadow-xs transition-[color,box-shadow,border-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/45 sm:h-14 sm:pr-2 sm:pl-4">
-          <Search className="size-4.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <div className="flex h-14 items-center gap-1 rounded-lg border border-input bg-card pr-1.5 pl-4 shadow-xs transition-[color,box-shadow,border-color] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/45 sm:h-16 sm:pr-2 sm:pl-5">
+          <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <label htmlFor={inputId} className="sr-only">
             Название университета
           </label>
@@ -53,13 +53,13 @@ export function SearchBox({ defaultValue, loading = false, examples = [], onSubm
             placeholder="Название университета"
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-base outline-none placeholder:text-muted-foreground/80 [&::-webkit-search-cancel-button]:hidden"
+            className="h-full min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground/70 sm:text-lg [&::-webkit-search-cancel-button]:hidden"
           />
           <Button
             type="submit"
             size="lg"
             disabled={loading}
-            className="h-10 shrink-0 gap-1.5 rounded-lg px-4 text-sm sm:h-10.5 sm:px-5"
+            className="h-11 shrink-0 gap-2 rounded-md px-4 text-[0.9375rem] sm:h-12 sm:px-6"
           >
             {loading ? (
               <LoaderCircle className="animate-spin" aria-hidden="true" />
@@ -73,7 +73,7 @@ export function SearchBox({ defaultValue, loading = false, examples = [], onSubm
 
       {examples.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-0.5 text-sm text-muted-foreground">Например:</span>
+          <span className="mr-0.5 text-[0.9375rem] text-muted-foreground">Например:</span>
           {examples.map((example) => (
             <Button
               key={example}
@@ -81,7 +81,7 @@ export function SearchBox({ defaultValue, loading = false, examples = [], onSubm
               variant="outline"
               size="sm"
               disabled={loading}
-              className="h-7 rounded-full px-3 font-normal"
+              className="h-8 rounded-md px-3 text-[0.9375rem] font-normal"
               onClick={() => {
                 setValue(example);
                 submit(example);

@@ -41,14 +41,14 @@ export function CategorySection({ category, photos, coverage, onOpenPhoto }: Cat
     <section id={`category-${category.id}`} aria-labelledby={titleId} className="scroll-mt-40 space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b pb-2.5">
         <div className="min-w-0 space-y-0.5">
-          <h2 id={titleId} className="flex items-baseline gap-2.5 font-display text-lg font-semibold tracking-tight">
+          <h2 id={titleId} className="flex items-baseline gap-2.5 font-display text-title font-semibold">
             {category.labelRu}
-            <span className="font-mono text-xs font-normal text-muted-foreground tabular-nums">{photos.length}</span>
+            <span className="font-mono text-sm font-normal text-muted-foreground tabular-nums">{photos.length}</span>
           </h2>
-          <p className="text-[0.8125rem] text-muted-foreground">{category.descriptionRu}</p>
+          <p className="text-[0.9375rem] text-muted-foreground">{category.descriptionRu}</p>
         </div>
         {tierCounts.length > 0 ? (
-          <ul className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-[0.6875rem] text-muted-foreground">
+          <ul className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 text-[0.8125rem] text-muted-foreground">
             {tierCounts.map(({ tier, count }) => (
               <li key={tier} className="inline-flex items-center gap-1.5">
                 <span className={cn("size-1.5 rounded-full", TIER_DOT[tier])} aria-hidden="true" />

@@ -103,6 +103,16 @@
   /* The one green that belongs to the mark itself: it flips with the theme so the logo never muddies. */
   --color-logo-check: var(--logo-check);
 
+  --text-hero: clamp(2.375rem, 5.4vw, 3.75rem);
+  --text-hero--line-height: 1.02;
+  --text-hero--letter-spacing: -0.035em;
+  --text-display: clamp(1.75rem, 3vw, 2.25rem);
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.025em;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.015em;
+
   --animate-reveal: reveal 0.44s var(--ease-out-quint) both;
 }
 
@@ -136,7 +146,7 @@
   --chart-3: oklch(0.439 0.024 265);
   --chart-4: oklch(0.371 0.026 265);
   --chart-5: oklch(0.269 0.028 265);
-  --radius: 0.5rem;
+  --radius: 0.4375rem;
   --shadow-ink: oklch(0.205 0.021 265 / 0.14);
   --shadow-ink-weak: oklch(0.205 0.021 265 / 0.07);
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
@@ -277,6 +287,14 @@
    * margin annotation, and it is the one place the interface speaks in the machine's voice.
    */
   .annotation {
-    @apply font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase;
+    @apply font-mono text-xs font-medium tracking-[0.06em] text-muted-foreground uppercase;
+  }
+
+  /*
+   * The verdict stamp. A rectangle with a hard edge, not a pill: a pill reads as a decorative tag,
+   * a stamp reads as something applied to the frame after an inspection — which is what it is.
+   */
+  .stamp {
+    @apply inline-flex h-6 shrink-0 items-center gap-1.5 rounded-[3px] border px-2 text-xs font-semibold;
   }
 }

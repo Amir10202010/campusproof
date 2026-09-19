@@ -22,9 +22,9 @@ export function CandidateButton({ candidate, onPick }: { candidate: CandidateCar
       </span>
       <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block leading-snug font-medium">{candidate.name}</span>
-        {place ? <span className="block text-[0.8125rem] text-muted-foreground">{place}</span> : null}
+        {place ? <span className="block text-[0.9375rem] text-muted-foreground">{place}</span> : null}
         {candidate.founded ? (
-          <span className="block font-mono text-[0.6875rem] text-muted-foreground">основан {candidate.founded}</span>
+          <span className="block font-mono text-xs text-muted-foreground">основан {candidate.founded}</span>
         ) : null}
       </span>
       <ChevronRight
