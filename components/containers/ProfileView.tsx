@@ -2,7 +2,9 @@
 
 import { TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CommunityGallery } from "@/components/community/CommunityGallery";
+import { ContributePhoto, type UploadOutcome } from "@/components/community/ContributePhoto";
 import { ProfileGuide } from "@/components/help/ProfileGuide";
 import { CampusMap } from "@/components/profile/CampusMap";
 import { CategoryNav } from "@/components/profile/CategoryNav";
@@ -21,6 +23,7 @@ import { ProfileError } from "@/components/search/ProfileError";
 import { useProfileStream, type ProfileStreamParams } from "@/hooks/useProfileStream";
 import { shareableProfilePath } from "@/lib/client/profileStream";
 import { CATEGORIES } from "@/lib/config/categories";
+import type { PublicCommunityPhoto } from "@/lib/community/types";
 import { computeCoverage } from "@/lib/pipeline/coverage";
 import type { CategoryId, Photo } from "@/lib/types";
 import { applyFilters, DEFAULT_FILTERS } from "@/lib/ui/filters";
@@ -34,6 +37,50 @@ export function ProfileView(props: ProfileStreamParams) {
   const state = useProfileStream(props);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openPhoto, setOpenPhoto] = useState<Photo | null>(null);
+  const [loadedCommunity, setLoadedCommunity] = useState<{ qid: string; photos: PublicCommunityPhoto[] } | null>(null);
+  const qid = state.entity?.qid;
+  const communityPhotos = loadedCommunity && loadedCommunity.qid === qid ? loadedCommunity.photos : [];
+
+  const refreshCommunityPhotos = useCallback(async (forQid: string) => {
+    try {
+      const response = await fetch(`/api/community/${forQid}`);
+      const data = await response.json();
+      setLoadedCommunity({ qid: forQid, photos: Array.isArray(data.photos) ? data.photos : [] });
+    } catch {
+      setLoadedCommunity({ qid: forQid, photos: [] });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!qid) return;
+    const controller = new AbortController();
+    fetch(`/api/community/${qid}`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data) => setLoadedCommunity({ qid, photos: Array.isArray(data.photos) ? data.photos : [] }))
+      .catch(() => setLoadedCommunity({ qid, photos: [] }));
+    return () => controller.abort();
+  }, [qid]);
+
+  const handleUpload = useCallback(
+    async (file: File, category: CategoryId, caption: string): Promise<UploadOutcome> => {
+      if (!qid) return { checks: [], error: "Сначала выберите университет." };
+      const form = new FormData();
+      form.set("file", file);
+      form.set("qid", qid);
+      form.set("category", category);
+      form.set("caption", caption);
+      try {
+        const response = await fetch("/api/community/photo", { method: "POST", body: form });
+        const data = await response.json();
+        if (!response.ok) return { checks: data.checks ?? [], error: data.message ?? "Не удалось загрузить фото." };
+        if (response.status === 201) void refreshCommunityPhotos(qid);
+        return { status: data.status, checks: data.checks ?? [] };
+      } catch {
+        return { checks: [], error: "Сеть недоступна — попробуйте ещё раз." };
+      }
+    },
+    [qid, refreshCommunityPhotos],
+  );
 
   // /search?q=… and /u/<qid>?refresh=1 become the shareable /u/<qid> without re-running the stream.
   useEffect(() => {
@@ -145,6 +192,19 @@ export function ProfileView(props: ProfileStreamParams) {
         />
         <FilteredOutTray items={state.rejected} />
       </div>
+
+      {qid ? (
+        <div className="space-y-3 border-t pt-8">
+          <div>
+            <h2 className="text-lg font-semibold">Фото студентов</h2>
+            <p className="text-sm text-muted-foreground">
+              Загружено студентами · не является проверенным источником и не влияет на баллы и уровни выше.
+            </p>
+          </div>
+          <ContributePhoto onUpload={handleUpload} />
+          <CommunityGallery photos={communityPhotos} />
+        </div>
+      ) : null}
 
       <EvidenceDialog
         photo={openPhoto}
