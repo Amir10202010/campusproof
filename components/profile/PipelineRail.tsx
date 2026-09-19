@@ -98,9 +98,16 @@ function stageSummary(stage: StageState): string {
 export function PipelineRail({ stages, sources }: PipelineRailProps) {
   const latest = [...stages].reverse().find((stage) => stage.status !== "pending" && stageSummary(stage));
   const problems = sources.filter((source) => source.status !== "ok");
+  const complete = stages.length > 0 && stages.every((stage) => stage.status === "done");
 
   return (
-    <section aria-label="Ход проверки" className="space-y-3 rounded-xl border bg-surface px-3 py-3 sm:px-4">
+    <details aria-label="Ход проверки" open={!complete} className="space-y-3 border-y py-3">
+      <summary className="cursor-pointer py-1 text-base font-medium focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+        {complete ? "Как собран профиль" : "Собираем профиль"}
+        {problems.length > 0 ? (
+          <span className="ml-2 inline-block text-sm font-normal text-warn">Не все источники ответили полностью</span>
+        ) : null}
+      </summary>
       <ol className="grid grid-cols-5 gap-1.5 sm:gap-3">
         {stages.map((stage) => {
           const status = STAGE_STATUS[stage.status];
@@ -157,7 +164,7 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
           </ul>
         ) : null}
       </div>
-    </section>
+    </details>
   );
 }
 

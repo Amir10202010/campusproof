@@ -1,114 +1,80 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarDays, ExternalLink, ScanSearch } from "lucide-react";
 import Link from "next/link";
-import { ScoringTable } from "@/components/help/ScoringTable";
-import { TrustScale } from "@/components/help/TrustScale";
 import { HomeSearch } from "@/components/search/HomeSearch";
-import { MANDATORY_FILTERS, REQUIRED_AREAS } from "@/lib/config/categories";
-import { LIMITS } from "@/lib/config/limits";
+import { REQUIRED_AREAS } from "@/lib/config/categories";
 
-/** Search examples: an ambiguous abbreviation, a Kazakhstan university, an international one (product-strategy §12). */
+/** Search examples cover an ambiguous abbreviation, a local and an international university. */
 const EXAMPLES = ["MSU", "Назарбаев Университет", "Harvard University"];
 
-const DEADLINE_S = Math.round(LIMITS.GLOBAL_DEADLINE_MS / 1000);
+const PHOTO_DETAILS = [
+  { icon: ExternalLink, title: "Источник", text: "Ссылка на страницу, где опубликован снимок." },
+  { icon: CalendarDays, title: "Дата", text: "Когда сняли, опубликовали или нашли фото — с точной пометкой." },
+  { icon: ScanSearch, title: "Доказательства", text: "Что связывает снимок с вузом и насколько этому можно доверять." },
+];
 
-/** P4 · #5 · home: value proposition, search with examples, the scoring rules, link to the methodology. */
+/** P4 · home: start a search first; explain the evidence without making users learn the scorer. */
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-      <section className="pt-16 pb-14 sm:pt-24 sm:pb-20">
-        <h1 className="max-w-5xl font-display text-hero font-semibold text-balance">
-          Настоящие фото университета — у каждого есть источник, дата и уровень доверия
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-          Введите название вуза. За полминуты соберём кампус, общежития, аудитории, библиотеки и город из открытых
-          источников — и покажем, на чём основан каждый снимок.
-        </p>
-
-        <div className="mt-10 max-w-3xl sm:mt-12">
-          <HomeSearch examples={EXAMPLES} />
+      <section className="grid grid-cols-1 gap-12 pt-12 pb-14 sm:pt-20 sm:pb-20 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-end lg:gap-16 lg:pt-24">
+        <div>
+          <h1 className="font-display text-hero font-semibold text-balance">
+            Ваш будущий вуз.
+            <br />
+            <span className="text-muted-foreground">В фотографиях.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            Найдите университет. Посмотрите кампус, общежития и аудитории — с источниками и проверкой каждого снимка.
+          </p>
+          <div className="mt-8 sm:mt-10">
+            <HomeSearch examples={EXAMPLES} />
+          </div>
         </div>
 
-        <p className="mt-5 max-w-2xl text-[0.9375rem] text-muted-foreground">
-          Лучше всего протестировано на вузах Казахстана, Центральной Азии и крупных международных университетах. Сборка
-          профиля укладывается в {DEADLINE_S} секунд.
-        </p>
+        <div className="border-t pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+          <h2 className="text-base font-semibold">У каждого фото — своя история</h2>
+          <dl className="mt-6 space-y-6">
+            {PHOTO_DETAILS.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 gap-y-1">
+                <dt className="col-span-2 flex gap-3 font-medium">
+                  <Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  {title}
+                </dt>
+                <dd className="col-start-2 text-base leading-relaxed text-muted-foreground">{text}</dd>
+              </div>
+            ))}
+          </dl>
+          <Link
+            href="/how-it-works"
+            className="mt-6 inline-flex min-h-11 items-center gap-2 text-base font-medium underline-offset-4 hover:underline"
+          >
+            Как мы проверяем фото
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
       </section>
 
-      {/*
-        The one thing worth remembering: the actual scoring table. Every figure comes from the code
-        that scores, so the landing page cannot promise arithmetic the pipeline does not perform.
-      */}
-      <section aria-labelledby="scoring-title" className="border-t py-14 sm:py-20">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-16">
-          <div className="lg:sticky lg:top-24 lg:self-start">
-            <p className="annotation">Как это считается</p>
-            <h2 id="scoring-title" className="mt-3 font-display text-display font-semibold text-balance">
-              Мы показываем свою арифметику
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Уровень доверия — не мнение нейросети. Каждый найденный признак добавляет или отнимает очки по
-              фиксированным правилам, и уровень выставляет код по сумме. Вот эти правила целиком.
-            </p>
-            <div className="mt-8">
-              <TrustScale />
+      <section
+        aria-labelledby="profile-title"
+        className="grid gap-8 border-t py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)] lg:gap-16"
+      >
+        <div>
+          <h2 id="profile-title" className="font-display text-display font-semibold text-balance">
+            От кампуса до города
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
+            Всё в одном профиле. Откройте любое фото, чтобы увидеть источник и доказательства. Если снимков нет, скажем
+            об этом — без случайных замен.
+          </p>
+        </div>
+        <dl className="divide-y">
+          {REQUIRED_AREAS.map((area) => (
+            <div key={area.id} className="grid gap-x-6 gap-y-1 py-4 first:pt-0 sm:grid-cols-[10rem_minmax(0,1fr)]">
+              <dt className="text-lg font-medium">{area.labelRu}</dt>
+              <dd className="text-base leading-relaxed text-muted-foreground">{area.descriptionRu}</dd>
             </div>
-            <Link
-              href="/how-it-works"
-              className="mt-8 inline-flex items-center gap-2 text-base font-medium underline-offset-4 hover:underline"
-            >
-              Как мы проверяем фото
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </div>
-          <ScoringTable />
-        </div>
-      </section>
-
-      <section aria-labelledby="profile-title" className="border-t py-14 sm:py-20">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-16">
-          <div>
-            <p className="annotation">Что в профиле</p>
-            <h2 id="profile-title" className="mt-3 font-display text-display font-semibold text-balance">
-              Пять обязательных разделов и четыре фильтра
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Разделы собираются для каждого вуза одинаково. Пустой раздел значит «не смогли подтвердить» — мы не
-              подставляем туда чужие снимки.
-            </p>
-          </div>
-
-          <div className="space-y-10">
-            <dl className="divide-y border-y">
-              {REQUIRED_AREAS.map((area) => (
-                <div key={area.id} className="grid gap-x-6 py-4 sm:grid-cols-[10rem_minmax(0,1fr)]">
-                  <dt className="font-display text-title font-semibold">{area.labelRu}</dt>
-                  <dd className="text-[0.9375rem] leading-relaxed text-muted-foreground">{area.descriptionRu}</dd>
-                </div>
-              ))}
-            </dl>
-            <div>
-              <p className="annotation">Фильтры</p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {MANDATORY_FILTERS.map((filter) => (
-                  <li key={filter.id} className="rounded-md border bg-card px-3 py-1.5 text-[0.9375rem]">
-                    {filter.filterLabelRu}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted-foreground">
-                Плюс переключатель «Показывать неподтверждённые» — по умолчанию такие снимки скрыты.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The product's actual position, given the weight it deserves. */}
-      <section className="border-t py-14 sm:py-20">
-        <blockquote className="max-w-4xl font-display text-display leading-tight font-medium text-balance">
-          Если подтвердить фото нельзя, мы так и пишем.
-          <span className="text-muted-foreground"> Чужие снимки хуже честного «не нашли».</span>
-        </blockquote>
+          ))}
+        </dl>
       </section>
     </main>
   );

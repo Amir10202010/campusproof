@@ -78,10 +78,10 @@ export function SearchBox({ defaultValue, loading = false, examples = [], onSubm
             <Button
               key={example}
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={loading}
-              className="h-8 rounded-md px-3 text-[0.9375rem] font-normal"
+              className="min-h-11 rounded-sm px-2 text-[0.9375rem] font-normal text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
               onClick={() => {
                 setValue(example);
                 submit(example);
