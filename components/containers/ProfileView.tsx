@@ -89,7 +89,10 @@ export function ProfileView(props: ProfileStreamParams) {
         onRefresh={state.entity ? () => router.push(`/u/${state.entity?.qid}?refresh=1`) : undefined}
       />
       <PipelineRail stages={state.stages} sources={state.sources} />
-      <DegradedBanner degraded={state.profile?.degraded ?? []} />
+      <DegradedBanner
+        degraded={state.profile?.degraded ?? []}
+        visionPartial={state.sources.some((source) => source.source === "vision" && source.status === "partial")}
+      />
       <DescriptionBlock description={state.description} ready={state.descriptionReady || state.status === "error"} />
       <FilterBar value={filters} onChange={setFilters} counts={counts} />
       <ProfileGuide photosCount={visible.length} />
