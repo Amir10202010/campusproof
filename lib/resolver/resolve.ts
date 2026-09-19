@@ -45,8 +45,10 @@ export const resolveQuery: ResolveQuery = async (query, signal) => {
  * v4 (#109): #64 and #101 changed the rules (higher-education filter, typed abbreviations) but kept v3,
  * so Redis still answered "ЕНУ" with the not_found it cached before those fixes — for up to 24 h.
  * v5: an initial («им. К. И. Сатпаева») or a shorter acronym no longer covers a query word ("КазНМУ" was Satbayev).
+ * v6: the syllabic Kazakh acronym is generated, so "КазНМУ" resolves instead of falling through. v5 answered
+ * it with not_found and cached that for 24 h — without the bump the fix would be invisible until tomorrow.
  */
-const RESOLVER_VERSION = 5;
+const RESOLVER_VERSION = 6;
 
 export function resolveCacheKey(normalizedQuery: string): string {
   return `resolve:v${RESOLVER_VERSION}:${normalizedQuery}`;
