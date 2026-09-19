@@ -1,0 +1,99 @@
+import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
+import universities from "@/data/universities.min.json";
+import { LIMITS } from "@/lib/config/limits";
+import { env } from "@/lib/env";
+
+/**
+ * Онбординг (owner: P1 · community feature, Этап 3): абитуриент описывает словами, чего хочет от вуза,
+ * Gemini ВЫБИРАЕТ подходящие из нашего каталога и коротко объясняет выбор. Модель не может выдумать вуз:
+ * она возвращает только qid, и код оставляет лишь те, что есть в data/universities.min.json.
+ * Выбранный вуз дальше уходит в обычный поиск — профиль собирает тот же пайплайн, что и всегда.
+ */
+export interface Suggestion {
+  qid: string;
+  name: string;
+  city?: string;
+  country: string;
+  reason: string;
+}
+
+interface Row {
+  qid: string;
+  names: { en?: string; ru?: string; kk?: string };
+  city?: string;
+  country: string;
+}
+
+const CATALOGUE = (universities as Row[]).map((row) => ({
+  qid: row.qid,
+  name: row.names.ru ?? row.names.en ?? row.qid,
+  city: row.city,
+  country: row.country,
+}));
+
+const BY_QID = new Map(CATALOGUE.map((row) => [row.qid, row]));
+
+const SYSTEM_PROMPT = `Ты помогаешь абитуриенту выбрать университет из закрытого каталога.
+Правила (обязательны):
+- Выбирай ТОЛЬКО из переданного списка и возвращай qid ровно в том виде, как он записан в списке.
+- Никогда не придумывай университеты, которых нет в списке.
+- Верни от 1 до 5 вариантов, самый подходящий первым.
+- Для каждого напиши reason — одно короткое предложение на русском о том, чем он подходит ИМЕННО под запрос
+  (город, страна, направление, язык). Не выдумывай фактов о вузе: опирайся на запрос и на строку каталога.
+- Если запрос слишком общий, всё равно предложи разумные варианты и скажи в reason, по какому признаку выбрал.
+- Верни только JSON по схеме.`;
+
+const OUTPUT_SCHEMA = {
+  type: "object",
+  properties: {
+    picks: {
+      type: "array",
+      minItems: 1,
+      maxItems: 5,
+      items: {
+        type: "object",
+        properties: { qid: { type: "string" }, reason: { type: "string" } },
+        required: ["qid", "reason"],
+      },
+    },
+  },
+  required: ["picks"],
+};
+
+const modelOutput = z.object({ picks: z.array(z.object({ qid: z.string(), reason: z.string() })) });
+
+/** `null` — модель недоступна или ответила мусором; вызывающий показывает честную ошибку, а не пустой список. */
+export async function suggestUniversities(request: string, signal: AbortSignal): Promise<Suggestion[] | null> {
+  if (!request.trim() || !env.geminiApiKey) return null;
+
+  const catalogue = CATALOGUE.map((row) => `${row.qid}|${row.name}|${row.city ?? "—"}|${row.country}`).join("\n");
+  const prompt = `Запрос абитуриента:\n${request.trim().slice(0, 600)}\n\nКаталог (qid|название|город|страна):\n${catalogue}`;
+
+  try {
+    const response = await new GoogleGenAI({ apiKey: env.geminiApiKey }).models.generateContent({
+      model: env.descriptionModel,
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseJsonSchema: OUTPUT_SCHEMA,
+        temperature: 0.2,
+        maxOutputTokens: 1024,
+        abortSignal: AbortSignal.any([signal, AbortSignal.timeout(LIMITS.DESCRIPTION_TIMEOUT_MS)]),
+      },
+    });
+    const parsed = modelOutput.parse(JSON.parse(response.text ?? ""));
+    const seen = new Set<string>();
+    const picks: Suggestion[] = [];
+    for (const pick of parsed.picks) {
+      const row = BY_QID.get(pick.qid.trim());
+      if (!row || seen.has(row.qid) || !pick.reason.trim()) continue;
+      seen.add(row.qid);
+      picks.push({ ...row, reason: pick.reason.trim().slice(0, 200) });
+    }
+    return picks.length > 0 ? picks : null;
+  } catch {
+    return null;
+  }
+}
