@@ -44,12 +44,13 @@ export async function GET(request: NextRequest) {
 }
 
 interface Probe {
-  status: "up" | "down" | "not_configured";
+  /** "skipped" = configured but deliberately not called, so a reader does not mistake it for a missing key. */
+  status: "up" | "down" | "not_configured" | "skipped";
   ms?: number;
   /** Short Russian reason when a probe is down — the same wording the pipeline shows. */
   reason?: string;
   /** Format checks of the configured key: never the key itself. */
-  key?: { length: number; looksLikeApiKey: boolean; hasWhitespace: boolean };
+  key?: { length: number; hasWhitespace: boolean; hasQuotes: boolean };
 }
 
 async function runProbes(withSearch: boolean): Promise<Record<string, Probe>> {
@@ -66,7 +67,8 @@ async function runProbes(withSearch: boolean): Promise<Record<string, Probe>> {
         })
       : Promise.resolve<Probe>({ status: "not_configured" }),
     geminiProbe(),
-    withSearch ? serperProbe() : Promise.resolve<Probe>({ status: "not_configured" }),
+    // Without &search=1 the probe is not run at all: it would spend one of the 2,500 free credits.
+    withSearch ? serperProbe() : Promise.resolve<Probe>({ status: env.serperApiKey ? "skipped" : "not_configured" }),
   ]);
   return { wikidata, redis, gemini, serper };
 }
@@ -75,11 +77,12 @@ async function runProbes(withSearch: boolean): Promise<Record<string, Probe>> {
 async function geminiProbe(): Promise<Probe> {
   const apiKey = env.geminiApiKey;
   if (!apiKey) return { status: "not_configured" };
+  // How a pasted key actually breaks — not what it looks like. The old check wanted the AIza… prefix of
+  // AI Studio keys and reported "false" next to a key that works, which reads as a fault when there is none.
   const key = {
     length: apiKey.length,
-    // Google AI Studio keys look like AIza… — an OAuth token or a service-account JSON is rejected with 401.
-    looksLikeApiKey: /^AIza[\w-]{30,}$/.test(apiKey),
     hasWhitespace: apiKey.trim() !== apiKey || /\s/.test(apiKey),
+    hasQuotes: /^["']|["']$/.test(apiKey),
   };
   const started = Date.now();
   try {
