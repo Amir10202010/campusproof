@@ -4,12 +4,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * CampusProof design system — «контактный лист».
+ *
+ * The product is a photographic dossier: every frame is stamped with where it came from, when, and how
+ * sure we are. The visual language follows from that, not from a template:
+ *   · one cold, inky neutral ramp (hue 265) — archival paper and ink, never pure gray;
+ *   · saturated colour always carries a verdict, never decoration. Green means confirmed (a verified
+ *     photo, a source that answered, a finished stage), amber means partial, red means rejected. No
+ *     heading, button, border or hover is allowed to borrow those hues, or the page stops reading as
+ *     evidence;
+ *   · Golos Text (Cyrillic-native) carries headings and figures, Geist carries prose, JetBrains Mono
+ *     carries machine facts — domains, timestamps, counts, codes. The mono is the margin of the sheet.
+ *
+ * Contrast of the tokens below is enforced by tests/ui-tiers-contrast.test.ts. That test parses this file
+ * with a regex rather than a CSS parser, so every variable it reads must stay a flat oklch(L C H) triple,
+ * declared directly in the light or dark token block — no alpha, no nesting, no calc.
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+
+  /* Fallbacks matter: app/global-error.tsx renders its own <html> without next/font's variables, and a
+     webfont can always fail to load. Each face degrades to a sane system stack instead of to nothing. */
+  --font-sans: var(--font-geist, ui-sans-serif, system-ui, "Segoe UI", sans-serif);
+  --font-mono: var(--font-mono-face, ui-monospace, "Cascadia Mono", "Consolas", monospace);
+  --font-display: var(--font-golos, ui-sans-serif, system-ui, "Segoe UI", sans-serif);
+  /* components/ui/card.tsx renders titles with font-heading. */
+  --font-heading: var(--font-golos, ui-sans-serif, system-ui, "Segoe UI", sans-serif);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -27,6 +51,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-surface: var(--destructive-surface);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -39,6 +65,9 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* A panel that should read as "beneath" the page — headers, rails, the footer. */
+  --color-surface: var(--surface);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,7 +75,14 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* Trust tiers (P4 · #36): text on background keeps contrast ≥ 4.5:1 — checked in tests/ui-tiers-contrast.test.ts */
+
+  /* Elevation is tinted with the ink hue, never neutral black: shadows on paper are cold. */
+  --shadow-xs: 0 1px 2px -1px var(--shadow-ink-weak);
+  --shadow-sm: 0 1px 2px -1px var(--shadow-ink-weak), 0 2px 6px -2px var(--shadow-ink-weak);
+  --shadow-md: 0 2px 4px -2px var(--shadow-ink-weak), 0 6px 16px -6px var(--shadow-ink);
+  --shadow-lg: 0 4px 8px -4px var(--shadow-ink-weak), 0 16px 32px -12px var(--shadow-ink);
+
+  /* Verdict colours. Text on background keeps contrast ≥ 4.5:1 — tests/ui-tiers-contrast.test.ts. */
   --color-tier-verified: var(--tier-verified);
   --color-tier-verified-foreground: var(--tier-verified-foreground);
   --color-tier-verified-border: var(--tier-verified-border);
@@ -56,96 +92,148 @@
   --color-tier-unconfirmed: var(--tier-unconfirmed);
   --color-tier-unconfirmed-foreground: var(--tier-unconfirmed-foreground);
   --color-tier-unconfirmed-border: var(--tier-unconfirmed-border);
+
+  /* Status tones shared by source chips, degraded banners and coverage rows. */
+  --color-ok: var(--ok);
+  --color-ok-surface: var(--ok-surface);
+  --color-ok-border: var(--ok-border);
+  --color-warn: var(--warn);
+  --color-warn-surface: var(--warn-surface);
+  --color-warn-border: var(--warn-border);
+  /* The one green that belongs to the mark itself: it flips with the theme so the logo never muddies. */
+  --color-logo-check: var(--logo-check);
+
+  --animate-reveal: reveal 0.44s var(--ease-out-quint) both;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Without this the browser may force-darken the page (and native scrollbars, form controls and
+     the canvas behind the body) whenever the OS asks for dark, ignoring the theme the visitor chose. */
+  color-scheme: light;
+  --background: oklch(0.993 0.0025 265);
+  --foreground: oklch(0.205 0.021 265);
+  --surface: oklch(0.975 0.005 265);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.205 0.021 265);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.5 0 0); /* P4 · #40: ≥ 4.5:1 on white and on bg-muted */
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.205 0 0); /* P4 · #40: ring-ring/50 stays ≥ 3:1 against white */
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --tier-verified: oklch(0.508 0.118 165.612);
+  --popover-foreground: oklch(0.205 0.021 265);
+  --primary: oklch(0.262 0.042 265);
+  --primary-foreground: oklch(0.985 0.002 265);
+  --secondary: oklch(0.955 0.007 265);
+  --secondary-foreground: oklch(0.262 0.042 265);
+  --muted: oklch(0.963 0.006 265);
+  --muted-foreground: oklch(0.487 0.019 265); /* ≥ 4.5:1 on background and on bg-muted */
+  --accent: oklch(0.945 0.009 265);
+  --accent-foreground: oklch(0.262 0.042 265);
+  --destructive: oklch(0.523 0.202 26.5);
+  --destructive-foreground: oklch(0.399 0.161 26.5);
+  --destructive-surface: oklch(0.966 0.019 22);
+  --border: oklch(0.906 0.007 265);
+  --input: oklch(0.879 0.009 265);
+  --ring: oklch(0.26 0.13 262); /* ring-ring/50 stays ≥ 3:1 against white */
+  --chart-1: oklch(0.487 0.112 163);
+  --chart-2: oklch(0.556 0.02 265);
+  --chart-3: oklch(0.439 0.024 265);
+  --chart-4: oklch(0.371 0.026 265);
+  --chart-5: oklch(0.269 0.028 265);
+  --radius: 0.5rem;
+  --shadow-ink: oklch(0.205 0.021 265 / 0.14);
+  --shadow-ink-weak: oklch(0.205 0.021 265 / 0.07);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --sidebar: oklch(0.975 0.005 265);
+  --sidebar-foreground: oklch(0.205 0.021 265);
+  --sidebar-primary: oklch(0.262 0.042 265);
+  --sidebar-primary-foreground: oklch(0.985 0.002 265);
+  --sidebar-accent: oklch(0.945 0.009 265);
+  --sidebar-accent-foreground: oklch(0.262 0.042 265);
+  --sidebar-border: oklch(0.906 0.007 265);
+  --sidebar-ring: oklch(0.26 0.13 262);
+  --ok: oklch(0.44 0.101 163);
+  --ok-surface: oklch(0.963 0.031 164);
+  --ok-border: oklch(0.842 0.078 165);
+  --warn: oklch(0.487 0.115 62);
+  --warn-surface: oklch(0.968 0.043 91);
+  --warn-border: oklch(0.866 0.111 84);
+  --logo-check: oklch(0.755 0.152 164);
+  --tier-verified: oklch(0.487 0.112 163);
   --tier-verified-foreground: oklch(1 0 0);
-  --tier-verified-border: oklch(0.432 0.095 166.913);
-  --tier-likely: oklch(0.962 0.059 95.617);
-  --tier-likely-foreground: oklch(0.279 0.077 45.635);
-  --tier-likely-border: oklch(0.879 0.169 91.605);
-  --tier-unconfirmed: oklch(0.967 0.001 286.375);
-  --tier-unconfirmed-foreground: oklch(0.37 0.013 285.805);
-  --tier-unconfirmed-border: oklch(0.705 0.015 286.067);
+  --tier-verified-border: oklch(0.413 0.093 164);
+  --tier-likely: oklch(0.955 0.055 92);
+  --tier-likely-foreground: oklch(0.33 0.075 60);
+  --tier-likely-border: oklch(0.866 0.147 88);
+  --tier-unconfirmed: oklch(0.958 0.005 265);
+  --tier-unconfirmed-foreground: oklch(0.43 0.019 265);
+  --tier-unconfirmed-border: oklch(0.742 0.014 265);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.87 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  --tier-verified: oklch(0.432 0.095 166.913);
+  color-scheme: dark;
+  --background: oklch(0.163 0.015 265);
+  --foreground: oklch(0.968 0.004 265);
+  --surface: oklch(0.196 0.017 265);
+  --card: oklch(0.212 0.018 265);
+  --card-foreground: oklch(0.968 0.004 265);
+  --popover: oklch(0.223 0.019 265);
+  --popover-foreground: oklch(0.968 0.004 265);
+  --primary: oklch(0.915 0.006 265);
+  --primary-foreground: oklch(0.205 0.024 265);
+  --secondary: oklch(0.268 0.018 265);
+  --secondary-foreground: oklch(0.968 0.004 265);
+  --muted: oklch(0.258 0.016 265);
+  --muted-foreground: oklch(0.715 0.018 265);
+  --accent: oklch(0.29 0.02 265);
+  --accent-foreground: oklch(0.968 0.004 265);
+  --destructive: oklch(0.704 0.173 24);
+  --destructive-foreground: oklch(0.79 0.132 26);
+  --destructive-surface: oklch(0.29 0.075 25);
+  --border: oklch(0.319 0.019 265);
+  --input: oklch(0.366 0.021 265);
+  --ring: oklch(0.65 0.121 262);
+  --chart-1: oklch(0.62 0.118 164);
+  --chart-2: oklch(0.65 0.02 265);
+  --chart-3: oklch(0.556 0.022 265);
+  --chart-4: oklch(0.45 0.024 265);
+  --chart-5: oklch(0.35 0.022 265);
+  --shadow-ink: oklch(0.06 0.01 265 / 0.6);
+  --shadow-ink-weak: oklch(0.06 0.01 265 / 0.35);
+  --sidebar: oklch(0.196 0.017 265);
+  --sidebar-foreground: oklch(0.968 0.004 265);
+  --sidebar-primary: oklch(0.915 0.006 265);
+  --sidebar-primary-foreground: oklch(0.205 0.024 265);
+  --sidebar-accent: oklch(0.29 0.02 265);
+  --sidebar-accent-foreground: oklch(0.968 0.004 265);
+  --sidebar-border: oklch(0.319 0.019 265);
+  --sidebar-ring: oklch(0.65 0.121 262);
+  --ok: oklch(0.762 0.129 165);
+  --ok-surface: oklch(0.283 0.055 166);
+  --ok-border: oklch(0.44 0.087 165);
+  --warn: oklch(0.836 0.128 86);
+  --warn-surface: oklch(0.312 0.062 68);
+  --warn-border: oklch(0.487 0.096 72);
+  --logo-check: oklch(0.476 0.108 163);
+  --tier-verified: oklch(0.408 0.093 164);
   --tier-verified-foreground: oklch(1 0 0);
-  --tier-verified-border: oklch(0.508 0.118 165.612);
-  --tier-likely: oklch(0.279 0.077 45.635);
-  --tier-likely-foreground: oklch(0.962 0.059 95.617);
-  --tier-likely-border: oklch(0.555 0.163 48.998);
-  --tier-unconfirmed: oklch(0.274 0.006 286.033);
-  --tier-unconfirmed-foreground: oklch(0.871 0.006 286.286);
-  --tier-unconfirmed-border: oklch(0.552 0.016 285.938);
+  --tier-verified-border: oklch(0.52 0.113 165);
+  --tier-likely: oklch(0.315 0.063 68);
+  --tier-likely-foreground: oklch(0.925 0.075 92);
+  --tier-likely-border: oklch(0.523 0.113 70);
+  --tier-unconfirmed: oklch(0.27 0.014 265);
+  --tier-unconfirmed-foreground: oklch(0.79 0.014 265);
+  --tier-unconfirmed-border: oklch(0.45 0.017 265);
 }
 
-/* P4 · #40 · respect "reduce motion": no spinners, pulses, slides or smooth scrolling. */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Respect "reduce motion": no spinners, pulses, slides or smooth scrolling. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -161,10 +249,34 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    /* Cyrillic at small sizes is denser than Latin; a touch of optical sizing keeps the mono readable. */
+    text-rendering: optimizeLegibility;
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  /* Headings and figures are set in the display face; weights and sizes are chosen per component. */
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    font-feature-settings: "ss01";
+  }
+  /* Tabular figures wherever numbers are compared down a column. */
+  .font-mono,
+  [class*="tabular-nums"] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /*
+   * The eyebrow that titles every apparatus panel on a profile — mono, spaced, quiet. It is the sheet's
+   * margin annotation, and it is the one place the interface speaks in the machine's voice.
+   */
+  .annotation {
+    @apply font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase;
   }
 }

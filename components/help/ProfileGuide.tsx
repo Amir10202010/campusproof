@@ -58,12 +58,12 @@ export function ProfileGuide({ photosCount }: ProfileGuideProps) {
   if (photosCount === 0 || dismissed) return null;
 
   return (
-    <aside aria-labelledby={titleId} className="relative rounded-xl border bg-muted/40 p-4 pr-12 text-sm">
+    <aside aria-labelledby={titleId} className="relative rounded-xl border bg-surface p-4 pr-12 text-sm">
       <Button variant="ghost" size="icon-sm" className="absolute top-2 right-2" onClick={dismiss}>
         <X aria-hidden="true" />
         <span className="sr-only">Скрыть подсказку</span>
       </Button>
-      <h2 id={titleId} className="flex items-center gap-2 font-medium">
+      <h2 id={titleId} className="flex items-center gap-2 font-display font-semibold">
         <Info className="size-4 text-muted-foreground" aria-hidden="true" />
         Как читать профиль
       </h2>
@@ -93,7 +93,7 @@ export function ProfileGuide({ photosCount }: ProfileGuideProps) {
         </Button>
         <Link
           href="/how-it-works"
-          className="inline-flex items-center gap-1 font-medium underline-offset-3 hover:underline"
+          className="inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline"
         >
           Как мы проверяем фото
           <ArrowRight className="size-4" aria-hidden="true" />

@@ -11,23 +11,26 @@ export function CandidateButton({ candidate, onPick }: { candidate: CandidateCar
     <button
       type="button"
       onClick={() => onPick(candidate.qid)}
-      className="flex h-full w-full cursor-pointer items-center gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid"
+      className="group flex h-full w-full cursor-pointer items-center gap-3 rounded-lg bg-card p-3 text-left ring-1 ring-border transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
     >
-      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+      <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
         {candidate.logoUrl ? (
           <ExternalImage src={candidate.logoUrl} alt="" fallbackText="" className="size-full object-contain p-1" />
         ) : (
-          <GraduationCap className="size-6 text-muted-foreground" aria-hidden="true" />
+          <GraduationCap className="size-5 text-muted-foreground" aria-hidden="true" />
         )}
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 space-y-0.5">
         <span className="block leading-snug font-medium">{candidate.name}</span>
-        {place ? <span className="block text-sm text-muted-foreground">{place}</span> : null}
+        {place ? <span className="block text-[0.8125rem] text-muted-foreground">{place}</span> : null}
         {candidate.founded ? (
-          <span className="block text-xs text-muted-foreground">основан: {candidate.founded}</span>
+          <span className="block font-mono text-[0.6875rem] text-muted-foreground">основан {candidate.founded}</span>
         ) : null}
       </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <ChevronRight
+        className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5"
+        aria-hidden="true"
+      />
     </button>
   );
 }

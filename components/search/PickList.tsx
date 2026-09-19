@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { CandidateCard } from "@/lib/types";
 import { CandidateButton } from "./CandidateButton";
+import { Outcome, OutcomeHints } from "./Outcome";
 
 export interface PickListProps {
   query: string;
@@ -15,17 +16,14 @@ export function PickList({ query, candidates, onPick }: PickListProps) {
   // One card means a weak match, not a tie: the name found does not quite match what was typed.
   const single = candidates.length === 1;
   return (
-    <section className="mx-auto max-w-3xl space-y-5 py-2">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">
-          {single ? "Вы имели в виду этот университет?" : "Какой университет вы имели в виду?"}
-        </h1>
-        <p className="text-muted-foreground">
-          {single
-            ? `Название этого вуза совпало с запросом «${query}» не полностью, поэтому сами профиль не открываем. Если это он — выберите его.`
-            : `Запросу «${query}» подходит несколько университетов. Выберите нужный — профиль соберём для него.`}
-        </p>
-      </div>
+    <Outcome
+      title={single ? "Вы имели в виду этот университет?" : "Какой университет вы имели в виду?"}
+      lead={
+        single
+          ? `Название этого вуза совпало с запросом «${query}» не полностью, поэтому сами профиль не открываем. Если это он — выберите его.`
+          : `Запросу «${query}» подходит несколько университетов. Выберите нужный — профиль соберём для него.`
+      }
+    >
       <ul className="grid gap-3 sm:grid-cols-2">
         {candidates.map((candidate) => (
           <li key={candidate.qid}>
@@ -33,16 +31,14 @@ export function PickList({ query, candidates, onPick }: PickListProps) {
           </li>
         ))}
       </ul>
-      <div className="space-y-2 rounded-xl border border-dashed p-4 text-sm">
-        <p className="font-medium">Нужного нет в списке?</p>
-        <ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
-          <li>Напишите полное официальное название, а не сокращение.</li>
-          <li>Попробуйте название на английском языке.</li>
-        </ul>
-        <Link href="/" className="inline-block font-medium underline underline-offset-3">
+      <OutcomeHints
+        title="Нужного нет в списке?"
+        items={["Напишите полное официальное название, а не сокращение.", "Попробуйте название на английском языке."]}
+      >
+        <Link href="/" className="inline-block pt-1 font-medium underline underline-offset-4">
           Новый поиск
         </Link>
-      </div>
-    </section>
+      </OutcomeHints>
+    </Outcome>
   );
 }

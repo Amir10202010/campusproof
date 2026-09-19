@@ -30,16 +30,18 @@ export function FilteredOutTray({ items }: FilteredOutTrayProps) {
     .join(" · ");
 
   return (
-    <section className="rounded-xl border">
+    <section className="rounded-xl border bg-surface">
       <button
         type="button"
         aria-expanded={open}
         aria-controls={contentId}
         onClick={() => setOpen(!open)}
-        className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl p-4 text-left hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid"
+        className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl p-4 text-left transition-colors hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
       >
         <span className="min-w-0">
-          <span className="block text-lg font-semibold tracking-tight">Отфильтровано ({items.length})</span>
+          <span className="block font-display text-lg font-semibold tracking-tight">
+            Отфильтровано ({items.length})
+          </span>
           <span className="block text-sm text-muted-foreground">
             {summary}
             {groups.length > 3 ? " · …" : ""}
@@ -95,7 +97,7 @@ function RejectedCard({ item }: { item: RejectedItem }) {
   const href = safeHttpUrl(item.sourcePageUrl);
 
   return (
-    <li className="overflow-hidden rounded-lg border bg-card text-xs">
+    <li className="overflow-hidden rounded-lg bg-card text-xs ring-1 ring-border">
       <span className="block aspect-4/3 bg-muted">
         {thumb ? (
           <ExternalImage

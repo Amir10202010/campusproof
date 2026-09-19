@@ -4,6 +4,7 @@ import { Hourglass, RotateCw, SearchX, TriangleAlert, WifiOff, type LucideIcon }
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HomeSearch } from "./HomeSearch";
+import { Outcome } from "./Outcome";
 
 export interface ProfileErrorProps {
   error: { code: string; message: string; retryable: boolean };
@@ -28,22 +29,25 @@ const FALLBACK = { title: "Не удалось собрать профиль", i
 /**
  * P4 · the run ended with an error before any photo was shown: say what happened and what to do next,
  * instead of leaving the "searching…" skeleton on screen. Presentational; the container decides when to show it.
+ * Shares the Outcome shell with PickList and NotFound, so the three terminal states read as one family.
  */
 export function ProfileError({ error, entityName, onRetry }: ProfileErrorProps) {
   const { title, icon: Icon } = ERROR_VIEW[error.code] ?? FALLBACK;
 
   return (
-    <section className="mx-auto max-w-3xl space-y-5 py-2">
-      <div role="alert" className="space-y-2">
-        <Icon className="size-8 text-muted-foreground" aria-hidden="true" />
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">{title}</h1>
-        {entityName ? <p className="font-medium">{entityName}</p> : null}
-        <p className="text-muted-foreground">{error.message}</p>
-        <p className="font-mono text-xs text-muted-foreground">код: {error.code}</p>
-      </div>
-
+    <Outcome
+      icon={Icon}
+      title={title}
+      alert
+      lead={
+        <>
+          {entityName ? <span className="mb-1 block font-medium text-foreground">{entityName}</span> : null}
+          {error.message}
+        </>
+      }
+    >
       {error.retryable && onRetry ? (
-        <Button size="lg" onClick={onRetry}>
+        <Button size="lg" className="h-10" onClick={onRetry}>
           <RotateCw aria-hidden="true" />
           Попробовать ещё раз
         </Button>
@@ -52,10 +56,13 @@ export function ProfileError({ error, entityName, onRetry }: ProfileErrorProps) 
       <div className="space-y-3 rounded-xl border border-dashed p-4 text-sm">
         <p className="font-medium">Найти другой университет</p>
         <HomeSearch examples={[]} />
-        <Link href="/" className="inline-block font-medium underline underline-offset-3">
+        <Link href="/" className="inline-block font-medium underline underline-offset-4">
           На главную
         </Link>
       </div>
-    </section>
+
+      {/* Useful when someone reports the problem; deliberately the quietest thing on the page. */}
+      <p className="font-mono text-xs text-muted-foreground">код: {error.code}</p>
+    </Outcome>
   );
 }

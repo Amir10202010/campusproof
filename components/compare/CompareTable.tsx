@@ -15,8 +15,8 @@ export interface CompareTableProps {
 }
 
 const COVERAGE_STATUS: Record<CategoryCoverage["status"], { label: string; icon: LucideIcon; className: string }> = {
-  good: { label: "хорошо", icon: CircleCheck, className: "text-emerald-700" },
-  thin: { label: "мало фото", icon: Contrast, className: "text-amber-700" },
+  good: { label: "хорошо", icon: CircleCheck, className: "text-ok" },
+  thin: { label: "мало фото", icon: Contrast, className: "text-warn" },
   none: { label: "нет подтверждённых", icon: CircleDashed, className: "text-muted-foreground" },
 };
 
@@ -48,7 +48,7 @@ export function CompareTable({ columns, onOpenPhoto }: CompareTableProps) {
       <div className="hidden space-y-6 sm:block">
         {cells.map((cell) => (
           <div key={cell.key} className="space-y-2">
-            <h2 className="border-b pb-1 text-sm font-medium text-muted-foreground">{cell.title}</h2>
+            <h2 className="annotation border-b pb-1.5">{cell.title}</h2>
             <div className="grid grid-cols-2 gap-6">
               {columns.map((column) => (
                 <div key={column.qid} className="min-w-0">
@@ -73,7 +73,7 @@ export function CompareTable({ columns, onOpenPhoto }: CompareTableProps) {
           <TabsContent key={column.qid} value={column.qid} className="space-y-5 pt-2">
             {cells.map((cell) => (
               <div key={cell.key} className="space-y-2">
-                <h2 className="border-b pb-1 text-sm font-medium text-muted-foreground">{cell.title}</h2>
+                <h2 className="annotation border-b pb-1.5">{cell.title}</h2>
                 {cell.render(column)}
               </div>
             ))}
@@ -88,7 +88,10 @@ function About({ column }: { column: CompareColumn }) {
   const website = safeHttpUrl(column.website);
   return (
     <div className="space-y-1 text-sm">
-      <Link href={`/u/${column.qid}`} className="text-lg leading-snug font-semibold underline-offset-3 hover:underline">
+      <Link
+        href={`/u/${column.qid}`}
+        className="font-display text-lg leading-snug font-semibold tracking-tight underline-offset-4 hover:underline"
+      >
         {column.name}
       </Link>
       {column.place ? <p className="text-muted-foreground">{column.place}</p> : null}
@@ -97,7 +100,7 @@ function About({ column }: { column: CompareColumn }) {
           href={website}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-muted-foreground underline-offset-3 hover:text-foreground hover:underline"
+          className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           {displayHost(website)}
           <ExternalLink className="size-3" aria-hidden="true" />
@@ -110,7 +113,7 @@ function About({ column }: { column: CompareColumn }) {
       </p>
       <p className="text-xs text-muted-foreground">
         Проверено: {column.totals.verified} · вероятно: {column.totals.likely} · сохранённый профиль от{" "}
-        <time dateTime={column.generatedAt} suppressHydrationWarning>
+        <time dateTime={column.generatedAt} className="font-mono" suppressHydrationWarning>
           {formatDateTimeRu(column.generatedAt)}
         </time>
       </p>
@@ -129,7 +132,7 @@ function Facts({ column }: { column: CompareColumn }) {
             <dt className="text-muted-foreground">{fact.label}</dt>
             <dd className="min-w-0 break-words">
               {href ? (
-                <a href={href} target="_blank" rel="noopener noreferrer" className="underline-offset-3 hover:underline">
+                <a href={href} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
                   {fact.value}
                 </a>
               ) : (
@@ -187,7 +190,7 @@ function AreaPhotos({
       {area.shownTotal > area.photos.length ? (
         <Link
           href={`/u/${column.qid}#category-${area.category.id}`}
-          className="text-xs text-muted-foreground underline-offset-3 hover:text-foreground hover:underline"
+          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           Ещё {area.shownTotal - area.photos.length} в профиле
         </Link>

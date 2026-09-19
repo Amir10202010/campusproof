@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Landmark, MessagesSquare, Newspaper, UserRound, type LucideIcon } from "lucide-react";
+import { BookOpen, Landmark, MessagesSquare, Newspaper, TriangleAlert, UserRound, type LucideIcon } from "lucide-react";
 import type { Photo, SourceType } from "@/lib/types";
 import { photoAlt, photoDateText } from "@/lib/ui/format";
 import { PHOTO_LABEL_RU, SOURCE_TYPE_SHORT_RU } from "@/lib/ui/labels";
@@ -22,8 +22,11 @@ export interface PhotoCardProps {
 }
 
 /**
- * P4 · #3 · thumbnail (<img loading="lazy" referrerPolicy="no-referrer"> + onError fallback), TierBadge,
- * source domain, date with its kind ("снято" / "опубликовано" / "загружено" / "получено"). Click → onOpen.
+ * P4 · #3 · one frame of the contact sheet: the picture, its verdict stamped on it, and the margin —
+ * where it came from and when, set in mono because those are machine facts, not prose.
+ *
+ * The thumbnail is a plain <img loading="lazy" referrerPolicy="no-referrer"> with an onError fallback
+ * (AGENTS.md: never next/image for third-party photos). Click → onOpen → the evidence dialog.
  */
 export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
   const content = (
@@ -32,19 +35,30 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
         <ExternalImage
           src={photo.thumbUrl}
           alt={photoAlt(photo)}
-          className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          className="size-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
         />
         <TierBadge tier={photo.tier} className="absolute top-2 left-2 shadow-sm" />
         <SourceTypeBadge type={photo.sourceType} />
       </span>
-      <span className="block space-y-0.5 px-2.5 py-2 text-xs">
-        <span className="block truncate font-medium text-foreground">{photo.sourceDomain}</span>
-        <span className="block text-muted-foreground">{photoDateText(photo)}</span>
-        {photo.labels.map((label) => (
-          <span key={label} className="block text-amber-800">
-            {PHOTO_LABEL_RU[label]}
+      {/* The margin annotation. Fixed leading keeps every frame in the grid the same height. */}
+      <span className="flex grow flex-col gap-1 px-2.5 py-2">
+        <span className="block truncate font-mono text-[0.6875rem] leading-4 text-foreground">
+          {photo.sourceDomain}
+        </span>
+        <span className="block text-[0.6875rem] leading-4 text-muted-foreground">{photoDateText(photo)}</span>
+        {photo.labels.length > 0 ? (
+          <span className="mt-0.5 flex flex-wrap gap-1">
+            {photo.labels.map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1 rounded-full bg-warn-surface px-1.5 py-0.5 text-[0.625rem] leading-3.5 font-medium text-warn"
+              >
+                <TriangleAlert className="size-2.5 shrink-0" aria-hidden="true" />
+                {PHOTO_LABEL_RU[label]}
+              </span>
+            ))}
           </span>
-        ))}
+        ) : null}
       </span>
     </>
   );
@@ -52,7 +66,7 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
   // A flex column, not a block: a <button> centers its content vertically, so in a grid row of cards with
   // different caption lengths the shorter cards' images slid down out of line.
   const cardClass =
-    "group flex h-full w-full flex-col overflow-hidden rounded-xl border bg-card text-left text-card-foreground";
+    "group flex h-full w-full animate-reveal flex-col overflow-hidden rounded-lg bg-card text-left text-card-foreground ring-1 ring-border";
   if (!onOpen) return <div className={cardClass}>{content}</div>;
 
   return (
@@ -62,7 +76,7 @@ export function PhotoCard({ photo, onOpen }: PhotoCardProps) {
       onClick={() => onOpen(photo)}
       className={cn(
         cardClass,
-        "cursor-pointer transition-[border-color,box-shadow] hover:border-foreground/25 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid",
+        "cursor-pointer transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
       )}
     >
       {content}
@@ -76,7 +90,7 @@ function SourceTypeBadge({ type }: { type: SourceType }) {
   if (type === "unknown") return null;
   const Icon = SOURCE_TYPE_ICON[type];
   return (
-    <span className="absolute bottom-2 left-2 inline-flex h-5 max-w-[calc(100%-1rem)] items-center gap-1 rounded-4xl bg-black/65 px-2 text-[11px] font-medium text-white">
+    <span className="absolute bottom-2 left-2 inline-flex h-5 max-w-[calc(100%-1rem)] items-center gap-1 rounded-4xl bg-black/70 px-2 text-[0.6875rem] font-medium text-white backdrop-blur-[2px]">
       <Icon className="size-3 shrink-0" aria-hidden="true" />
       <span className="truncate">{SOURCE_TYPE_SHORT_RU[type]}</span>
     </span>

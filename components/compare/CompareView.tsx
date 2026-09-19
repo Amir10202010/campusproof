@@ -115,16 +115,18 @@ export function CompareView({ initialA, initialB }: { initialA?: string; initial
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-balance">Сравнение вузов</h1>
-        <p className="text-muted-foreground">
+    <main className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="max-w-2xl space-y-3">
+        <h1 className="font-display text-[1.75rem] leading-tight font-semibold tracking-[-0.025em] text-balance sm:text-4xl">
+          Сравнение вузов
+        </h1>
+        <p className="leading-relaxed text-muted-foreground">
           Сравниваем уже сохранённые профили: новые проверки здесь не запускаются. Если профиля ещё нет, откройте его —
           он соберётся примерно за полминуты — и вернитесь.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid items-start gap-4 sm:grid-cols-2">
         {([0, 1] as const).map((index) => (
           <CompareSlot
             key={index}

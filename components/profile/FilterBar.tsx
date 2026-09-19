@@ -24,25 +24,27 @@ export interface FilterBarProps {
 }
 
 const FOCUS_RING =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid";
 
 const PRESSED =
   "data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90 data-[state=on]:hover:text-primary-foreground";
 
 /** Rows scroll sideways on phones instead of wrapping into a tall sticky bar. */
 const ROW =
-  "flex gap-2 overflow-x-auto px-4 py-1.5 [scrollbar-width:none] sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden";
+  "flex gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden";
 
 /**
  * P4 · #3 · the 4 mandatory filters (exact labels from the case) + "show unconfirmed" switch; horizontal scroll on mobile.
  * P4 · #29 · «Все / Официальные / Независимые» lens over `value.sourceTypes`.
+ *
+ * Sticks below the site header (top-14, h-14 header) so both stay reachable through a long profile.
  */
 export function FilterBar({ value, onChange, counts }: FilterBarProps) {
   const switchId = useId();
 
   return (
-    <div className="sticky top-0 z-30 -mx-4 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 sm:-mx-6">
-      <div className="py-1.5 sm:px-6">
+    <div className="sticky top-14 z-30 -mx-4 border-b bg-background/95 py-1 backdrop-blur-xl supports-backdrop-filter:bg-background/88 sm:-mx-6">
+      <div className="sm:px-6">
         <div role="group" aria-label="Фильтры по категориям" className={ROW}>
           <FilterChip pressed={value.categories.length === 0} onPress={() => onChange({ ...value, categories: [] })}>
             Все
@@ -90,7 +92,7 @@ export function FilterBar({ value, onChange, counts }: FilterBarProps) {
               onCheckedChange={(checked) => onChange({ ...value, showUnconfirmed: checked })}
               className={FOCUS_RING}
             />
-            <Label htmlFor={switchId} className="cursor-pointer font-normal whitespace-nowrap">
+            <Label htmlFor={switchId} className="cursor-pointer text-[0.8125rem] font-normal whitespace-nowrap">
               <span className="sm:hidden">Неподтверждённые</span>
               <span className="hidden sm:inline">Показывать неподтверждённые</span>
             </Label>
@@ -108,11 +110,11 @@ function FilterChip(props: { pressed: boolean; count?: number; onPress: () => vo
       size="sm"
       pressed={props.pressed}
       onPressedChange={props.onPress}
-      className={cn("h-8 shrink-0 rounded-full px-3", PRESSED, FOCUS_RING)}
+      className={cn("h-8 shrink-0 rounded-full px-3 text-[0.8125rem]", PRESSED, FOCUS_RING)}
     >
       {props.children}
       {props.count !== undefined ? (
-        <span className="min-w-5 rounded-full bg-muted px-1.5 text-xs text-muted-foreground tabular-nums group-data-[state=on]/toggle:bg-primary-foreground/20 group-data-[state=on]/toggle:text-primary-foreground">
+        <span className="min-w-5 rounded-full bg-muted px-1.5 font-mono text-[0.6875rem] text-muted-foreground tabular-nums group-data-[state=on]/toggle:bg-primary-foreground/20 group-data-[state=on]/toggle:text-primary-foreground">
           {props.count}
         </span>
       ) : null}

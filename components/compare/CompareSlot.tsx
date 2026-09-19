@@ -74,7 +74,7 @@ export function CompareSlot({ label, qid, name, search, load, onSearch, onPick, 
         <p className="text-sm text-muted-foreground">
           {[entity.city?.name, entity.country].filter(Boolean).join(", ")}
           {" · "}сохранённый профиль от{" "}
-          <time dateTime={generatedAt} suppressHydrationWarning>
+          <time dateTime={generatedAt} className="font-mono text-[0.8125rem]" suppressHydrationWarning>
             {formatDateTimeRu(generatedAt)}
           </time>
         </p>
@@ -121,10 +121,10 @@ export function CompareSlot({ label, qid, name, search, load, onSearch, onPick, 
 
 function Card({ label, title, children }: { label: string; title?: string; children: ReactNode }) {
   return (
-    <div className="space-y-3 rounded-xl border p-4">
-      <div className="space-y-0.5">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</p>
-        {title ? <p className="text-lg leading-snug font-semibold">{title}</p> : null}
+    <div className="space-y-3 rounded-xl border bg-card p-4">
+      <div className="space-y-1">
+        <p className="annotation">{label}</p>
+        {title ? <p className="font-display text-lg leading-snug font-semibold tracking-tight">{title}</p> : null}
       </div>
       {children}
     </div>

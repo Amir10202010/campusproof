@@ -31,9 +31,9 @@ const STAGE_LABEL_RU: Record<PipelineStage, string> = {
 
 const STAGE_STATUS: Record<StageState["status"], { label: string; icon: LucideIcon; bar: string; iconClass: string }> =
   {
-    pending: { label: "ожидает", icon: CircleDashed, bar: "bg-muted", iconClass: "text-muted-foreground" },
-    running: { label: "идёт", icon: LoaderCircle, bar: "animate-pulse bg-primary/60", iconClass: "animate-spin" },
-    done: { label: "готово", icon: CircleCheck, bar: "bg-emerald-600", iconClass: "text-emerald-700" },
+    pending: { label: "ожидает", icon: CircleDashed, bar: "bg-border", iconClass: "text-muted-foreground/70" },
+    running: { label: "идёт", icon: LoaderCircle, bar: "animate-pulse bg-foreground/45", iconClass: "animate-spin" },
+    done: { label: "готово", icon: CircleCheck, bar: "bg-foreground/70", iconClass: "text-ok" },
   };
 
 /** Russian labels for count keys emitted by the orchestrator (lib/pipeline/orchestrator.ts) and the fixture stream. */
@@ -60,12 +60,20 @@ const SOURCE_NAME_RU: Record<string, string> = {
 };
 
 const SOURCE_STATUS: Record<SourceStatus["status"], { label: string; icon: LucideIcon; className: string }> = {
-  ok: { label: "ответил", icon: Check, className: "border-emerald-200 bg-emerald-50 text-emerald-900" },
-  partial: { label: "ответил частично", icon: Contrast, className: "border-amber-300 bg-amber-50 text-amber-950" },
-  timeout: { label: "не успел ответить", icon: Clock, className: "border-amber-300 bg-amber-50 text-amber-950" },
-  error: { label: "ошибка", icon: X, className: "border-red-200 bg-red-50 text-red-900" },
+  ok: { label: "ответил", icon: Check, className: "border-ok-border bg-ok-surface text-ok" },
+  partial: { label: "ответил частично", icon: Contrast, className: "border-warn-border bg-warn-surface text-warn" },
+  timeout: { label: "не успел ответить", icon: Clock, className: "border-warn-border bg-warn-surface text-warn" },
+  error: {
+    label: "ошибка",
+    icon: X,
+    className: "border-destructive/35 bg-destructive-surface text-destructive-foreground",
+  },
   skipped: { label: "не подключён", icon: Minus, className: "border-dashed text-muted-foreground" },
-  simulated_down: { label: "отключён (симуляция)", icon: Ban, className: "border-red-200 bg-red-50 text-red-900" },
+  simulated_down: {
+    label: "отключён (симуляция)",
+    icon: Ban,
+    className: "border-destructive/35 bg-destructive-surface text-destructive-foreground",
+  },
 };
 
 /** A zero is news for these counts ("кандидатов: 0"); for the rest ("не открылись: 0") it is noise. */
@@ -80,13 +88,19 @@ function stageSummary(stage: StageState): string {
   return parts.join(" · ");
 }
 
-/** P4 · #4 · Поиск → Загрузка → Дубли → Проверка → Профиль with counts; source chips ok / timeout / error / skipped / simulated_down. */
+/**
+ * P4 · #4 · Поиск → Загрузка → Дубли → Проверка → Профиль with counts; source chips ok / timeout /
+ * error / skipped / simulated_down.
+ *
+ * This is apparatus, not content: it sits on the page's own surface with no card around it, so the
+ * photographs below stay the loudest thing on screen. Every number here is a real count from the run.
+ */
 export function PipelineRail({ stages, sources }: PipelineRailProps) {
   const latest = [...stages].reverse().find((stage) => stage.status !== "pending" && stageSummary(stage));
   const problems = sources.filter((source) => source.status !== "ok");
 
   return (
-    <section aria-label="Ход проверки" className="space-y-3 rounded-xl border px-3 py-3 sm:px-4">
+    <section aria-label="Ход проверки" className="space-y-3 rounded-xl border bg-surface px-3 py-3 sm:px-4">
       <ol className="grid grid-cols-5 gap-1.5 sm:gap-3">
         {stages.map((stage) => {
           const status = STAGE_STATUS[stage.status];
@@ -94,10 +108,10 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
           const summary = stageSummary(stage);
           return (
             <li key={stage.stage} className="flex min-w-0 flex-col gap-1.5">
-              <span className={cn("h-1.5 rounded-full transition-colors", status.bar)} aria-hidden="true" />
+              <span className={cn("h-1 rounded-full transition-colors duration-300", status.bar)} aria-hidden="true" />
               <span className="flex min-w-0 flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
-                <Icon className={cn("size-3.5 shrink-0 sm:size-4", status.iconClass)} aria-hidden="true" />
-                <span className="max-w-full truncate text-[11px] font-medium sm:text-sm">
+                <Icon className={cn("size-3.5 shrink-0", status.iconClass)} aria-hidden="true" />
+                <span className="max-w-full truncate text-[0.6875rem] font-medium sm:text-[0.8125rem]">
                   {STAGE_LABEL_RU[stage.stage]}
                 </span>
                 <span className="sr-only">
@@ -106,7 +120,10 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
                 </span>
               </span>
               {summary ? (
-                <span className="hidden text-xs text-muted-foreground sm:block" aria-hidden="true">
+                <span
+                  className="hidden font-mono text-[0.6875rem] leading-4 text-muted-foreground sm:block"
+                  aria-hidden="true"
+                >
                   {summary}
                 </span>
               ) : null}
@@ -115,14 +132,14 @@ export function PipelineRail({ stages, sources }: PipelineRailProps) {
         })}
       </ol>
       {latest ? (
-        <p className="text-xs text-muted-foreground sm:hidden" aria-hidden="true">
+        <p className="font-mono text-[0.6875rem] text-muted-foreground sm:hidden" aria-hidden="true">
           {STAGE_LABEL_RU[latest.stage]}: {stageSummary(latest)}
         </p>
       ) : null}
 
       <div className="space-y-2 border-t pt-3 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-muted-foreground">Источники:</span>
+          <span className="annotation">Источники</span>
           {sources.length === 0 ? (
             <span className="text-muted-foreground">ждём ответа…</span>
           ) : (
@@ -160,14 +177,14 @@ function SourceChip({ source }: { source: SourceStatus }) {
           <button
             type="button"
             className={cn(
-              "inline-flex cursor-help items-center gap-1 rounded-full border px-2 py-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:outline-solid",
+              "inline-flex cursor-help items-center gap-1 rounded-full border px-2 py-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid",
               status.className,
             )}
           >
             <Icon className="size-3 shrink-0" strokeWidth={2.5} aria-hidden="true" />
             <span className="font-medium">{name}</span>
             {source.status === "ok" || source.status === "partial" ? (
-              <span className="tabular-nums">{source.candidates}</span>
+              <span className="font-mono tabular-nums">{source.candidates}</span>
             ) : (
               <span>{status.label}</span>
             )}

@@ -34,12 +34,12 @@ export function CampusMap({ entity, photos, distanceToCityCenterM, onOpenPhoto }
   if (!points.campus && points.pins.length === 0) return null;
 
   return (
-    <section aria-labelledby={titleId} className="space-y-3">
-      <div className="space-y-0.5">
-        <h2 id={titleId} className="text-lg font-semibold tracking-tight">
+    <section aria-labelledby={titleId} className="scroll-mt-40 space-y-4">
+      <div className="space-y-0.5 border-b pb-2.5">
+        <h2 id={titleId} className="font-display text-lg font-semibold tracking-tight">
           Карта
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[0.8125rem] text-muted-foreground">
           {points.pins.length > 0
             ? `Фото с геометкой: ${points.pins.length}. Нажмите на точку, чтобы открыть доказательства.`
             : "У показанных фото нет геометок — на карте только кампус и город."}
@@ -54,22 +54,19 @@ export function CampusMap({ entity, photos, distanceToCityCenterM, onOpenPhoto }
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Обозначения на карте">
         {points.campus ? (
           <li className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full border-2 border-white bg-neutral-900 ring-1 ring-neutral-900" />
+            <span className="size-3 rounded-full bg-foreground ring-2 ring-background" />
             Кампус
           </li>
         ) : null}
         {points.cityCenter ? (
           <li className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full border-2 border-dashed border-neutral-900 bg-white" />
+            <span className="size-3 rounded-full border-2 border-dashed border-foreground bg-background" />
             Центр города
           </li>
         ) : null}
         {TIERS.filter((tier) => points.pins.some((photo) => photo.tier === tier)).map((tier) => (
           <li key={tier} className="inline-flex items-center gap-1.5">
-            <span
-              className="size-3 rounded-full border-2 border-white ring-1 ring-neutral-300"
-              style={{ background: TIER_PIN_COLOR[tier] }}
-            />
+            <span className="size-3 rounded-full ring-2 ring-background" style={{ background: TIER_PIN_COLOR[tier] }} />
             Фото: {TIER_LABEL_RU[tier]}
           </li>
         ))}
