@@ -11,16 +11,16 @@ const DATA_SOURCES = [
 
 const REPOSITORY_URL = "https://github.com/Amir10202010/campusproof";
 
-const LINK = "underline-offset-3 hover:text-foreground hover:underline";
+const LINK = "underline-offset-4 transition-colors hover:text-foreground hover:underline";
 
 /** P4 · #36 · data sources, AI provider, hackathon and repository. */
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted/30">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-8 text-sm sm:grid-cols-[1.5fr_1fr_1fr] sm:px-6">
-        <div className="space-y-2">
+    <footer className="mt-16 border-t bg-surface">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 text-sm sm:grid-cols-[1.6fr_1fr_1fr] sm:px-6">
+        <div className="space-y-3">
           <Logo />
-          <p className="text-muted-foreground">
+          <p className="max-w-xs leading-relaxed text-muted-foreground">
             Проверенные фото университетов: у каждого снимка есть источник, дата и уровень доверия.
           </p>
           <Link href="/how-it-works" className={`inline-block font-medium ${LINK}`}>
@@ -28,9 +28,9 @@ export function SiteFooter() {
           </Link>
         </div>
 
-        <div className="space-y-2">
-          <h2 className="font-medium">Источники данных</h2>
-          <ul className="space-y-1 text-muted-foreground">
+        <div className="space-y-3">
+          <h2 className="annotation">Источники данных</h2>
+          <ul className="space-y-1.5 text-muted-foreground">
             {DATA_SOURCES.map((source) => (
               <li key={source.name}>
                 <a href={source.url} target="_blank" rel="noopener noreferrer" className={LINK}>
@@ -41,9 +41,9 @@ export function SiteFooter() {
           </ul>
         </div>
 
-        <div className="space-y-2">
-          <h2 className="font-medium">О проекте</h2>
-          <ul className="space-y-1 text-muted-foreground">
+        <div className="space-y-3">
+          <h2 className="annotation">О проекте</h2>
+          <ul className="space-y-1.5 text-muted-foreground">
             <li>AI: Google Gemini (бесплатный тариф)</li>
             <li>LOCUS Startup Hackathon 2026 · кейс 1</li>
             <li>

@@ -13,8 +13,8 @@ export interface CoveragePanelProps {
 }
 
 const STATUS: Record<CategoryCoverage["status"], { label: string; icon: LucideIcon; className: string }> = {
-  good: { label: "Хорошо", icon: CircleCheck, className: "text-emerald-700" },
-  thin: { label: "Мало фото", icon: Contrast, className: "text-amber-700" },
+  good: { label: "Хорошо", icon: CircleCheck, className: "text-ok" },
+  thin: { label: "Мало фото", icon: Contrast, className: "text-warn" },
   none: { label: "Нет подтверждённых фото", icon: CircleDashed, className: "text-muted-foreground" },
 };
 
@@ -24,17 +24,20 @@ export function CoveragePanel({ coverage, onShowUnconfirmed }: CoveragePanelProp
   const good = CATEGORIES.filter((category) => coverage[category.id].status === "good").length;
 
   return (
-    <section aria-labelledby={titleId} className="space-y-3 rounded-xl border p-4">
-      <div className="space-y-1">
-        <h2 id={titleId} className="text-lg font-semibold tracking-tight">
+    <section aria-labelledby={titleId} className="rounded-xl border bg-surface">
+      <div className="space-y-1.5 border-b px-4 py-4 sm:px-5">
+        <h2 id={titleId} className="font-display text-lg font-semibold tracking-tight">
           Что удалось подтвердить
         </h2>
         <p className="text-sm text-muted-foreground">
-          Хорошо покрыто разделов: {good} из {CATEGORIES.length}. «Хорошо» — от 3 фото с уровнем «Проверено» или
-          «Вероятно».
+          Хорошо покрыто разделов:{" "}
+          <span className="font-mono font-medium text-foreground tabular-nums">
+            {good}/{CATEGORIES.length}
+          </span>
+          . «Хорошо» — от 3 фото с уровнем «Проверено» или «Вероятно».
         </p>
       </div>
-      <ul className="divide-y">
+      <ul className="divide-y px-4 sm:px-5">
         {CATEGORIES.map((category) => (
           <CoverageRow
             key={category.id}
@@ -78,15 +81,18 @@ function CoverageRow({
   };
 
   return (
-    <li className="flex items-start gap-3 py-2.5 text-sm">
+    <li className="flex items-start gap-3 py-3 text-sm">
       <Icon className={`mt-0.5 size-4 shrink-0 ${status.className}`} aria-hidden="true" />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 space-y-0.5">
         <p className="flex flex-wrap items-baseline gap-x-2">
-          <a href={`#category-${category.id}`} className="font-medium underline-offset-3 hover:underline">
+          <a
+            href={`#category-${category.id}`}
+            className="font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
+          >
             {category.labelRu}
           </a>
           <span className={status.className}>{status.label}</span>
-          {category.requiredArea ? <span className="text-xs text-muted-foreground">обязательный раздел</span> : null}
+          {category.requiredArea ? <span className="annotation">обязательный</span> : null}
         </p>
         <p className="text-muted-foreground">
           {shown > 0

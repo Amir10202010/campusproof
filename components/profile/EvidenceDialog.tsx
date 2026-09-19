@@ -144,12 +144,16 @@ function EvidenceBody({ photo }: { photo: Photo }) {
       <div className="space-y-5 p-4 sm:p-5">
         <div className="space-y-2">
           <TierBadge tier={photo.tier} />
-          <DialogTitle className="text-lg leading-snug font-semibold">{photoAlt(photo)}</DialogTitle>
-          <DialogDescription className="text-sm text-foreground/80">{TIER_VERDICT_RU[photo.tier]}</DialogDescription>
+          <DialogTitle className="font-display text-xl leading-snug font-semibold tracking-tight">
+            {photoAlt(photo)}
+          </DialogTitle>
+          <DialogDescription className="text-sm leading-relaxed text-foreground/80">
+            {TIER_VERDICT_RU[photo.tier]}
+          </DialogDescription>
         </div>
 
         <section className="space-y-3" aria-label="Доказательства">
-          <h3 className="text-sm font-medium">Почему такой уровень</h3>
+          <h3 className="annotation">Почему такой уровень</h3>
           {groupEvidence(photo.evidence).map((group) => {
             const meta = EVIDENCE_KIND_RU[group.kind] ?? { title: "Другое", hint: "прочие сигналы" };
             const KindIcon = EVIDENCE_KIND_ICON[group.kind] ?? CircleDot;
@@ -171,7 +175,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
           {photo.labels.length > 0 ? (
             <ul className="space-y-1.5 text-sm">
               {photo.labels.map((label) => (
-                <li key={label} className="flex gap-2 text-amber-900">
+                <li key={label} className="flex gap-2 text-warn">
                   <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                   <span>{PHOTO_LABEL_DETAIL_RU[label]}</span>
                 </li>
@@ -179,14 +183,14 @@ function EvidenceBody({ photo }: { photo: Photo }) {
             </ul>
           ) : null}
           <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer select-none hover:text-foreground">
+            <summary className="cursor-pointer rounded-sm select-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid">
               Очки доказательств: {photo.points}
             </summary>
             <p className="mt-1">
               Это очки доказательств, а не вероятность: сумма за найденные признаки. Уровень выставляют правила по этим
               очкам.
             </p>
-            <ul className="mt-1 space-y-0.5 tabular-nums">
+            <ul className="mt-1 space-y-0.5 font-mono tabular-nums">
               {photo.evidence.map((evidence, index) => (
                 <li key={`${evidence.signal}-${index}`}>
                   {evidence.points > 0 ? "+" : ""}
@@ -197,7 +201,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
           </details>
         </section>
 
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]">
+        <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5 border-t pt-4 text-sm sm:grid-cols-[9rem_1fr]">
           <Row term="Источник">
             {photo.sourceDomain} · {SOURCE_TYPE_RU[photo.sourceType]}
           </Row>
@@ -218,7 +222,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
               <>
                 {licenseUrl ? (
                   <a
-                    className="underline underline-offset-3"
+                    className="underline underline-offset-4"
                     href={licenseUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -258,7 +262,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
 
         {photo.alsoFoundAt.length > 0 ? (
           <section className="space-y-1.5" aria-label="Также найдено на">
-            <h3 className="text-sm font-medium">Также найдено на</h3>
+            <h3 className="annotation">Также найдено на</h3>
             <ul className="flex flex-wrap gap-2 text-sm">
               {photo.alsoFoundAt.map((place) => {
                 const href = safeHttpUrl(place.sourcePageUrl);
@@ -267,7 +271,7 @@ function EvidenceBody({ photo }: { photo: Photo }) {
                   <li key={place.sourcePageUrl}>
                     {href ? (
                       <a
-                        className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 hover:bg-muted"
+                        className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 transition-colors hover:bg-accent"
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -316,9 +320,9 @@ function EvidenceBody({ photo }: { photo: Photo }) {
 function EvidenceLine({ evidence }: { evidence: Evidence }) {
   const [Icon, tone, prefix] =
     evidence.points > 0
-      ? [Check, "text-emerald-700", "За:"]
+      ? [Check, "text-ok", "За:"]
       : evidence.points < 0
-        ? [X, "text-red-600", "Против:"]
+        ? [X, "text-destructive", "Против:"]
         : [Minus, "text-muted-foreground", "Нейтрально:"];
   return (
     <li className="flex gap-2">

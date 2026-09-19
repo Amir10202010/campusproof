@@ -39,10 +39,10 @@ export function DegradedBanner({ degraded, visionPartial = false }: DegradedBann
         const { title, text } =
           flag === "vision_unavailable" && visionPartial ? VISION_PARTIAL_TEXT_RU : DEGRADED_TEXT_RU[flag];
         return (
-          <Alert key={flag} className="border-amber-300 bg-amber-50 text-amber-950">
+          <Alert key={flag} className="border-warn-border bg-warn-surface text-warn">
             <TriangleAlert aria-hidden="true" />
-            <AlertTitle>{title}</AlertTitle>
-            <AlertDescription className="text-amber-950/80">{text}</AlertDescription>
+            <AlertTitle className="font-medium">{title}</AlertTitle>
+            <AlertDescription className="text-warn/85">{text}</AlertDescription>
           </Alert>
         );
       })}

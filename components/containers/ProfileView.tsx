@@ -1,9 +1,11 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ProfileGuide } from "@/components/help/ProfileGuide";
 import { CampusMap } from "@/components/profile/CampusMap";
+import { CategoryNav } from "@/components/profile/CategoryNav";
 import { CategorySection } from "@/components/profile/CategorySection";
 import { CoveragePanel } from "@/components/profile/CoveragePanel";
 import { DegradedBanner } from "@/components/profile/DegradedBanner";
@@ -56,6 +58,12 @@ export function ProfileView(props: ProfileStreamParams) {
     }
     return result;
   }, [state.photos, filters]);
+  // What each section actually shows right now — the side rail reports the page, not the filter chips.
+  const visibleCounts = useMemo(() => {
+    const result: Partial<Record<CategoryId, number>> = {};
+    for (const photo of visible) result[photo.category] = (result[photo.category] ?? 0) + 1;
+    return result;
+  }, [visible]);
   const shownCategories =
     filters.categories.length > 0 ? CATEGORIES.filter((c) => filters.categories.includes(c.id)) : CATEGORIES;
   const pick = (qid: string) => router.push(`/u/${qid}`);
@@ -71,10 +79,16 @@ export function ProfileView(props: ProfileStreamParams) {
     );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {state.error ? (
-        <div className="rounded-lg border border-destructive/50 p-3 text-sm">
-          {state.error.message} <span className="font-mono text-xs text-muted-foreground">({state.error.code})</span>
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-destructive/35 bg-destructive-surface px-3.5 py-3 text-sm text-destructive-foreground"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            {state.error.message} <span className="font-mono text-xs opacity-75">({state.error.code})</span>
+          </span>
         </div>
       ) : null}
       <ProfileHeader
@@ -96,26 +110,42 @@ export function ProfileView(props: ProfileStreamParams) {
       <DescriptionBlock description={state.description} ready={state.descriptionReady || state.status === "error"} />
       <FilterBar value={filters} onChange={setFilters} counts={counts} />
       <ProfileGuide photosCount={visible.length} />
-      {shownCategories.map((category) => (
-        <CategorySection
-          key={category.id}
-          category={category}
-          photos={visible.filter((p) => p.category === category.id)}
-          coverage={coverage[category.id]}
-          onOpenPhoto={setOpenPhoto}
+
+      {/* The photographs are the page. The side rail says where you are in them; it never competes. */}
+      <div className="grid gap-x-10 gap-y-8 xl:grid-cols-[minmax(0,1fr)_12rem]">
+        <div className="min-w-0 space-y-10">
+          {shownCategories.map((category) => (
+            <CategorySection
+              key={category.id}
+              category={category}
+              photos={visible.filter((p) => p.category === category.id)}
+              coverage={coverage[category.id]}
+              onOpenPhoto={setOpenPhoto}
+            />
+          ))}
+          <CampusMap
+            entity={state.entity}
+            photos={visible}
+            distanceToCityCenterM={state.profile?.distanceToCityCenterM}
+            onOpenPhoto={setOpenPhoto}
+          />
+        </div>
+        <aside className="hidden xl:block">
+          <div className="sticky top-36">
+            <CategoryNav categories={shownCategories} coverage={coverage} counts={visibleCounts} />
+          </div>
+        </aside>
+      </div>
+
+      {/* How the run accounts for itself: what got confirmed, and what was thrown away and why. */}
+      <div className="space-y-4 border-t pt-8">
+        <CoveragePanel
+          coverage={coverage}
+          onShowUnconfirmed={() => setFilters((f) => ({ ...f, showUnconfirmed: true }))}
         />
-      ))}
-      <CampusMap
-        entity={state.entity}
-        photos={visible}
-        distanceToCityCenterM={state.profile?.distanceToCityCenterM}
-        onOpenPhoto={setOpenPhoto}
-      />
-      <CoveragePanel
-        coverage={coverage}
-        onShowUnconfirmed={() => setFilters((f) => ({ ...f, showUnconfirmed: true }))}
-      />
-      <FilteredOutTray items={state.rejected} />
+        <FilteredOutTray items={state.rejected} />
+      </div>
+
       <EvidenceDialog
         photo={openPhoto}
         open={openPhoto !== null}

@@ -21,7 +21,6 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
         <title>Ошибка · CampusProof</title>
         <StatusPage
           icon={TriangleAlert}
-          code="CampusProof"
           title="Сайт временно не открылся"
           text="Произошла ошибка при загрузке страницы. Попробуйте ещё раз или откройте главную заново."
         >

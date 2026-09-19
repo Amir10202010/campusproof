@@ -56,6 +56,27 @@ describe("tier colors", () => {
   }
 });
 
+/**
+ * Status tones carry text too: source chips, degraded banners, coverage rows, the warning chips on a
+ * photo card. They are held to the same 4.5:1 as the tier badges, on their own surface and on the page.
+ */
+describe("status tones", () => {
+  for (const theme of [":root", ".dark"]) {
+    for (const [tone, surface] of [
+      ["ok", "ok-surface"],
+      ["warn", "warn-surface"],
+      ["destructive-foreground", "destructive-surface"],
+    ] as const) {
+      it(`${theme} ${tone}: text contrast ≥ 4.5 on ${surface} and on the page`, () => {
+        const source = block(theme);
+        const text = oklchVar(source, tone);
+        expect(contrast(text, oklchVar(source, surface))).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(text, oklchVar(source, "background"))).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+});
+
 describe("theme tokens (P4 · #40)", () => {
   const root = () => block(":root");
 
