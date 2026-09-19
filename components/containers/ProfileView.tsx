@@ -7,6 +7,7 @@ import { CommunityGallery } from "@/components/community/CommunityGallery";
 import { ContributePhoto, type UploadOutcome } from "@/components/community/ContributePhoto";
 import { ReviewForm, type ReviewOutcome } from "@/components/community/ReviewForm";
 import { ReviewList } from "@/components/community/ReviewList";
+import { WhatToKnow } from "@/components/community/WhatToKnow";
 import { ProfileGuide } from "@/components/help/ProfileGuide";
 import { CampusMap } from "@/components/profile/CampusMap";
 import { CategoryNav } from "@/components/profile/CategoryNav";
@@ -232,6 +233,8 @@ export function ProfileView(props: ProfileStreamParams) {
         />
         <FilteredOutTray items={state.rejected} />
       </div>
+
+      {qid ? <WhatToKnow qid={qid} /> : null}
 
       {qid ? (
         <div className="space-y-3 border-t pt-8">
