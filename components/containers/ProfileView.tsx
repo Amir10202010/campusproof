@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CommunityGallery } from "@/components/community/CommunityGallery";
 import { ContributePhoto, type UploadOutcome } from "@/components/community/ContributePhoto";
+import { ReviewForm, type ReviewOutcome } from "@/components/community/ReviewForm";
+import { ReviewList } from "@/components/community/ReviewList";
 import { ProfileGuide } from "@/components/help/ProfileGuide";
 import { CampusMap } from "@/components/profile/CampusMap";
 import { CategoryNav } from "@/components/profile/CategoryNav";
@@ -23,7 +25,7 @@ import { ProfileError } from "@/components/search/ProfileError";
 import { useProfileStream, type ProfileStreamParams } from "@/hooks/useProfileStream";
 import { shareableProfilePath } from "@/lib/client/profileStream";
 import { CATEGORIES } from "@/lib/config/categories";
-import type { PublicCommunityPhoto } from "@/lib/community/types";
+import type { PublicCommunityPhoto, PublicCommunityReview, ReviewAspect } from "@/lib/community/types";
 import { computeCoverage } from "@/lib/pipeline/coverage";
 import type { CategoryId, Photo } from "@/lib/types";
 import { applyFilters, DEFAULT_FILTERS } from "@/lib/ui/filters";
@@ -81,6 +83,44 @@ export function ProfileView(props: ProfileStreamParams) {
     },
     [qid, refreshCommunityPhotos],
   );
+
+  const [loadedReviews, setLoadedReviews] = useState<{ qid: string; reviews: PublicCommunityReview[] } | null>(null);
+  const reviews = loadedReviews && loadedReviews.qid === qid ? loadedReviews.reviews : [];
+
+  useEffect(() => {
+    if (!qid) return;
+    const controller = new AbortController();
+    fetch(`/api/community/reviews/${qid}`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data) => setLoadedReviews({ qid, reviews: Array.isArray(data.reviews) ? data.reviews : [] }))
+      .catch(() => setLoadedReviews({ qid, reviews: [] }));
+    return () => controller.abort();
+  }, [qid]);
+
+  const handleReviewSubmit = useCallback(
+    async (aspect: ReviewAspect, rating: number, text: string): Promise<ReviewOutcome> => {
+      if (!qid) return { error: "Сначала выберите университет." };
+      try {
+        const response = await fetch("/api/community/review", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ qid, aspect, rating, text }),
+        });
+        const data = await response.json();
+        if (!response.ok) return { error: data.message ?? "Не удалось отправить отзыв." };
+        if (data.status === "published")
+          setLoadedReviews((prev) => ({ qid, reviews: [data, ...(prev?.reviews ?? [])] }));
+        return { review: data };
+      } catch {
+        return { error: "Сеть недоступна — попробуйте ещё раз." };
+      }
+    },
+    [qid],
+  );
+
+  const handleReviewReport = useCallback((id: string) => {
+    void fetch(`/api/community/review/${id}/report`, { method: "POST" });
+  }, []);
 
   // /search?q=… and /u/<qid>?refresh=1 become the shareable /u/<qid> without re-running the stream.
   useEffect(() => {
@@ -203,6 +243,14 @@ export function ProfileView(props: ProfileStreamParams) {
           </div>
           <ContributePhoto onUpload={handleUpload} />
           <CommunityGallery photos={communityPhotos} />
+        </div>
+      ) : null}
+
+      {qid ? (
+        <div className="space-y-3 border-t pt-8">
+          <h2 className="text-lg font-semibold">Отзывы студентов</h2>
+          <ReviewForm onSubmit={handleReviewSubmit} />
+          <ReviewList reviews={reviews} onReport={handleReviewReport} />
         </div>
       ) : null}
 
