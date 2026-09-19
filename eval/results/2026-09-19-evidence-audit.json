@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-19T03:16:46.451Z",
+  "generatedAt": "2026-09-19T03:41:33.544Z",
   "base": "https://campusproof.vercel.app",
   "profiles": 42,
-  "photos": 1095,
+  "photos": 1105,
   "tiers": {
-    "verified": 327,
-    "likely": 569,
-    "unconfirmed": 199
+    "verified": 333,
+    "likely": 596,
+    "unconfirmed": 176
   },
   "photosPerProfile": {
     "median": 27,
@@ -14,44 +14,45 @@
     "max": 34
   },
   "integrity": {
-    "checked": 1095,
-    "failures": 1,
-    "examples": [
-      "Кембриджский университет 439203bbeefb: уровень likely, а по 70 очкам — verified"
-    ]
+    "checked": 1105,
+    "failures": 0,
+    "examples": []
   },
   "officialDomain": {
-    "checked": 321,
-    "verified": 321,
-    "exactWikidataDomain": 303,
-    "academicTwin": 18,
+    "checked": 365,
+    "verified": 365,
+    "exactWikidataDomain": 302,
+    "academicTwin": 63,
     "mismatched": 0,
     "twinExamples": [
       "Казахстанско-Британский технический университет: kbtu.edu.kz — академический двойник [\"kbtu.kz\"]",
-      "Медицинский университет Астаны: amu.edu.kz — академический двойник [\"amu.kz\"]"
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: news.kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: pharmacy.kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Университет Нархоз: narxoz.edu.kz — академический двойник [\"narxoz.kz\"]"
     ],
     "examples": []
   },
   "commonsCategory": {
     "claims": 155,
-    "sampled": 20,
-    "direct": 13,
-    "inSubcategory": 7,
+    "sampled": 25,
+    "direct": 16,
+    "inSubcategory": 9,
     "notConfirmed": 0,
     "examples": []
   },
   "images": {
-    "sampled": 40,
-    "load": 40,
+    "sampled": 50,
+    "load": 50,
     "broken": 0,
     "examples": []
   },
   "signals": {
-    "visual_consistent": 1068,
-    "page_mentions_name": 661,
-    "official_domain": 302,
-    "visible_text_this": 293,
-    "geo_near_campus": 226,
+    "visual_consistent": 1078,
+    "page_mentions_name": 658,
+    "official_domain": 346,
+    "visible_text_this": 290,
+    "geo_near_campus": 225,
     "commons_category": 155,
     "geo_in_city": 111,
     "commons_depicts": 95,

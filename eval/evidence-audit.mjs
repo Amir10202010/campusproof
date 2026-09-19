@@ -17,8 +17,19 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const UA = "CampusProof-EvidenceAudit/0.1 (LOCUS hackathon 2026; https://github.com/Amir10202010/campusproof)";
-/** docs/architecture.md §5.6 — the published thresholds; kept here so the audit is independent of the app. */
+/** docs/architecture.md §5.6 — the published tier table, restated here so the audit is independent of the app. */
 const TIER_THRESHOLDS = { verified: 60, likely: 35, unconfirmed: 10 };
+/** "Verified" needs one of these, not just points (§5.6). */
+const STRONG_SIGNALS = new Set([
+  "commons_depicts",
+  "commons_category",
+  "geo_near_campus",
+  "wikipedia_use",
+  "official_domain",
+  "visible_text_this",
+]);
+/** A render, or a scene that contradicts the context: holds a photo back however good its provenance is. */
+const NEGATIVE_SIGNALS = new Set(["render", "visual_inconsistent"]);
 /** The team and the deadline live in Astana: a run at 01:00 there must not be filed under the previous UTC day. */
 const TEAM_TIMEZONE = "Asia/Almaty";
 const teamDate = (iso) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TEAM_TIMEZONE });
@@ -149,11 +160,25 @@ async function main() {
       const sum = (ph.evidence ?? []).reduce((acc, e) => acc + e.points, 0);
       if (sum !== ph.points) failures.push(`${name} ${ph.id}: очки ${ph.points} ≠ сумма доказательств ${sum}`);
 
-      const expected = ph.points >= TIER_THRESHOLDS.verified ? "verified"
-        : ph.points >= TIER_THRESHOLDS.likely ? "likely"
-        : ph.points >= TIER_THRESHOLDS.unconfirmed ? "unconfirmed" : null;
-      if (expected === null) failures.push(`${name} ${ph.id}: показано ниже порога (${ph.points} очков)`);
-      else if (ph.tier !== expected) failures.push(`${name} ${ph.id}: уровень ${ph.tier}, а по ${ph.points} очкам — ${expected}`);
+      // §5.6 is not a plain threshold: "verified" also needs a strong signal and no render/contradiction.
+      // Checking only the points reads a correctly held-back render as a violation.
+      const own = new Set((ph.evidence ?? []).map((e) => e.signal));
+      const strong = [...own].some((x) => STRONG_SIGNALS.has(x));
+      const negative = [...own].some((x) => NEGATIVE_SIGNALS.has(x));
+      const canBeVerified = ph.points >= TIER_THRESHOLDS.verified && strong && !negative;
+
+      if (ph.points < TIER_THRESHOLDS.unconfirmed) {
+        failures.push(`${name} ${ph.id}: показано ниже порога (${ph.points} очков)`);
+      } else if (canBeVerified && ph.tier !== "verified") {
+        failures.push(`${name} ${ph.id}: ${ph.points} очков, сильный признак, без render — должно быть verified, а стоит ${ph.tier}`);
+      } else if (ph.tier === "verified" && !canBeVerified) {
+        const why = ph.points < TIER_THRESHOLDS.verified ? `только ${ph.points} очков` : negative ? "есть render или противоречие сцене" : "нет сильного признака";
+        failures.push(`${name} ${ph.id}: уровень verified, но ${why}`);
+      } else if (ph.tier === "likely" && ph.points < TIER_THRESHOLDS.likely) {
+        failures.push(`${name} ${ph.id}: уровень likely при ${ph.points} очках (порог ${TIER_THRESHOLDS.likely})`);
+      } else if (ph.tier === "unconfirmed" && ph.points >= TIER_THRESHOLDS.likely && strong) {
+        failures.push(`${name} ${ph.id}: ${ph.points} очков и сильный признак, но уровень unconfirmed`);
+      }
 
       if (!/^https?:\/\//.test(ph.sourcePageUrl ?? "")) failures.push(`${name} ${ph.id}: нет ссылки на источник`);
       if (!ph.retrievedAt) failures.push(`${name} ${ph.id}: нет времени получения`);
@@ -273,8 +298,10 @@ function renderMarkdown(r, date) {
 
 ## 1 · Очки и уровни сходятся с доказательствами
 
-Для каждого фото: сумма очков доказательств равна \`points\`, уровень равен порогу из \`TIER_THRESHOLDS\`
-(${TIER_THRESHOLDS.verified} / ${TIER_THRESHOLDS.likely} / ${TIER_THRESHOLDS.unconfirmed}), есть ссылка на источник, время получения и раздел.
+Для каждого фото: сумма очков доказательств равна \`points\`, уровень следует таблице §5.6, есть ссылка на
+источник, время получения и раздел. «Проверено» — это не просто ${TIER_THRESHOLDS.verified} очков: нужен ещё сильный
+признак и отсутствие render'а или противоречия сцене, поэтому рендер с отличным происхождением честно
+остаётся «Вероятно».
 
 **Проверено ${r.integrity.checked} фото · нарушений: ${r.integrity.failures}.**
 ${r.integrity.examples.map((e) => `- ${e}`).join("\n") || ""}
