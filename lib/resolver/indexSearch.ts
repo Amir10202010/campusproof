@@ -101,6 +101,26 @@ export function indexTerms(entry: UniversityIndexEntry): { text: string; isLabel
 const ACRONYM_STOP = new Set(["имени", "им", "атындагы", "of", "the", "named", "after"]);
 
 /**
+ * Kazakh universities are abbreviated with the whole first syllable, not one letter: the medical university
+ * is "КазНМУ", not "КНМУ". The syllable is emitted in the script of the name it came from, and the
+ * transliteration in queryVariants covers the other one ("KazNMU" → "казнму").
+ */
+const SYLLABLE_HEAD = [
+  { test: /^каз(ах|ак)?/, head: "каз" },
+  { test: /^kaz(akh?)?/, head: "kaz" },
+] as const;
+
+/** Words of a name that carry an initial: everything up to "имени"/"named after", single letters dropped. */
+function acronymWords(name: string): string[] {
+  const words: string[] = [];
+  for (const word of foldText(name).split(" ")) {
+    if (ACRONYM_STOP.has(word)) break;
+    if (word.length > 1) words.push(word);
+  }
+  return words;
+}
+
+/**
  * Abbreviations people actually type ("ЕНУ", "КБТУ") are often missing from Wikidata aliases, so they are
  * generated from the official names: initials of the words before "имени"/"named after". Generated matches
  * count a little below real aliases, so a real "МГУ" still beats a generated one.
@@ -109,13 +129,20 @@ export function acronymsOf(entry: UniversityIndexEntry): string[] {
   const acronyms = new Set<string>();
   for (const name of Object.values(entry.names)) {
     if (!name) continue;
-    const words: string[] = [];
-    for (const word of foldText(name).split(" ")) {
-      if (ACRONYM_STOP.has(word)) break;
-      if (word.length > 1) words.push(word);
-    }
+    const words = acronymWords(name);
     const acronym = words.map((word) => word[0]).join("");
     if (acronym.length >= 3 && acronym.length <= 6) acronyms.add(acronym);
+
+    // "Казахский национальный медицинский университет" → "казнму" alongside "кнму".
+    const head = words.length >= 2 ? SYLLABLE_HEAD.find((rule) => rule.test.test(words[0])) : undefined;
+    if (!head) continue;
+    const syllabic =
+      head.head +
+      words
+        .slice(1)
+        .map((word) => word[0])
+        .join("");
+    if (syllabic.length >= 4 && syllabic.length <= 8) acronyms.add(syllabic);
   }
   return [...acronyms];
 }
