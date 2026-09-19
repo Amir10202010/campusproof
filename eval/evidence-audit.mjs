@@ -77,6 +77,18 @@ async function imageLoads(url) {
 const stripWww = (host) => (host.startsWith("www.") ? host.slice(4) : host);
 const hostMatches = (host, domain) => host === domain || host.endsWith(`.${domain}`);
 
+/**
+ * The academic twin of a Wikidata domain, re-derived here rather than imported: "kbtu.kz" → "kbtu.edu.kz",
+ * "kbtu.ac.kz" (#141). Only these second levels, and only in this direction — anyone may register a plain
+ * name.CC. The audit counts twin matches separately, so relaxing the rule stays visible in the report.
+ */
+const ACADEMIC_LEVELS = ["edu", "ac"];
+function academicTwins(domain) {
+  const [name, countryCode, ...rest] = stripWww(domain.toLowerCase()).split(".");
+  if (rest.length > 0 || !name || !/^[a-z]{2}$/.test(countryCode ?? "")) return [];
+  return ACADEMIC_LEVELS.map((level) => `${name}.${level}.${countryCode}`);
+}
+
 /** Every category a Commons file is filed under. */
 async function commonsCategories(title) {
   const url = new URL("https://commons.wikimedia.org/w/api.php");
@@ -150,16 +162,23 @@ async function main() {
   }
 
   // ── B · official_domain must be one of the entity's own Wikidata P856 domains ────────────────
-  let officialChecked = 0, officialOk = 0;
+  let officialChecked = 0, officialExact = 0, officialTwin = 0;
   const officialBad = [];
+  const twinExamples = new Set();
   for (const p of profiles) {
     const domains = (p.entity?.domains ?? []).map((d) => stripWww(d.toLowerCase()));
     for (const ph of p.photos) {
       if (!(ph.evidence ?? []).some((e) => e.signal === "official_domain" || e.signal === "official_domain_weak")) continue;
       officialChecked++;
       const host = stripWww((ph.sourceDomain ?? "").toLowerCase());
-      if (domains.some((d) => hostMatches(host, d))) officialOk++;
-      else officialBad.push(`${p.entity.name}: ${host} ∉ ${JSON.stringify(domains)}`);
+      if (domains.some((d) => hostMatches(host, d))) { officialExact++; continue; }
+      const twin = domains.flatMap(academicTwins).find((t) => hostMatches(host, t));
+      if (twin) {
+        officialTwin++;
+        twinExamples.add(`${p.entity.name}: ${host} — академический двойник ${JSON.stringify(domains)}`);
+        continue;
+      }
+      officialBad.push(`${p.entity.name}: ${host} ∉ ${JSON.stringify(domains)} и не их академический двойник`);
     }
   }
 
@@ -209,7 +228,15 @@ async function main() {
     tiers,
     photosPerProfile: { median: median(withPhotos), min: withPhotos[0] ?? null, max: withPhotos.at(-1) ?? null },
     integrity: { checked: photos, failures: failures.length, examples: failures.slice(0, 10) },
-    officialDomain: { checked: officialChecked, verified: officialOk, mismatched: officialBad.length, examples: officialBad.slice(0, 5) },
+    officialDomain: {
+      checked: officialChecked,
+      verified: officialExact + officialTwin,
+      exactWikidataDomain: officialExact,
+      academicTwin: officialTwin,
+      mismatched: officialBad.length,
+      twinExamples: [...twinExamples].slice(0, 5),
+      examples: officialBad.slice(0, 5),
+    },
     commonsCategory: { claims: commonsClaims.length, sampled: commonsSample.length, direct: ccDirect, inSubcategory: ccSub, notConfirmed: ccMiss.length, examples: ccMiss.slice(0, 5) },
     images: { sampled: imgSample.length, load: imgOk, broken: imgBad.length, examples: imgBad.slice(0, 8) },
     signals: Object.fromEntries([...signals.entries()].sort((a, b) => b[1] - a[1])),
@@ -254,9 +281,13 @@ ${r.integrity.examples.map((e) => `- ${e}`).join("\n") || ""}
 
 ## 2 · «Официальный сайт» — это правда официальный сайт
 
-Признак \`official_domain\` сверен с доменами вуза из Wikidata (P856), а не со списком, написанным руками.
+Признак \`official_domain\` сверен с доменами вуза из Wikidata (P856) и их академическими двойниками, а не со
+списком, написанным руками.
 
 **Проверено ${r.officialDomain.checked} заявок · подтверждено ${r.officialDomain.verified} · расхождений: ${r.officialDomain.mismatched}.**
+
+Из подтверждённых: ${r.officialDomain.exactWikidataDomain} — ровно домен из P856, ${r.officialDomain.academicTwin} — его академический двойник (\`имя.edu.CC\` / \`имя.ac.CC\`, #141). Двойники считаются отдельно: правило мягче P856, и должно быть видно, сколько заявок на нём держится.
+${r.officialDomain.twinExamples.map((e) => `- двойник: ${e}`).join("\n") || ""}
 ${r.officialDomain.examples.map((e) => `- ${e}`).join("\n") || ""}
 
 ## 3 · «В категории университета на Commons» — проверено на Commons

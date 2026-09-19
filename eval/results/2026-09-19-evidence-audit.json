@@ -1,58 +1,67 @@
 {
-  "generatedAt": "2026-09-18T23:25:04.268Z",
+  "generatedAt": "2026-09-19T03:16:46.451Z",
   "base": "https://campusproof.vercel.app",
-  "profiles": 35,
-  "photos": 887,
+  "profiles": 42,
+  "photos": 1095,
   "tiers": {
-    "verified": 216,
-    "likely": 482,
-    "unconfirmed": 189
+    "verified": 327,
+    "likely": 569,
+    "unconfirmed": 199
   },
   "photosPerProfile": {
     "median": 27,
     "min": 15,
-    "max": 33
+    "max": 34
   },
   "integrity": {
-    "checked": 887,
-    "failures": 0,
-    "examples": []
+    "checked": 1095,
+    "failures": 1,
+    "examples": [
+      "Кембриджский университет 439203bbeefb: уровень likely, а по 70 очкам — verified"
+    ]
   },
   "officialDomain": {
-    "checked": 247,
-    "verified": 247,
+    "checked": 321,
+    "verified": 321,
+    "exactWikidataDomain": 303,
+    "academicTwin": 18,
     "mismatched": 0,
+    "twinExamples": [
+      "Казахстанско-Британский технический университет: kbtu.edu.kz — академический двойник [\"kbtu.kz\"]",
+      "Медицинский университет Астаны: amu.edu.kz — академический двойник [\"amu.kz\"]"
+    ],
     "examples": []
   },
   "commonsCategory": {
-    "claims": 106,
-    "sampled": 25,
-    "direct": 19,
-    "inSubcategory": 6,
+    "claims": 155,
+    "sampled": 20,
+    "direct": 13,
+    "inSubcategory": 7,
     "notConfirmed": 0,
     "examples": []
   },
   "images": {
-    "sampled": 50,
-    "load": 50,
+    "sampled": 40,
+    "load": 40,
     "broken": 0,
     "examples": []
   },
   "signals": {
-    "visual_consistent": 866,
-    "page_mentions_name": 492,
-    "visible_text_this": 235,
-    "official_domain": 228,
-    "geo_near_campus": 160,
-    "commons_category": 106,
-    "geo_in_city": 99,
-    "low_res": 85,
-    "commons_depicts": 37,
-    "wikipedia_use": 36,
+    "visual_consistent": 1068,
+    "page_mentions_name": 661,
+    "official_domain": 302,
+    "visible_text_this": 293,
+    "geo_near_campus": 226,
+    "commons_category": 155,
+    "geo_in_city": 111,
+    "commons_depicts": 95,
+    "low_res": 95,
+    "wikipedia_use": 44,
     "official_domain_weak": 19,
     "news_mentions_name": 18,
     "cross_source_match": 8,
-    "visual_inconsistent": 5,
-    "render": 4
+    "visual_inconsistent": 6,
+    "render": 6,
+    "geo_same_city": 3
   }
 }
