@@ -171,8 +171,9 @@ export function FixturesWorkbench({
         <PipelineRail stages={STAGES_DONE} sources={SOURCES_FAILING} />
       </Demo>
 
-      <Demo title="DegradedBanner · все флаги">
+      <Demo title="DegradedBanner · все флаги · визуальная проверка частично">
         <DegradedBanner degraded={["web_search_unavailable", "vision_unavailable", "wikimedia_unavailable"]} />
+        <DegradedBanner degraded={["vision_unavailable"]} visionPartial />
       </Demo>
 
       <Demo title="DescriptionBlock · готовится · готово · нет источников">
