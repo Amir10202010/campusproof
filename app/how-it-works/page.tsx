@@ -44,6 +44,8 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
       "В Wikimedia Commons отмечено, что на фото изображён этот университет",
       "Фото лежит в категории университета на Commons",
       `Геометка не дальше ${formatDistanceRu(GEO.STRONG_NEAR_CAMPUS_M)} от кампуса`,
+      // geo_in_city is only added for the city section, and there it is strong (lib/scoring/signals.ts).
+      "Снимок города с геометкой в черте города — для раздела «Город»",
       "Фото используется в статье Википедии об университете",
       "Фото опубликовано на официальном сайте (и не похоже на сток или рендер)",
       "На снимке читается название этого университета",
@@ -56,7 +58,7 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
       "Название вуза есть в заголовке, подписи или адресе страницы",
       "Тот же снимок нашёлся ещё на одном сайте",
       "Новостная статья, в которой упоминается университет",
-      `Геометка в том же городе — до ${formatDistanceRu(GEO.SAME_CITY_M)}`,
+      `Геометка в том же городе — до ${formatDistanceRu(GEO.SAME_CITY_M)}, для остальных разделов`,
       // visual_consistent: the model compares the scene with the context block of lib/vision/gemini.ts.
       "Сцена соответствует описанию вуза: городу, известным корпусам, статье Википедии",
     ],
