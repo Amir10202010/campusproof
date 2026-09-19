@@ -75,7 +75,8 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
     items: [
       `Геометка дальше ${formatDistanceRu(GEO.FAR_AWAY_M)} от кампуса`,
       "На снимке название другого вуза",
-      "Фото со стокового сайта или агрегатора",
+      // Only stock banks: a web-search hit on an aggregator (Pinterest) is scored like any unknown site.
+      "Фото со стокового сайта (фотобанка)",
       "Не фотография: логотип, карта, документ, скриншот",
       "Крупный портрет человека",
     ],
