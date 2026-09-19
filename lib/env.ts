@@ -21,9 +21,16 @@ export const env = {
   /** Serper: 2,500 free queries, no card. Optional — without a key the web search source is skipped. */
   serperApiKey: process.env.SERPER_API_KEY,
 
-  /** Openverse (free CC-licensed photos). Optional — register an app for 10k requests/day (#33). */
-  openverseClientId: process.env.OPENVERSE_CLIENT_ID,
-  openverseClientSecret: process.env.OPENVERSE_CLIENT_SECRET,
+  /**
+   * Openverse (free CC-licensed photos). Optional — register an app for 10k requests/day (#33).
+   * Openverse hands the credentials out as `client_id` / `client_secret`, and that is how they were
+   * entered in Vercel, where a variable cannot be renamed without the value in hand. Both spellings are
+   * accepted so the source runs on its real quota instead of the anonymous ~100 requests/day (#111);
+   * the prefixed names win, and nothing else in this project uses an OAuth client id.
+   * `||`, not `??`: .env.example ships these keys empty, and an empty value means "not set" here.
+   */
+  openverseClientId: process.env.OPENVERSE_CLIENT_ID || process.env.client_id,
+  openverseClientSecret: process.env.OPENVERSE_CLIENT_SECRET || process.env.client_secret,
 
   /** Upstash Redis free tier. The Vercel Marketplace integration may name the vars KV_REST_API_*. */
   upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL,
