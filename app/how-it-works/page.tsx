@@ -57,7 +57,8 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
       "Тот же снимок нашёлся ещё на одном сайте",
       "Новостная статья, в которой упоминается университет",
       `Геометка в том же городе — до ${formatDistanceRu(GEO.SAME_CITY_M)}`,
-      "Сцена соответствует разделу: например, на фото действительно читальный зал",
+      // visual_consistent: the model compares the scene with the context block of lib/vision/gemini.ts.
+      "Сцена соответствует описанию вуза: городу, известным корпусам, статье Википедии",
     ],
   },
   {
@@ -75,7 +76,8 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
     items: [
       `Геометка дальше ${formatDistanceRu(GEO.FAR_AWAY_M)} от кампуса`,
       "На снимке название другого вуза",
-      "Фото со стокового сайта или агрегатора",
+      // Only stock banks: a web-search hit on an aggregator (Pinterest) is scored like any unknown site.
+      "Фото со стокового сайта (фотобанка)",
       "Не фотография: логотип, карта, документ, скриншот",
       "Крупный портрет человека",
     ],

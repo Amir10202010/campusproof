@@ -23,7 +23,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } fr
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { CATEGORY_BY_ID } from "@/lib/config/categories";
 import type { Evidence, Photo } from "@/lib/types";
-import { groupEvidence } from "@/lib/ui/evidence";
+import { groupEvidence, reportPhotoUrl } from "@/lib/ui/evidence";
 import { displayHost, formatDateRu, formatDistanceRu, photoAlt, safeHttpUrl } from "@/lib/ui/format";
 import {
   DATE_KIND_HINT_RU,
@@ -65,7 +65,7 @@ function subscribeToViewport(onChange: () => void) {
 /**
  * P4 · #4 · shadcn Dialog (Sheet on mobile): big image, tier + plain-language verdict, evidence list
  * (points > 0 → ✓, < 0 → ✗), "Открыть источник" (target=_blank rel="noopener noreferrer"), date + kind,
- * license/author, distance from campus, "Также найдено на", disabled "Сообщить об ошибке".
+ * license/author, distance from campus, "Также найдено на", "Сообщить об ошибке" (a prefilled GitHub issue).
  */
 export function EvidenceDialog({ photo, open, onOpenChange }: EvidenceDialogProps) {
   const isDesktop = useSyncExternalStore(
@@ -295,9 +295,17 @@ function EvidenceBody({ photo }: { photo: Photo }) {
               </a>
             </Button>
           ) : null}
-          <Button variant="outline" size="lg" className="h-10" disabled title="Скоро">
-            <Flag aria-hidden="true" />
-            Сообщить об ошибке
+          <Button asChild variant="outline" size="lg" className="h-10">
+            <a
+              href={reportPhotoUrl(photo, typeof window === "undefined" ? undefined : window.location.href)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Откроется форма на GitHub (нужен аккаунт GitHub)"
+            >
+              <Flag aria-hidden="true" />
+              Сообщить об ошибке
+              <span className="sr-only"> (форма на GitHub, откроется в новой вкладке)</span>
+            </a>
           </Button>
         </div>
       </div>

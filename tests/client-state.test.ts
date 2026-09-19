@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sampleProfile } from "@/fixtures/profile.sample";
 import { sampleStream } from "@/fixtures/stream.sample";
-import { initialProfileStreamState, profileStreamReducer } from "@/lib/client/profileStream";
+import { initialProfileStreamState, profileStreamReducer, shareableProfilePath } from "@/lib/client/profileStream";
 import { computeCoverage } from "@/lib/pipeline/coverage";
 import { haversineM } from "@/lib/sources/geo";
 import { applyFilters, DEFAULT_FILTERS, toggleCategory } from "@/lib/ui/filters";
@@ -47,5 +47,22 @@ describe("helpers", () => {
     const km = haversineM({ lat: 43.2389, lon: 76.8897 }, { lat: 51.1694, lon: 71.4491 }) / 1000;
     expect(km).toBeGreaterThan(950);
     expect(km).toBeLessThan(1000);
+  });
+});
+
+describe("shareableProfilePath", () => {
+  it("turns a search into /u/<qid> and drops refresh=1, so a reload does not start another fresh run", () => {
+    expect(shareableProfilePath("https://x.app/search?q=KBTU", "Q1734762")).toBe("/u/Q1734762");
+    expect(shareableProfilePath("https://x.app/u/Q1734762?refresh=1", "Q1734762")).toBe("/u/Q1734762");
+    expect(shareableProfilePath("https://x.app/u/Q1734762", "Q1734762")).toBe("/u/Q1734762");
+  });
+
+  it("keeps a simulated outage and the section anchor", () => {
+    expect(shareableProfilePath("https://x.app/search?q=KBTU&simulate=web_search_down&refresh=1", "Q1734762")).toBe(
+      "/u/Q1734762?simulate=web_search_down",
+    );
+    expect(shareableProfilePath("https://x.app/u/Q1?refresh=1#category-dormitory", "Q1")).toBe(
+      "/u/Q1#category-dormitory",
+    );
   });
 });

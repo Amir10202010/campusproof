@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { samplePhotos } from "@/fixtures/profile.sample";
 import type { Evidence } from "@/lib/types";
-import { EVIDENCE_KIND_ORDER, groupEvidence } from "@/lib/ui/evidence";
+import { EVIDENCE_KIND_ORDER, groupEvidence, reportPhotoUrl } from "@/lib/ui/evidence";
 import { EVIDENCE_KIND_RU } from "@/lib/ui/labels";
 
 describe("groupEvidence", () => {
@@ -29,5 +29,19 @@ describe("groupEvidence", () => {
       expect(EVIDENCE_KIND_RU[kind].title).toBeTruthy();
       expect(EVIDENCE_KIND_RU[kind].hint).toBeTruthy();
     }
+  });
+});
+
+describe("reportPhotoUrl", () => {
+  it("opens a GitHub issue prefilled with what is needed to re-check the photo", () => {
+    const photo = samplePhotos[0];
+    const url = new URL(reportPhotoUrl(photo, "https://campusproof.vercel.app/u/Q1"));
+    expect(url.origin + url.pathname).toBe("https://github.com/Amir10202010/campusproof/issues/new");
+    expect(url.searchParams.get("title")).toMatch(/^Ошибка в фото: /);
+    const body = url.searchParams.get("body") ?? "";
+    expect(body).toContain(photo.imageUrl);
+    expect(body).toContain(photo.sourcePageUrl);
+    expect(body).toContain(`очков: ${photo.points}`);
+    expect(body).toContain("https://campusproof.vercel.app/u/Q1");
   });
 });

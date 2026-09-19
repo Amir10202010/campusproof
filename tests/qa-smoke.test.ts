@@ -8,7 +8,10 @@ import {
   evaluate,
   parseSseBlock,
   renderReport,
+  reportDate,
+  reportPath,
   splitSseBuffer,
+  startedAtText,
   streamUrl,
   summarize,
   summarizeRun,
@@ -146,5 +149,20 @@ describe("evaluate and report", () => {
     expect(report).toContain(
       "| Исходы | профиль — 2 (из них симуляций сбоя — 1), выбор — 0, не найден — 1, ошибка — 0 |",
     );
+  });
+});
+
+describe("report date", () => {
+  it("dates the report by Astana time, so a night run does not overwrite yesterday's file (#145)", () => {
+    expect(reportDate(new Date("2026-09-18T23:30:00Z"))).toBe("2026-09-19");
+    expect(reportDate(new Date("2026-09-18T12:00:00Z"))).toBe("2026-09-18");
+    expect(startedAtText(new Date("2026-09-18T23:30:00Z"))).toBe("2026-09-18 23:30 UTC (04:30 по Астане)");
+  });
+
+  it("never overwrites a report of the same day: the second run gets the time in its name", () => {
+    const at = new Date("2026-09-19T04:00:00Z"); // 09:00 in Astana
+    const posix = (path: string) => path.split("\\").join("/");
+    expect(posix(reportPath(at, () => false))).toBe("docs/qa-report-2026-09-19.md");
+    expect(posix(reportPath(at, () => true))).toBe("docs/qa-report-2026-09-19-0900.md");
   });
 });
