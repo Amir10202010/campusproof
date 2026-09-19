@@ -57,7 +57,8 @@ const SIGNALS: { title: string; icon: "plus" | "minus" | "ban"; items: string[] 
       "Тот же снимок нашёлся ещё на одном сайте",
       "Новостная статья, в которой упоминается университет",
       `Геометка в том же городе — до ${formatDistanceRu(GEO.SAME_CITY_M)}`,
-      "Сцена соответствует разделу: например, на фото действительно читальный зал",
+      // visual_consistent: the model compares the scene with the context block of lib/vision/gemini.ts.
+      "Сцена соответствует описанию вуза: городу, известным корпусам, статье Википедии",
     ],
   },
   {
