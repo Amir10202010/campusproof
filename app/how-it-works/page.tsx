@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Ban, ExternalLink, Minus, Plus } from "lucide-re
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ScoringTable } from "@/components/help/ScoringTable";
 import { TrustScale } from "@/components/help/TrustScale";
 import { CATEGORIES } from "@/lib/config/categories";
 import { GEO, LIMITS } from "@/lib/config/limits";
@@ -155,10 +156,18 @@ export default function HowItWorksPage() {
 
       <Section eyebrow="Шкала доверия" title="Как баллы превращаются в уровень">
         <TrustScale />
-        <p className="rounded-xl border bg-surface p-4 text-sm leading-relaxed">
+        <p className="text-base leading-relaxed text-muted-foreground">
           Баллы — это не вероятность, а сумма за найденные доказательства. Уровень выставляет код по заранее заданным
           правилам. Нейросеть только описывает, что видит на снимке, и оценку сама не ставит.
         </p>
+        <details className="border-y">
+          <summary className="cursor-pointer py-4 text-base font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+            За что начисляются баллы
+          </summary>
+          <div className="pb-5">
+            <ScoringTable />
+          </div>
+        </details>
       </Section>
 
       <Section eyebrow="Доказательства" title="Что мы ищем в каждом снимке">
