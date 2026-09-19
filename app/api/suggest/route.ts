@@ -24,10 +24,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const controller = new AbortController();
   request.signal.addEventListener("abort", () => controller.abort());
 
-  const picks = await suggestUniversities(parsed.data.text, controller.signal);
+  const { picks, detail } = await suggestUniversities(parsed.data.text, controller.signal);
   if (!picks) {
     return NextResponse.json(
-      { message: "Подбор сейчас недоступен — попробуйте позже или найдите вуз по названию." },
+      { message: "Подбор сейчас недоступен — попробуйте позже или найдите вуз по названию.", detail },
       { status: 503 },
     );
   }
