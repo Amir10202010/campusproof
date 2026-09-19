@@ -15,6 +15,7 @@ import { ThemeToggle } from "./ThemeToggle";
  */
 const NAV_LINKS = [
   { href: "/", label: "Поиск" },
+  { href: "/onboarding", label: "Подбор вуза" },
   { href: "/compare", label: "Сравнение" },
   { href: "/how-it-works", label: "Как мы проверяем" },
 ];
