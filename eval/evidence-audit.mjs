@@ -24,6 +24,9 @@ const STRONG_SIGNALS = new Set([
   "commons_depicts",
   "commons_category",
   "geo_near_campus",
+  // Only emitted for a photo of the city itself, and strong there: a city shot geotagged inside the city
+  // is as good as it gets for that section (lib/scoring/signals.ts).
+  "geo_in_city",
   "wikipedia_use",
   "official_domain",
   "visible_text_this",

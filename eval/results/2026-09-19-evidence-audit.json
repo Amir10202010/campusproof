@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T03:41:33.544Z",
+  "generatedAt": "2026-09-19T03:46:08.154Z",
   "base": "https://campusproof.vercel.app",
   "profiles": 42,
   "photos": 1105,
@@ -35,15 +35,15 @@
   },
   "commonsCategory": {
     "claims": 155,
-    "sampled": 25,
-    "direct": 16,
-    "inSubcategory": 9,
+    "sampled": 20,
+    "direct": 13,
+    "inSubcategory": 7,
     "notConfirmed": 0,
     "examples": []
   },
   "images": {
-    "sampled": 50,
-    "load": 50,
+    "sampled": 40,
+    "load": 40,
     "broken": 0,
     "examples": []
   },
