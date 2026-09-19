@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-09-19T03:46:08.154Z",
+  "base": "https://campusproof.vercel.app",
+  "profiles": 42,
+  "photos": 1105,
+  "tiers": {
+    "verified": 333,
+    "likely": 596,
+    "unconfirmed": 176
+  },
+  "photosPerProfile": {
+    "median": 27,
+    "min": 15,
+    "max": 34
+  },
+  "integrity": {
+    "checked": 1105,
+    "failures": 0,
+    "examples": []
+  },
+  "officialDomain": {
+    "checked": 365,
+    "verified": 365,
+    "exactWikidataDomain": 302,
+    "academicTwin": 63,
+    "mismatched": 0,
+    "twinExamples": [
+      "Казахстанско-Британский технический университет: kbtu.edu.kz — академический двойник [\"kbtu.kz\"]",
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: news.kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Казахский национальный медицинский университет имени С. Д. Асфендиярова: pharmacy.kaznmu.edu.kz — академический двойник [\"kaznmu.kz\"]",
+      "Университет Нархоз: narxoz.edu.kz — академический двойник [\"narxoz.kz\"]"
+    ],
+    "examples": []
+  },
+  "commonsCategory": {
+    "claims": 155,
+    "sampled": 20,
+    "direct": 13,
+    "inSubcategory": 7,
+    "notConfirmed": 0,
+    "examples": []
+  },
+  "images": {
+    "sampled": 40,
+    "load": 40,
+    "broken": 0,
+    "examples": []
+  },
+  "signals": {
+    "visual_consistent": 1078,
+    "page_mentions_name": 658,
+    "official_domain": 346,
+    "visible_text_this": 290,
+    "geo_near_campus": 225,
+    "commons_category": 155,
+    "geo_in_city": 111,
+    "commons_depicts": 95,
+    "low_res": 95,
+    "wikipedia_use": 44,
+    "official_domain_weak": 19,
+    "news_mentions_name": 18,
+    "cross_source_match": 8,
+    "visual_inconsistent": 6,
+    "render": 6,
+    "geo_same_city": 3
+  }
+}
