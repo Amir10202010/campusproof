@@ -1,8 +1,8 @@
 import { getRedis } from "@/lib/cache/kv";
 import { env } from "@/lib/env";
 import type { UniversityProfile } from "@/lib/types";
-import type { CommunityPhoto, PublicCommunityPhoto } from "./types";
-import { toPublicPhoto } from "./types";
+import type { CommunityPhoto, CommunityReview, PublicCommunityPhoto, PublicCommunityReview } from "./types";
+import { toPublicPhoto, toPublicReview } from "./types";
 
 /**
  * Upstash storage for community photos (owner: P1 · community feature).
@@ -70,4 +70,57 @@ export async function collectKnownDHashes(qid: string): Promise<{ dHash: string;
     console.error(JSON.stringify({ at: "community.collectKnownDHashes", error: String(error) }));
   }
   return out;
+}
+
+// ─── Reviews (Этап 2) ───────────────────────────────────────────────────────
+
+const reviewListKey = (qid: string) => `community:review:${qid}`;
+const reviewItemKey = (id: string) => `community:review:item:${id}`;
+
+export async function saveReview(review: CommunityReview): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  try {
+    await redis.set(reviewItemKey(review.id), review, { ex: TTL_S });
+    await redis.lpush(reviewListKey(review.qid), review.id);
+    await redis.expire(reviewListKey(review.qid), TTL_S);
+  } catch (error) {
+    console.error(JSON.stringify({ at: "community.saveReview", error: String(error) }));
+  }
+}
+
+export async function getReview(id: string): Promise<CommunityReview | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  try {
+    return await redis.get<CommunityReview>(reviewItemKey(id));
+  } catch (error) {
+    console.error(JSON.stringify({ at: "community.getReview", error: String(error) }));
+    return null;
+  }
+}
+
+export async function updateReview(review: CommunityReview): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  try {
+    await redis.set(reviewItemKey(review.id), review, { ex: TTL_S });
+  } catch (error) {
+    console.error(JSON.stringify({ at: "community.updateReview", error: String(error) }));
+  }
+}
+
+/** Only "published" reviews are exposed publicly; "held" ones stay invisible to everyone but moderators. */
+export async function listPublishedReviews(qid: string, limit = 30): Promise<PublicCommunityReview[]> {
+  const redis = getRedis();
+  if (!redis) return [];
+  try {
+    const ids = await redis.lrange<string>(reviewListKey(qid), 0, limit - 1);
+    if (ids.length === 0) return [];
+    const items = await Promise.all(ids.map((id) => redis.get<CommunityReview>(reviewItemKey(id))));
+    return items.filter((r): r is CommunityReview => Boolean(r) && r?.status === "published").map(toPublicReview);
+  } catch (error) {
+    console.error(JSON.stringify({ at: "community.listPublishedReviews", error: String(error) }));
+    return [];
+  }
 }

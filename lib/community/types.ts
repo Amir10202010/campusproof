@@ -38,3 +38,37 @@ export function toPublicPhoto(photo: CommunityPhoto): PublicCommunityPhoto {
   const { authorKey: _authorKey, ...rest } = photo;
   return rest;
 }
+
+// ─── Reviews (Этап 2) ───────────────────────────────────────────────────────
+
+export type ReviewAspect = "dorm" | "study" | "campus" | "city" | "other";
+export type ReviewStatus = "published" | "held";
+/** What Gemini's one-call classifier returns — a moderation filter, not an opinion about the university. */
+export type ModerationLabel = "ok" | "insult" | "personal_data" | "spam" | "unverifiable_accusation";
+
+export interface CommunityReview {
+  id: string;
+  qid: string;
+  aspect: ReviewAspect;
+  rating: 1 | 2 | 3 | 4 | 5;
+  text: string; // 30–1000 chars, PII already stripped before it ever reaches Gemini
+  status: ReviewStatus;
+  reportCount: number;
+  createdAt: string;
+  authorKey: string;
+}
+
+export type PublicCommunityReview = Omit<CommunityReview, "authorKey" | "reportCount">;
+
+export function toPublicReview(review: CommunityReview): PublicCommunityReview {
+  const { authorKey: _authorKey, reportCount: _reportCount, ...rest } = review;
+  return rest;
+}
+
+export const REVIEW_ASPECT_LABEL: Record<ReviewAspect, string> = {
+  dorm: "Общежитие",
+  study: "Учёба",
+  campus: "Кампус",
+  city: "Город",
+  other: "Другое",
+};
