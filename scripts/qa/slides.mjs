@@ -21,6 +21,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SLIDES = join(ROOT, "docs", "slides");
 
+/** Two decks share this script: the Russian one (docs/slides) and the English pitch deck (docs/slides/en). */
+const DECKS = {
+  ru: { html: join(SLIDES, "index.html"), pdf: join(SLIDES, "CampusProof.pdf") },
+  en: { html: join(SLIDES, "en", "index.html"), pdf: join(SLIDES, "en", "CampusProof-pitch-EN.pdf") },
+};
+
 const BROWSERS = [
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
@@ -31,7 +37,7 @@ const BROWSERS = [
   "/usr/bin/chromium",
 ];
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ─── DevTools protocol ─────────────────────────────────────────────────────────
 
@@ -66,7 +72,7 @@ class Cdp {
   }
 }
 
-async function launch(browserPath) {
+export async function launch(browserPath) {
   const profile = mkdtempSync(join(tmpdir(), "cp-slides-"));
   const child = spawn(
     browserPath,
@@ -106,7 +112,7 @@ async function launch(browserPath) {
 }
 
 /** Helpers injected into every page: element boxes in page coordinates (what Page.captureScreenshot's clip expects). */
-const PAGE_HELPERS = `
+export const PAGE_HELPERS = `
   window.__box = (elements, pad = 16) => {
     const rects = elements.filter(Boolean).map((element) => element.getBoundingClientRect());
     if (rects.length === 0) throw new Error("nothing to capture");
@@ -133,7 +139,7 @@ const PAGE_HELPERS = `
   };
 `;
 
-async function openPage(cdp, { width, height, scale = 2, mobile = false }) {
+export async function openPage(cdp, { width, height, scale = 2, mobile = false }) {
   const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
   const { sessionId } = await cdp.send("Target.attachToTarget", { targetId, flatten: true });
   const send = (method, params) => cdp.send(method, params, sessionId);
@@ -193,7 +199,7 @@ async function openPage(cdp, { width, height, scale = 2, mobile = false }) {
 // ─── Shots ─────────────────────────────────────────────────────────────────────
 
 /** A finished live run, or a saved profile once profiles are cached again. */
-const DONE = `/Завершено за|Сохранённый профиль/.test(document.body.innerText)`;
+const DONE = `/Завершено за|Собрано за|Сохранённый профиль/.test(document.body.innerText)`;
 
 /** The whole page fits the viewport, so every clip is inside it: sticky bars stay at the top, lazy images load. */
 async function growToContent(page, width) {
@@ -224,7 +230,7 @@ async function shots({ base, browser }) {
       join(out, "profile-top.png"),
       await page.evaluate(`window.__box([
         document.querySelector("main header"),
-        document.querySelector('section[aria-label="Ход проверки"]'),
+        document.querySelector('[aria-label="Ход проверки"]'),
         document.querySelector('main [role="alert"]')?.parentElement,
       ])`),
     );
@@ -279,7 +285,7 @@ async function shots({ base, browser }) {
     await page.shot(
       join(out, "degraded.png"),
       await page.evaluate(`window.__box([
-        document.querySelector('section[aria-label="Ход проверки"]'),
+        document.querySelector('[aria-label="Ход проверки"]'),
         document.querySelector('main [role="alert"]')?.parentElement,
       ])`),
     );
@@ -289,11 +295,113 @@ async function shots({ base, browser }) {
   }
 }
 
+/** Screens for the English pitch deck (docs/slides/en/img): the current prod UI, real runs, nothing staged. */
+async function shotsEn({ base, browser }) {
+  const out = join(SLIDES, "en", "img");
+  mkdirSync(out, { recursive: true });
+  const { cdp, close } = await launch(browser);
+  try {
+    const page = await openPage(cdp, { width: 1440, height: 900 });
+
+    console.error("home");
+    await page.goto(`${base}/`);
+    await sleep(1500);
+    await page.shot(join(out, "home.png"));
+
+    console.error("MSU: ambiguous query");
+    await page.goto(`${base}/search?q=MSU`);
+    await page.waitFor(`/Какой университет/.test(document.body.innerText)`);
+    await sleep(1500);
+    await page.evaluate(PAGE_HELPERS);
+    await page.shot(
+      join(out, "picklist.png"),
+      await page.evaluate(`window.__box([document.querySelector("main section")])`),
+    );
+
+    console.error("КБТУ: fresh run");
+    await page.goto(`${base}/u/Q1734762?refresh=1`);
+    await page.waitFor(DONE);
+    // A finished run folds the stages into <details>: open it, the counts are the point of the shot.
+    await page.evaluate(
+      `document.querySelectorAll('details[aria-label="Ход проверки"]').forEach((d) => (d.open = true))`,
+    );
+    await sleep(1000);
+    await page.evaluate(PAGE_HELPERS);
+    await page.shot(
+      join(out, "profile-top.png"),
+      await page.evaluate(`window.__box([
+        document.querySelector("main header"),
+        document.querySelector('[aria-label="Ход проверки"]'),
+      ])`),
+    );
+    await growToContent(page, 1440);
+    await page.evaluate(PAGE_HELPERS);
+    const cards = (id) => `(() => {
+      const section = document.getElementById("${id}");
+      const cards = [...section.querySelectorAll("li")].filter((li) => li.querySelector("img")).slice(0, 4);
+      return window.__box([section.querySelector("h2"), ...cards], 10);
+    })()`;
+    await page.shot(join(out, "dorms.jpg"), await page.evaluate(cards("category-dormitory")));
+    await page.shot(join(out, "campus.jpg"), await page.evaluate(cards("category-campus")));
+    await page.waitFor("window.__tilesReady()", 20_000).catch(() => console.error("  (map tiles still loading)"));
+    await page.shot(join(out, "map.jpg"), await page.evaluate(`window.__box([window.__section("Карта")])`));
+    await page.evaluate(
+      `[...document.querySelectorAll("main button")].find((b) => b.textContent.includes("Отфильтровано"))?.click()`,
+    );
+    await sleep(2500);
+    await page.evaluate(PAGE_HELPERS);
+    await page.shot(
+      join(out, "filtered.jpg"),
+      await page.evaluate(`(() => {
+        const button = [...document.querySelectorAll("main button")].find((b) => b.textContent.includes("Отфильтровано"));
+        return window.__box([button.closest("section")], 8);
+      })()`),
+    );
+
+    console.error("КБТУ: evidence dialog");
+    await page.viewport(1440, 1700);
+    await page.evaluate("scrollTo(0, 0)");
+    const opened = await page.evaluate(`(() => {
+      const card = [...document.querySelectorAll("#category-campus li")].find(
+        (li) => li.querySelector("img") && li.textContent.includes("Проверено"),
+      );
+      const button = card?.querySelector("button");
+      button?.click();
+      return Boolean(button);
+    })()`);
+    if (!opened) throw new Error("no «Проверено» campus photo to open on КБТУ");
+    await page.waitFor(`document.querySelector('[role="dialog"]')`);
+    await sleep(2000);
+    await page.evaluate(PAGE_HELPERS);
+    await page.shot(
+      join(out, "evidence.jpg"),
+      await page.evaluate(`window.__box([document.querySelector('[role="dialog"]')], 0)`),
+    );
+
+    console.error("simulated outage");
+    await page.viewport(1440, 900);
+    await page.goto(`${base}/search?q=KBTU&simulate=web_search_down`);
+    await page.waitFor(DONE);
+    await sleep(1000);
+    await page.evaluate(PAGE_HELPERS);
+    await page.shot(
+      join(out, "degraded.png"),
+      await page.evaluate(`window.__box([
+        document.querySelector('[aria-label="Ход проверки"]'),
+        document.querySelector('main [role="alert"]')?.parentElement,
+      ])`),
+    );
+
+    await page.close();
+  } finally {
+    await close();
+  }
+}
+
 // ─── PDF ───────────────────────────────────────────────────────────────────────
 
-async function pdf({ browser }) {
-  const source = join(SLIDES, "index.html");
-  const target = join(SLIDES, "CampusProof.pdf");
+async function pdf({ browser, deck }) {
+  const { html: source, pdf: target } = DECKS[deck];
   const { cdp, close } = await launch(browser);
   try {
     const page = await openPage(cdp, { width: 1280, height: 720, scale: 1 });
@@ -318,13 +426,13 @@ async function pdf({ browser }) {
 }
 
 /** One PNG per slide, to eyeball the deck without a PDF viewer. */
-async function preview({ browser, out }) {
+async function preview({ browser, out, deck }) {
   const target = out ?? join(tmpdir(), "campusproof-slides");
   mkdirSync(target, { recursive: true });
   const { cdp, close } = await launch(browser);
   try {
     const page = await openPage(cdp, { width: 1330, height: 800, scale: 1 });
-    await page.goto(pathToFileURL(join(SLIDES, "index.html")).href);
+    await page.goto(pathToFileURL(DECKS[deck].html).href);
     await page.waitFor("document.fonts.status === 'loaded'", 20_000);
     await growToContent(page, 1330);
     await page.evaluate(PAGE_HELPERS);
@@ -346,13 +454,16 @@ function parseArgs(argv) {
     base: "https://campusproof.vercel.app",
     browser: process.env.BROWSER_PATH,
     out: undefined,
+    deck: "ru",
   };
   for (let i = 1; i < argv.length; i++) {
     if (argv[i] === "--base") args.base = argv[++i].replace(/\/+$/, "");
     else if (argv[i] === "--browser") args.browser = argv[++i];
     else if (argv[i] === "--out") args.out = argv[++i];
+    else if (argv[i] === "--deck") args.deck = argv[++i];
     else throw new Error(`Неизвестный аргумент: ${argv[i]}`);
   }
+  if (!DECKS[args.deck]) throw new Error(`Неизвестная презентация: ${args.deck} (ru | en)`);
   args.browser ??= BROWSERS.find((path) => existsSync(path));
   if (!args.browser) throw new Error("Не нашли Chrome или Edge: укажите путь через --browser");
   return args;
@@ -360,9 +471,11 @@ function parseArgs(argv) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2));
-  const run = { shots, pdf, preview }[args.command];
+  const run = { shots, "shots-en": shotsEn, pdf, preview }[args.command];
   if (!run) {
-    console.error("Использование: node scripts/qa/slides.mjs shots [--base URL] | pdf | preview [--out папка]");
+    console.error(
+      "Использование: node scripts/qa/slides.mjs shots | shots-en [--base URL] | pdf [--deck ru|en] | preview [--deck ru|en] [--out папка]",
+    );
     process.exit(2);
   }
   run(args).catch((error) => {

@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CampusProof — pitch deck</title>
+    <!--
+      English pitch deck, 8 slides, 16:9 (1280 × 720 px = 13.333 × 7.5 in). Editable source of CampusProof-pitch-EN.pdf.
+      Every number comes from a committed measurement:
+        docs/qa-report-2026-09-19.md (smoke test on production) and eval/results/2026-09-19-evidence-audit.md.
+      Screenshots: real production runs, UI in Russian (the product is built for Kazakhstan & Central Asia):
+        node scripts/qa/slides.mjs shots-en              → docs/slides/en/img/*
+      PDF:  node scripts/qa/slides.mjs pdf --deck en      → docs/slides/en/CampusProof-pitch-EN.pdf
+      PNGs: node scripts/qa/slides.mjs preview --deck en  → one image per slide, to check the layout
+      Placeholders to fill in by hand are marked with class="todo" (team names).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+      :root {
+        --ink: #0b0f14;
+        --fg: #111827;
+        --muted: #4b5563;
+        --soft: #6b7280;
+        --line: #e5e7eb;
+        --panel: #f5f6f8;
+        --green: #047857;
+        --green-2: #059669;
+        --green-bright: #34d399;
+        --green-soft: #ecfdf5;
+        --amber-bg: #fef3c7;
+        --amber-fg: #92400e;
+        --amber-line: #fcd34d;
+        --red: #b91c1c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #cfd3d8;
+        color: var(--fg);
+        font-family: "Geist", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .slide {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        margin: 24px auto;
+        padding: 40px 60px 64px;
+        background: #fff;
+        overflow: hidden;
+        font-size: 24px;
+        line-height: 1.3;
+        display: flex;
+        flex-direction: column;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide > * {
+        flex-shrink: 0;
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .slide {
+          margin: 0;
+        }
+      }
+      .slide.dark {
+        background: radial-gradient(1200px 600px at 85% 0%, #0f2a22 0%, var(--ink) 60%);
+        color: #f9fafb;
+      }
+
+      /* chrome */
+      .footer {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 17px;
+        color: var(--soft);
+      }
+      .dark .footer {
+        color: #9ca3af;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+        font-weight: 600;
+        font-size: 18px;
+      }
+      .dark .brand {
+        color: #f9fafb;
+      }
+      .brand svg {
+        width: 26px;
+        height: 26px;
+      }
+      .brand b {
+        color: var(--green-2);
+        font-weight: 600;
+      }
+      .dark .brand b {
+        color: var(--green-bright);
+      }
+      .kicker {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin: 0 0 8px;
+      }
+      .dark .kicker {
+        color: var(--green-bright);
+      }
+      h1 {
+        font-size: 46px;
+        line-height: 1.06;
+        letter-spacing: -0.025em;
+        font-weight: 700;
+        margin: 0 0 8px;
+        text-wrap: balance;
+      }
+      .sub {
+        font-size: 23px;
+        line-height: 1.3;
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      .dark .sub {
+        color: #d1d5db;
+      }
+      .note {
+        font-size: 17px;
+        line-height: 1.32;
+        color: var(--soft);
+        margin: 0;
+      }
+      .mono {
+        font-family: "Geist Mono", Consolas, monospace;
+      }
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 12px 32px rgb(15 23 42 / 0.12);
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 12px;
+        border-radius: 7px;
+        font-size: 19px;
+        font-weight: 600;
+        white-space: nowrap;
+        line-height: 1.3;
+      }
+      .chip.verified {
+        background: var(--green);
+        color: #fff;
+      }
+      .chip.likely {
+        background: var(--amber-bg);
+        color: var(--amber-fg);
+        border: 1px solid var(--amber-line);
+      }
+      .chip.unconfirmed {
+        border: 2px dashed #9ca3af;
+        color: #374151;
+        background: #fff;
+      }
+      .todo {
+        background: #fef9c3;
+        outline: 2px dashed #ca8a04;
+        border-radius: 6px;
+        padding: 0 8px;
+      }
+      /* A fixed window onto a screenshot: the image is positioned inside with inline styles. */
+      .frame {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fbfbfc;
+        box-shadow: 0 10px 26px rgb(15 23 42 / 0.1);
+      }
+      .frame img {
+        position: absolute;
+        max-width: none;
+      }
+
+      /* 1 · hook */
+      .hook {
+        display: grid;
+        grid-template-columns: 1fr 440px;
+        gap: 48px;
+        margin-top: 6px;
+      }
+      .title-xl {
+        font-size: 80px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        margin: 0 0 14px;
+      }
+      .title-xl b {
+        color: var(--green-bright);
+        font-weight: 800;
+      }
+      .tagline {
+        font-size: 31px;
+        line-height: 1.2;
+        font-weight: 600;
+        margin: 0 0 26px;
+        color: #fff;
+        text-wrap: balance;
+      }
+      .problem {
+        font-size: 25px;
+        line-height: 1.36;
+        color: #e5e7eb;
+        margin: 0 0 20px;
+      }
+      .problem strong {
+        color: #fff;
+      }
+      .who {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .who span {
+        border: 1px solid #374151;
+        background: rgb(255 255 255 / 0.04);
+        border-radius: 999px;
+        padding: 5px 16px;
+        font-size: 20px;
+        color: #e5e7eb;
+      }
+      .questions {
+        display: grid;
+        gap: 14px;
+      }
+      .q {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid #1f2937;
+        background: rgb(255 255 255 / 0.05);
+        border-radius: 14px;
+        padding: 14px 18px;
+        font-size: 25px;
+        font-weight: 600;
+      }
+      .q i {
+        flex: none;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px dashed #6b7280;
+        display: grid;
+        place-items: center;
+        font-style: normal;
+        color: #9ca3af;
+        font-size: 22px;
+      }
+      .fact {
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: rgb(52 211 153 / 0.1);
+        border: 1px solid rgb(52 211 153 / 0.35);
+      }
+      .fact .big {
+        font-size: 50px;
+        font-weight: 800;
+        color: var(--green-bright);
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+      .fact p {
+        margin: 6px 0 0;
+        font-size: 19px;
+        line-height: 1.32;
+        color: #d1d5db;
+      }
+
+      /* 2 · solution */
+      .solution {
+        display: grid;
+        grid-template-columns: 440px 1fr;
+        gap: 36px;
+        align-items: start;
+      }
+      .flow {
+        display: grid;
+        gap: 6px;
+      }
+      .flow .box {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px 14px;
+        background: var(--panel);
+      }
+      .flow .box small {
+        display: block;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        font-weight: 600;
+      }
+      .flow .box span {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.25;
+      }
+      .flow .box.accent {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .flow .box.accent small {
+        color: var(--green-bright);
+      }
+      .flow .arrow {
+        text-align: center;
+        color: var(--green);
+        font-weight: 700;
+        line-height: 0.7;
+        font-size: 20px;
+      }
+      .tiers-col {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .tiers-col .chip {
+        font-size: 17px;
+        padding: 3px 10px;
+      }
+      .features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 22px;
+        margin-top: 14px;
+      }
+      .feature {
+        display: flex;
+        gap: 10px;
+        font-size: 19px;
+        line-height: 1.3;
+      }
+      .feature b {
+        color: var(--green);
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 17px;
+        padding-top: 2px;
+      }
+      .caption {
+        font-size: 17px;
+        color: var(--soft);
+        margin-top: 8px;
+        line-height: 1.32;
+      }
+
+      /* 3 · demo */
+      .demo-row {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 10px;
+      }
+      .demo-row.a {
+        grid-template-columns: 330px 1fr;
+      }
+      .demo-row.b {
+        grid-template-columns: 400px 1fr;
+      }
+      .step-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .step-label i {
+        font-style: normal;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .step-label small {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        color: var(--green);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .step-caption {
+        margin: 6px 0 0;
+        font-size: 17px;
+        line-height: 1.3;
+        color: var(--muted);
+      }
+      .step-caption strong {
+        color: var(--fg);
+      }
+      .demo-result {
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-size: 19px;
+        line-height: 1.3;
+      }
+      .demo-result b {
+        color: var(--green-bright);
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 15px;
+        letter-spacing: 0.1em;
+      }
+
+      /* 4 · technology */
+      .arch {
+        display: grid;
+        grid-template-columns: 245px 1fr 265px;
+        gap: 16px;
+        align-items: start;
+      }
+      .col-title {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        margin-bottom: 6px;
+      }
+      .tile {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 7px 12px;
+        background: #fff;
+        margin-bottom: 8px;
+      }
+      .tile b {
+        display: block;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+      .tile span {
+        display: block;
+        font-size: 16px;
+        line-height: 1.28;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .tile.dark {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .tile.dark span {
+        color: #d1d5db;
+      }
+      .tile.green {
+        background: var(--green-soft);
+        border-color: #a7f3d0;
+      }
+      .pipe {
+        border: 2px solid var(--green);
+        border-radius: 16px;
+        padding: 10px 12px 12px;
+        background: linear-gradient(180deg, #f0fdf8, #fff 40%);
+      }
+      .pipe-steps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 10px;
+      }
+      .pstep {
+        border-radius: 10px;
+        padding: 7px 11px;
+        background: #fff;
+        border: 1px solid var(--line);
+      }
+      .pstep b {
+        font-size: 18px;
+        display: block;
+        line-height: 1.2;
+      }
+      .pstep b em {
+        font-style: normal;
+        color: var(--green);
+        font-family: "Geist Mono", Consolas, monospace;
+        margin-right: 6px;
+      }
+      .pstep span {
+        font-size: 15.5px;
+        line-height: 1.28;
+        color: var(--muted);
+        display: block;
+        margin-top: 1px;
+      }
+      .pstep.ai {
+        border: 1px solid #a7f3d0;
+        background: var(--green-soft);
+      }
+      .pstep.rule {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .pstep.rule span {
+        color: #d1d5db;
+      }
+      .pstep.rule b em {
+        color: var(--green-bright);
+      }
+      .principle {
+        margin-top: 8px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .principle span {
+        font-size: 16px;
+        border-radius: 999px;
+        padding: 4px 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .principle span b {
+        color: var(--green);
+      }
+
+      /* 5 · advantages */
+      .versus {
+        display: grid;
+        grid-template-columns: 250px 1fr 1fr;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        font-size: 19px;
+        line-height: 1.28;
+      }
+      .versus > div {
+        padding: 8px 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .versus .h {
+        border-top: none;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        background: var(--panel);
+      }
+      .versus .h.ours {
+        background: var(--ink);
+        color: var(--green-bright);
+      }
+      .versus .k {
+        font-weight: 600;
+        background: var(--panel);
+      }
+      .versus .old {
+        color: var(--muted);
+      }
+      .versus .old::before {
+        content: "✕";
+        color: var(--red);
+        font-weight: 700;
+      }
+      .versus .new {
+        background: var(--green-soft);
+        font-weight: 500;
+      }
+      .versus .new::before {
+        content: "✓";
+        color: var(--green);
+        font-weight: 800;
+      }
+      .adv-bottom {
+        display: grid;
+        grid-template-columns: 1fr 480px;
+        gap: 24px;
+        margin-top: 14px;
+        align-items: center;
+      }
+      .adv-bottom .note {
+        font-size: 18px;
+        color: var(--muted);
+      }
+      .adv-bottom .note strong {
+        color: var(--fg);
+      }
+
+      /* 6 · impact */
+      .impact {
+        display: grid;
+        grid-template-columns: 560px 1fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 16px 12px;
+        background: var(--panel);
+      }
+      .stat .num {
+        font-size: 44px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        color: var(--green);
+      }
+      .stat .lbl {
+        font-size: 17px;
+        line-height: 1.3;
+        margin-top: 4px;
+        color: var(--fg);
+      }
+      .bar {
+        display: flex;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 17px;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+      .bar div {
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        white-space: nowrap;
+      }
+      .bar .v {
+        background: var(--green);
+        color: #fff;
+      }
+      .bar .l {
+        background: var(--amber-bg);
+        color: var(--amber-fg);
+      }
+      .bar .u {
+        background: #e5e7eb;
+        color: #374151;
+        justify-content: flex-end;
+      }
+      .value {
+        display: grid;
+        gap: 10px;
+      }
+      .value .card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 9px 16px;
+      }
+      .value .card small {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        color: var(--green);
+      }
+      .value .card p {
+        margin: 3px 0 0;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .kpis {
+        margin-top: 10px;
+        border: 2px dashed #9ca3af;
+        border-radius: 14px;
+        padding: 9px 16px;
+        font-size: 17px;
+        line-height: 1.32;
+      }
+      .kpis b {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        color: var(--soft);
+      }
+
+      /* 7 · team */
+      .team {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .member {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 20px;
+        display: grid;
+        grid-template-columns: 64px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .member .avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: var(--green-bright);
+        display: grid;
+        place-items: center;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .member .name {
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+      .member .role {
+        font-size: 19px;
+        font-weight: 600;
+        color: var(--green);
+        margin: 2px 0 6px;
+      }
+      .member .does {
+        font-size: 18px;
+        line-height: 1.32;
+        color: var(--muted);
+      }
+      .member .handle {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 15px;
+        color: var(--soft);
+        margin-top: 4px;
+      }
+      .member.placeholder {
+        border: 2px dashed #9ca3af;
+        background: #fafafa;
+      }
+      .member.placeholder .avatar {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
+      .how {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .how div {
+        border-radius: 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 10px 16px;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .how b {
+        display: block;
+        font-size: 26px;
+        color: var(--green);
+        letter-spacing: -0.02em;
+      }
+
+      /* 8 · roadmap */
+      .road {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .phase {
+        border-radius: 16px;
+        padding: 14px 18px;
+        border: 1px solid #1f2937;
+        background: rgb(255 255 255 / 0.04);
+      }
+      .phase.now {
+        border-color: rgb(52 211 153 / 0.6);
+        background: rgb(52 211 153 / 0.08);
+      }
+      .phase h3 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .phase .tag {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--green-bright);
+        margin-bottom: 4px;
+      }
+      .phase ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 7px;
+        font-size: 19px;
+        line-height: 1.3;
+        color: #e5e7eb;
+      }
+      .phase li {
+        position: relative;
+        padding-left: 18px;
+      }
+      .phase li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.52em;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green-bright);
+      }
+      .phase:not(.now) li::before {
+        background: #6b7280;
+      }
+      .stages {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 16px 0 0;
+        font-size: 18px;
+        color: #d1d5db;
+      }
+      .stages span {
+        border: 1px solid #374151;
+        border-radius: 999px;
+        padding: 4px 14px;
+        white-space: nowrap;
+      }
+      .stages span.here {
+        border-color: var(--green-bright);
+        color: #fff;
+        background: rgb(52 211 153 / 0.15);
+      }
+      .stages em {
+        font-style: normal;
+        color: var(--green-bright);
+      }
+      .finale {
+        margin: 20px 0 0;
+        font-size: 36px;
+        line-height: 1.15;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .finale b {
+        color: var(--green-bright);
+      }
+      .links {
+        margin-top: 14px;
+        display: flex;
+        gap: 26px;
+        font-size: 18px;
+        color: #9ca3af;
+      }
+      .links span b {
+        color: #fff;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="logo">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#171717" />
+        <path
+          d="M8 13V9a1 1 0 0 1 1-1h4M19 8h4a1 1 0 0 1 1 1v4M24 19v4a1 1 0 0 1-1 1h-4M13 24H9a1 1 0 0 1-1-1v-4"
+          fill="none"
+          stroke="#fafafa"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <path
+          d="m11.5 16.2 3 3 6-6.4"
+          fill="none"
+          stroke="#34d399"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </template>
+
+    <!-- 1 · PROBLEM / HOOK -->
+    <section class="slide dark">
+      <p class="kicker">The problem</p>
+      <div class="hook">
+        <div>
+          <p class="title-xl">Campus<b>Proof</b></p>
+          <p class="tagline">Real university photos — each with a source, a date and a trust level.</p>
+          <p class="problem">
+            Applicants pick universities they <strong>can't visit</strong>. Official sites show polished marketing, and
+            real photos are scattered, duplicated, outdated — or of another place. Image search never says
+            <strong>which photo to trust</strong>.
+          </p>
+          <div class="who">
+            <span>Applicants 16–19, Kazakhstan &amp; Central Asia</span>
+            <span>Parents</span>
+            <span>Admissions advisors</span>
+          </div>
+        </div>
+        <div class="questions">
+          <div class="q"><i>?</i>Where is this photo from?</div>
+          <div class="q"><i>?</i>When was it taken?</div>
+          <div class="q"><i>?</i>Is it really this university?</div>
+          <div class="fact">
+            <div class="big">27 %</div>
+            <p>
+              of the most promising open-source images we examined were rejected: duplicates, logos &amp; documents,
+              tiny files, portraits, another institution's name — 137 of 513, across 14 universities.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Source: saved production profiles, 19 Sep 2026 · 1 / 8</span>
+      </div>
+    </section>
+
+    <!-- 2 · SOLUTION -->
+    <section class="slide">
+      <p class="kicker">Our solution</p>
+      <h1>Type a university — get a verified visual profile</h1>
+      <p class="sub">Proof, not pictures: an honest “not found” beats someone else's photo.</p>
+      <div class="solution">
+        <div>
+          <div class="flow">
+            <div class="box"><small>Problem</small><span>Unverifiable, scattered campus photos</span></div>
+            <div class="arrow">↓</div>
+            <div class="box accent">
+              <small>CampusProof</small><span>Evidence pipeline over open data, web search and AI</span>
+            </div>
+            <div class="arrow">↓</div>
+            <div class="box"><small>User action</small><span>Type a name — typos are fine</span></div>
+            <div class="arrow">↓</div>
+            <div class="box">
+              <small>Result</small><span>Campus, dorms, classrooms, libraries, city — sorted and checked</span>
+            </div>
+          </div>
+          <div class="tiers-col">
+            <span class="chip verified">✓ Verified</span><span class="chip likely">◐ Likely</span
+            ><span class="chip unconfirmed">? Unconfirmed · hidden</span>
+          </div>
+        </div>
+        <div>
+          <div class="shot"><img src="img/dorms.jpg" alt="KBTU dormitory section on production" /></div>
+          <p class="caption">
+            Live on production — KBTU dormitories, from the university's own site, each with source, date and trust
+            tier. UI in Russian: built for Kazakhstan &amp; Central Asia.
+          </p>
+          <div class="features">
+            <div class="feature"><b>01</b>Smart search: typos, acronyms, Cyrillic; a pick-list if ambiguous</div>
+            <div class="feature"><b>02</b>Clickable source, typed date and license on every photo</div>
+            <div class="feature"><b>03</b>Trust tier computed from recorded evidence</div>
+            <div class="feature"><b>04</b>Honest gaps + a list of what was filtered out and why</div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>campusproof.vercel.app · 2 / 8</span>
+      </div>
+    </section>
+
+    <!-- 3 · DEMO -->
+    <section class="slide">
+      <p class="kicker">Demo · real production run · KBTU · 19 Sep 2026</p>
+      <h1>From a name to proof in seconds</h1>
+      <div class="demo-row a">
+        <div>
+          <div class="step-label"><i>1</i>Type a name <small>· input</small></div>
+          <div class="frame" style="height: 150px">
+            <img
+              src="img/home.png"
+              alt="Home page with the search box"
+              style="width: 709px; left: -79px; top: -165px"
+            />
+          </div>
+          <p class="step-caption">“КБТУ”, “MSU”, even “Nazarbaev Univercity” work.</p>
+        </div>
+        <div>
+          <div class="step-label"><i>2</i>Live pipeline <small>· process</small></div>
+          <div class="frame" style="height: 150px">
+            <img
+              src="img/profile-top.png"
+              alt="Pipeline stages with counts and source statuses"
+              style="width: 812px; left: 0; top: -124px"
+            />
+          </div>
+          <p class="step-caption">
+            <strong>135 candidates</strong> from Commons, web search and Openverse → 36 checked →
+            <strong>31 photos, 5 rejected</strong>. Built in 1.9 s (sources cached).
+          </p>
+        </div>
+      </div>
+      <div class="demo-row b">
+        <div>
+          <div class="step-label"><i>3</i>Evidence decides <small>· AI + rules</small></div>
+          <div class="frame" style="height: 160px">
+            <img
+              src="img/evidence.jpg"
+              alt="Evidence dialog of a verified photo"
+              style="width: 400px; left: 0; top: -314px"
+            />
+          </div>
+          <p class="step-caption">
+            Gemini describes the image; <strong>code scores evidence</strong>: 100 pts → ✓ Verified.
+          </p>
+        </div>
+        <div>
+          <div class="step-label"><i>4</i>Verified profile <small>· output</small></div>
+          <div class="frame" style="height: 160px">
+            <img src="img/campus.jpg" alt="Campus section with verified photos" style="width: 742px; left: 0; top: 0" />
+          </div>
+          <p class="step-caption">
+            8 sections, <strong>4 filters</strong>, map and compare — every photo one click from its source.
+          </p>
+        </div>
+      </div>
+      <div class="demo-result">
+        <b>RESULT</b>31 photos, each with a source, a date and a trust tier. A saved profile reopens in about 0.4 s.
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Screenshots: production UI · 3 / 8</span>
+      </div>
+    </section>
+
+    <!-- 4 · TECHNOLOGY -->
+    <section class="slide">
+      <p class="kicker">Technology · under the hood</p>
+      <h1>AI observes. Code decides.</h1>
+      <p class="sub">A streaming pipeline on free and open APIs — every stage has a timeout.</p>
+      <div class="arch">
+        <div>
+          <div class="col-title">Product layer</div>
+          <div class="tile dark">
+            <b>Browser · any device</b><span>No accounts; IPs only hashed for rate limits</span>
+          </div>
+          <div class="tile"><b>Next.js 16 · React 19</b><span>UI + API routes on Vercel, Node.js 24</span></div>
+          <div class="tile"><b>Server-Sent Events</b><span>Stages and photos stream as they're ready</span></div>
+          <div class="tile"><b>Tailwind 4 · shadcn/ui</b><span>Accessible UI, dark mode; Leaflet + OSM map</span></div>
+        </div>
+        <div class="pipe">
+          <div class="col-title">Pipeline · TypeScript · one path for every university</div>
+          <div class="pipe-steps">
+            <div class="pstep">
+              <b><em>1</em>Resolve</b><span>Local index of 1,041 universities + live Wikidata</span>
+            </div>
+            <div class="pstep">
+              <b><em>2</em>Gather</b><span>Commons, Wikipedia · Serper · Openverse, in parallel</span>
+            </div>
+            <div class="pstep">
+              <b><em>3</em>Download</b><span>SSRF-safe fetch, sharp resize, EXIF geotags</span>
+            </div>
+            <div class="pstep">
+              <b><em>4</em>Deduplicate</b><span>Perceptual hash (dHash) + same-scene check</span>
+            </div>
+            <div class="pstep ai">
+              <b><em>5</em>Observe · Gemini</b><span>Image type, visible text, category — zod-checked JSON</span>
+            </div>
+            <div class="pstep rule">
+              <b><em>6</em>Score · rules</b><span>Points per evidence → tier; deterministic, tested</span>
+            </div>
+            <div class="pstep ai">
+              <b><em>7</em>Describe · Gemini</b><span>3–5 sentences from sources only, each cited</span>
+            </div>
+            <div class="pstep">
+              <b><em>8</em>Assemble</b><span>Coverage per section, filtered-out list</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="col-title">Data &amp; quality</div>
+          <div class="tile green">
+            <b>Upstash Redis</b><span>14-day profile cache, source &amp; model answers, rate limits</span>
+          </div>
+          <div class="tile">
+            <b>Guardrails</b
+            ><span
+              >27 s deadline, per-source timeouts,
+              <span class="mono" style="display: inline">?simulate=</span> outages</span
+            >
+          </div>
+          <div class="tile"><b>291 automated tests</b><span>vitest; CI gates every pull request</span></div>
+          <div class="tile"><b>Production audits</b><span>Smoke test + evidence audit of 1,105 photos</span></div>
+        </div>
+      </div>
+      <div class="principle">
+        <span><b>✓</b> AI never assigns scores or tiers</span><span><b>✓</b> No people identification</span
+        ><span><b>✓</b> Official APIs &amp; open data, no scraping</span
+        ><span><b>✓</b> No per-university special cases</span>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>github.com/Amir10202010/campusproof · 4 / 8</span>
+      </div>
+    </section>
+
+    <!-- 5 · ADVANTAGES -->
+    <section class="slide">
+      <p class="kicker">Why this approach</p>
+      <h1>Image search shows pictures. We show proof.</h1>
+      <p class="sub">The same questions — answered on every single photo.</p>
+      <div class="versus">
+        <div class="h">Question</div>
+        <div class="h">Image search / official site</div>
+        <div class="h ours">CampusProof</div>
+
+        <div class="k">Where is it from?</div>
+        <div class="old">A thumbnail, provenance unknown</div>
+        <div class="new">Clickable source page, license, author</div>
+
+        <div class="k">When was it taken?</div>
+        <div class="old">Undated, or a date of unknown meaning</div>
+        <div class="new">Typed date: taken, uploaded, published</div>
+
+        <div class="k">Is it this university?</div>
+        <div class="old">A guess by the viewer</div>
+        <div class="new">Trust tier from evidence, every point visible</div>
+
+        <div class="k">Noise</div>
+        <div class="old">Duplicates, stock, renders, other places</div>
+        <div class="new">Removed before display, reason shown</div>
+
+        <div class="k">Missing data</div>
+        <div class="old">Filled with anything that looks close</div>
+        <div class="new">Honest empty section: “couldn't confirm”</div>
+
+        <div class="k">Marketing vs reality</div>
+        <div class="old">Only what the university chose to show</div>
+        <div class="new">Official and independent, side by side</div>
+      </div>
+      <div class="adv-bottom">
+        <p class="note">
+          <strong>Real catch, KBTU profile:</strong> photos showing “Amanat party office” and “Kazpatent” signs were
+          flagged by the visual check and moved to “Filtered out”, with the reason shown to the user.
+        </p>
+        <div class="frame" style="height: 140px">
+          <img
+            src="img/filtered.jpg"
+            alt="Filtered-out list: another institution's name on the photo"
+            style="width: 538px; left: -10px; top: -72px"
+          />
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>5 / 8</span>
+      </div>
+    </section>
+
+    <!-- 6 · IMPACT / VALUE -->
+    <section class="slide">
+      <p class="kicker">Impact · measured on production</p>
+      <h1>Trust you can audit — already working</h1>
+      <p class="sub">Measured on production, with sample size and date. Targets are marked as targets.</p>
+      <div class="impact">
+        <div>
+          <div class="stats">
+            <div class="stat">
+              <div class="num">27 / 27</div>
+              <div class="lbl">smoke-test queries passed: typos, ambiguity, garbage, outages</div>
+            </div>
+            <div class="stat">
+              <div class="num">2.6 s</div>
+              <div class="lbl">
+                median to a finished profile (sources cached; cold runs <span style="white-space: nowrap">9–20 s</span>)
+              </div>
+            </div>
+            <div class="stat">
+              <div class="num">0</div>
+              <div class="lbl">score/evidence mismatches in 1,105 photos of 42 profiles</div>
+            </div>
+            <div class="stat">
+              <div class="num">365 / 365</div>
+              <div class="lbl">“official site” claims confirmed against Wikidata</div>
+            </div>
+          </div>
+          <div class="bar">
+            <div class="v" style="width: 30.1%">✓ Verified 30.1 %</div>
+            <div class="l" style="width: 53.9%">◐ Likely 53.9 %</div>
+            <div class="u" style="width: 16%">? 15.9 %</div>
+          </div>
+          <p class="note">
+            Trust tiers of 1,105 photos in 42 saved profiles. Sources: docs/qa-report-2026-09-19.md,
+            eval/results/2026-09-19-evidence-audit.md
+          </p>
+        </div>
+        <div>
+          <div class="value">
+            <div class="card">
+              <small>FOR APPLICANTS &amp; PARENTS</small>
+              <p>See real dorms, classrooms and campus before applying — and know which photo to trust.</p>
+            </div>
+            <div class="card">
+              <small>FOR ADVISORS &amp; PLATFORMS</small>
+              <p>Shareable, source-linked profiles; a JSON profile endpoint already exists for integration.</p>
+            </div>
+            <div class="card">
+              <small>FOR THE INDUSTRY</small>
+              <p>A transparency standard for visual claims, built on open data with authors and licenses credited.</p>
+            </div>
+          </div>
+          <div class="kpis">
+            <b>NEXT KPIs · TARGETS, NOT YET MEASURED</b><br />
+            “Verified” precision on a labeled test set ≥ 90 % · category accuracy ≥ 85 % · p50/p90 cold latency · user
+            reports per 1,000 photos
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Measured 19 Sep 2026 · 6 / 8</span>
+      </div>
+    </section>
+
+    <!-- 7 · TEAM -->
+    <section class="slide">
+      <p class="kicker">Team</p>
+      <h1>Built in 72 hours as parallel lanes</h1>
+      <p class="sub">LOCUS Startup Hackathon 2026 · Case 01 “Visual University Profile”.</p>
+      <div class="team">
+        <div class="member">
+          <div class="avatar">P1</div>
+          <div>
+            <div class="name">Amirkhan Sagyndyk</div>
+            <div class="role">Pipeline &amp; Verification</div>
+            <div class="does">
+              Streaming pipeline, resolver, sources, Gemini integration, scoring rules, cache and rate limits.
+            </div>
+            <div class="handle">github.com/Amir10202010</div>
+          </div>
+        </div>
+        <div class="member">
+          <div class="avatar">P4</div>
+          <div>
+            <div class="name"><span class="todo">[Name]</span></div>
+            <div class="role">Product &amp; UI</div>
+            <div class="does">
+              Profile interface: evidence dialog, filters, map, compare, error states; QA smoke tests, README, pitch.
+            </div>
+            <div class="handle">github.com/aldiyaraizhigitov</div>
+          </div>
+        </div>
+        <div class="member">
+          <div class="avatar">P3</div>
+          <div>
+            <div class="name"><span class="todo">[Name]</span></div>
+            <div class="role">Data</div>
+            <div class="does">
+              University index built from Wikidata SPARQL — 1,041 universities with names, aliases and domains.
+            </div>
+            <div class="handle">github.com/Chelovek12346</div>
+          </div>
+        </div>
+        <div class="member placeholder">
+          <div class="avatar">?</div>
+          <div>
+            <div class="name"><span class="todo">[Name]</span></div>
+            <div class="role">[Role]</div>
+            <div class="does">Fourth team member — fill in or remove this card.</div>
+          </div>
+        </div>
+      </div>
+      <div class="how">
+        <div>
+          <b>Contract-first</b>Typed interfaces and a working skeleton from hour one, so lanes never blocked each other
+        </div>
+        <div><b>291 tests</b>Every change shipped as a small pull request, merged only with green CI</div>
+        <div><b>Open by default</b>Public repository; AI coding assistant use disclosed in the README</div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>7 / 8</span>
+      </div>
+    </section>
+
+    <!-- 8 · ROADMAP -->
+    <section class="slide dark">
+      <p class="kicker">Roadmap</p>
+      <h1>From a working MVP to a trust layer for campus media</h1>
+      <div class="road">
+        <div class="phase now">
+          <div class="tag">Now · live</div>
+          <h3>Working MVP</h3>
+          <ul>
+            <li>Search with typos, acronyms and a pick-list</li>
+            <li>8 sections, 4 filters, trust tiers with evidence</li>
+            <li>Filtered-out list, map, compare, saved profiles</li>
+            <li>Graceful degradation, tested on production</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="tag">Next · planned</div>
+          <h3>Prove accuracy</h3>
+          <ul>
+            <li>Labeled test set + public accuracy page</li>
+            <li>Reuse detector: the same image on a stock site or another university</li>
+            <li>User reports on photos as a scoring signal</li>
+            <li>More local sources for Kazakhstan &amp; Central Asia</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="tag">Future · explore</div>
+          <h3>Scale the trust layer</h3>
+          <ul>
+            <li>Profile API for admissions advisors and education platforms</li>
+            <li>Kazakh and English interface</li>
+            <li>More countries and university systems</li>
+            <li>Campus tour from geotagged photos</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stages">
+        <span class="here">MVP · now</span><em>→</em><span>Pilot with admissions advisors</span><em>→</em
+        ><span>Applicants</span><em>→</em><span>Platform integrations</span><em>→</em><span>New regions</span>
+      </div>
+      <p class="finale">
+        From campus photos you have to <b>take on faith</b> — to proof you can <b>check in one click</b>.
+      </p>
+      <div class="links">
+        <span>Try it: <b>campusproof.vercel.app</b></span
+        ><span>Code: <b>github.com/Amir10202010/campusproof</b></span>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Next steps are plans, no dates committed · 8 / 8</span>
+      </div>
+    </section>
+
+    <script>
+      // One logo definition for every footer.
+      const logo = document.getElementById("logo").content;
+      for (const brand of document.querySelectorAll("[data-logo]")) brand.prepend(logo.cloneNode(true));
+    </script>
+  </body>
+</html>
