@@ -25,6 +25,7 @@ const SLIDES = join(ROOT, "docs", "slides");
 const DECKS = {
   ru: { html: join(SLIDES, "index.html"), pdf: join(SLIDES, "CampusProof.pdf") },
   en: { html: join(SLIDES, "en", "index.html"), pdf: join(SLIDES, "en", "CampusProof-pitch-EN.pdf") },
+  "ru-pitch": { html: join(SLIDES, "ru", "index.html"), pdf: join(SLIDES, "ru", "CampusProof-pitch-RU.pdf") },
 };
 
 const BROWSERS = [
@@ -463,7 +464,7 @@ function parseArgs(argv) {
     else if (argv[i] === "--deck") args.deck = argv[++i];
     else throw new Error(`Неизвестный аргумент: ${argv[i]}`);
   }
-  if (!DECKS[args.deck]) throw new Error(`Неизвестная презентация: ${args.deck} (ru | en)`);
+  if (!DECKS[args.deck]) throw new Error(`Неизвестная презентация: ${args.deck} (ru | en | ru-pitch)`);
   args.browser ??= BROWSERS.find((path) => existsSync(path));
   if (!args.browser) throw new Error("Не нашли Chrome или Edge: укажите путь через --browser");
   return args;
@@ -474,7 +475,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const run = { shots, "shots-en": shotsEn, pdf, preview }[args.command];
   if (!run) {
     console.error(
-      "Использование: node scripts/qa/slides.mjs shots | shots-en [--base URL] | pdf [--deck ru|en] | preview [--deck ru|en] [--out папка]",
+      "Использование: node scripts/qa/slides.mjs shots | shots-en [--base URL] | pdf [--deck ru|en|ru-pitch] | preview [--deck ru|en|ru-pitch] [--out папка]",
     );
     process.exit(2);
   }

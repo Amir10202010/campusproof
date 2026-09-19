@@ -1,0 +1,1407 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <title>CampusProof — презентация</title>
+    <!--
+      Презентация CampusProof на русском, 8 слайдов, 16:9 (1280 × 720 px). Редактируемый исходник CampusProof-pitch-RU.pdf.
+      Тот же дизайн и те же измеренные цифры, что в английской версии (docs/slides/en): docs/qa-report-2026-09-19.md,
+      eval/results/2026-09-19-evidence-audit.md. Скриншоты общие: docs/slides/en/img (node scripts/qa/slides.mjs shots-en).
+      PDF: node scripts/qa/slides.mjs pdf --deck ru-pitch      → docs/slides/ru/CampusProof-pitch-RU.pdf
+      PNG: node scripts/qa/slides.mjs preview --deck ru-pitch  → по картинке на слайд, проверить вёрстку
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+      :root {
+        --ink: #0b0f14;
+        --fg: #111827;
+        --muted: #4b5563;
+        --soft: #6b7280;
+        --line: #e5e7eb;
+        --panel: #f5f6f8;
+        --green: #047857;
+        --green-2: #059669;
+        --green-bright: #34d399;
+        --green-soft: #ecfdf5;
+        --amber-bg: #fef3c7;
+        --amber-fg: #92400e;
+        --amber-line: #fcd34d;
+        --red: #b91c1c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #cfd3d8;
+        color: var(--fg);
+        font-family: "Geist", "Segoe UI", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .slide {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        margin: 24px auto;
+        padding: 40px 60px 64px;
+        background: #fff;
+        overflow: hidden;
+        font-size: 24px;
+        line-height: 1.3;
+        display: flex;
+        flex-direction: column;
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide > * {
+        flex-shrink: 0;
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .slide {
+          margin: 0;
+        }
+      }
+      .slide.dark {
+        background: radial-gradient(1200px 600px at 85% 0%, #0f2a22 0%, var(--ink) 60%);
+        color: #f9fafb;
+      }
+
+      /* chrome */
+      .footer {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        bottom: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 17px;
+        color: var(--soft);
+      }
+      .dark .footer {
+        color: #9ca3af;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+        font-weight: 600;
+        font-size: 18px;
+      }
+      .dark .brand {
+        color: #f9fafb;
+      }
+      .brand svg {
+        width: 26px;
+        height: 26px;
+      }
+      .brand b {
+        color: var(--green-2);
+        font-weight: 600;
+      }
+      .dark .brand b {
+        color: var(--green-bright);
+      }
+      .kicker {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--green);
+        margin: 0 0 8px;
+      }
+      .dark .kicker {
+        color: var(--green-bright);
+      }
+      h1 {
+        font-size: 46px;
+        line-height: 1.06;
+        letter-spacing: -0.025em;
+        font-weight: 700;
+        margin: 0 0 8px;
+        text-wrap: balance;
+      }
+      .sub {
+        font-size: 23px;
+        line-height: 1.3;
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      .dark .sub {
+        color: #d1d5db;
+      }
+      .note {
+        font-size: 17px;
+        line-height: 1.32;
+        color: var(--soft);
+        margin: 0;
+      }
+      .mono {
+        font-family: "Geist Mono", Consolas, monospace;
+      }
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 12px 32px rgb(15 23 42 / 0.12);
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 12px;
+        border-radius: 7px;
+        font-size: 19px;
+        font-weight: 600;
+        white-space: nowrap;
+        line-height: 1.3;
+      }
+      .chip.verified {
+        background: var(--green);
+        color: #fff;
+      }
+      .chip.likely {
+        background: var(--amber-bg);
+        color: var(--amber-fg);
+        border: 1px solid var(--amber-line);
+      }
+      .chip.unconfirmed {
+        border: 2px dashed #9ca3af;
+        color: #374151;
+        background: #fff;
+      }
+      .todo {
+        background: #fef9c3;
+        outline: 2px dashed #ca8a04;
+        border-radius: 6px;
+        padding: 0 8px;
+      }
+      /* A fixed window onto a screenshot: the image is positioned inside with inline styles. */
+      .frame {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fbfbfc;
+        box-shadow: 0 10px 26px rgb(15 23 42 / 0.1);
+      }
+      .frame img {
+        position: absolute;
+        max-width: none;
+      }
+
+      /* 1 · hook */
+      .hook {
+        display: grid;
+        grid-template-columns: 1fr 440px;
+        gap: 48px;
+        margin-top: 6px;
+      }
+      .title-xl {
+        font-size: 80px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        margin: 0 0 14px;
+      }
+      .title-xl b {
+        color: var(--green-bright);
+        font-weight: 800;
+      }
+      .tagline {
+        font-size: 31px;
+        line-height: 1.2;
+        font-weight: 600;
+        margin: 0 0 26px;
+        color: #fff;
+        text-wrap: balance;
+      }
+      .problem {
+        font-size: 25px;
+        line-height: 1.36;
+        color: #e5e7eb;
+        margin: 0 0 20px;
+      }
+      .problem strong {
+        color: #fff;
+      }
+      .who {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .who span {
+        border: 1px solid #374151;
+        background: rgb(255 255 255 / 0.04);
+        border-radius: 999px;
+        padding: 5px 16px;
+        font-size: 20px;
+        color: #e5e7eb;
+      }
+      .questions {
+        display: grid;
+        gap: 14px;
+      }
+      .q {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border: 1px solid #1f2937;
+        background: rgb(255 255 255 / 0.05);
+        border-radius: 14px;
+        padding: 14px 18px;
+        font-size: 25px;
+        font-weight: 600;
+      }
+      .q i {
+        flex: none;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px dashed #6b7280;
+        display: grid;
+        place-items: center;
+        font-style: normal;
+        color: #9ca3af;
+        font-size: 22px;
+      }
+      .team-line {
+        margin: 18px 0 0;
+        font-size: 20px;
+        color: #9ca3af;
+      }
+      .team-line b {
+        color: #fff;
+      }
+      .fact {
+        border-radius: 14px;
+        padding: 16px 18px;
+        background: rgb(52 211 153 / 0.1);
+        border: 1px solid rgb(52 211 153 / 0.35);
+      }
+      .fact .big {
+        font-size: 50px;
+        font-weight: 800;
+        color: var(--green-bright);
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+      .fact p {
+        margin: 6px 0 0;
+        font-size: 19px;
+        line-height: 1.32;
+        color: #d1d5db;
+      }
+
+      /* 2 · solution */
+      .solution {
+        display: grid;
+        grid-template-columns: 440px 1fr;
+        gap: 36px;
+        align-items: start;
+      }
+      .flow {
+        display: grid;
+        gap: 6px;
+      }
+      .flow .box {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 8px 14px;
+        background: var(--panel);
+      }
+      .flow .box small {
+        display: block;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        font-weight: 600;
+      }
+      .flow .box span {
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.25;
+      }
+      .flow .box.accent {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .flow .box.accent small {
+        color: var(--green-bright);
+      }
+      .flow .arrow {
+        text-align: center;
+        color: var(--green);
+        font-weight: 700;
+        line-height: 0.7;
+        font-size: 20px;
+      }
+      .tiers-col {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .tiers-col .chip {
+        font-size: 17px;
+        padding: 3px 10px;
+      }
+      .features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 22px;
+        margin-top: 14px;
+      }
+      .feature {
+        display: flex;
+        gap: 10px;
+        font-size: 19px;
+        line-height: 1.3;
+      }
+      .feature b {
+        color: var(--green);
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 17px;
+        padding-top: 2px;
+      }
+      .caption {
+        font-size: 17px;
+        color: var(--soft);
+        margin-top: 8px;
+        line-height: 1.32;
+      }
+
+      /* 3 · demo */
+      .demo-row {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 10px;
+      }
+      .demo-row.a {
+        grid-template-columns: 330px 1fr;
+      }
+      .demo-row.b {
+        grid-template-columns: 400px 1fr;
+      }
+      .step-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .step-label i {
+        font-style: normal;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .step-label small {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        color: var(--green);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+      .step-caption {
+        margin: 6px 0 0;
+        font-size: 17px;
+        line-height: 1.3;
+        color: var(--muted);
+      }
+      .step-caption strong {
+        color: var(--fg);
+      }
+      .demo-result {
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-size: 19px;
+        line-height: 1.3;
+      }
+      .demo-result b {
+        color: var(--green-bright);
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 15px;
+        letter-spacing: 0.1em;
+      }
+
+      /* 4 · technology */
+      .arch {
+        display: grid;
+        grid-template-columns: 245px 1fr 265px;
+        gap: 16px;
+        align-items: start;
+      }
+      .col-title {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        margin-bottom: 6px;
+      }
+      .tile {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 7px 12px;
+        background: #fff;
+        margin-bottom: 8px;
+      }
+      .tile b {
+        display: block;
+        font-size: 18px;
+        line-height: 1.2;
+      }
+      .tile span {
+        display: block;
+        font-size: 16px;
+        line-height: 1.28;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .tile.dark {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .tile.dark span {
+        color: #d1d5db;
+      }
+      .tile.green {
+        background: var(--green-soft);
+        border-color: #a7f3d0;
+      }
+      .pipe {
+        border: 2px solid var(--green);
+        border-radius: 16px;
+        padding: 10px 12px 12px;
+        background: linear-gradient(180deg, #f0fdf8, #fff 40%);
+      }
+      .pipe-steps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 10px;
+      }
+      .pstep {
+        border-radius: 10px;
+        padding: 7px 11px;
+        background: #fff;
+        border: 1px solid var(--line);
+      }
+      .pstep b {
+        font-size: 18px;
+        display: block;
+        line-height: 1.2;
+      }
+      .pstep b em {
+        font-style: normal;
+        color: var(--green);
+        font-family: "Geist Mono", Consolas, monospace;
+        margin-right: 6px;
+      }
+      .pstep span {
+        font-size: 15.5px;
+        line-height: 1.28;
+        color: var(--muted);
+        display: block;
+        margin-top: 1px;
+      }
+      .pstep.ai {
+        border: 1px solid #a7f3d0;
+        background: var(--green-soft);
+      }
+      .pstep.rule {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .pstep.rule span {
+        color: #d1d5db;
+      }
+      .pstep.rule b em {
+        color: var(--green-bright);
+      }
+      .principle {
+        margin-top: 8px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .principle span {
+        font-size: 16px;
+        border-radius: 999px;
+        padding: 4px 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .principle span b {
+        color: var(--green);
+      }
+
+      /* 5 · advantages */
+      .versus {
+        display: grid;
+        grid-template-columns: 250px 1fr 1fr;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        font-size: 19px;
+        line-height: 1.28;
+      }
+      .versus > div {
+        padding: 8px 14px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .versus .h {
+        border-top: none;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--soft);
+        background: var(--panel);
+      }
+      .versus .h.ours {
+        background: var(--ink);
+        color: var(--green-bright);
+      }
+      .versus .k {
+        font-weight: 600;
+        background: var(--panel);
+      }
+      .versus .old {
+        color: var(--muted);
+      }
+      .versus .old::before {
+        content: "✕";
+        color: var(--red);
+        font-weight: 700;
+      }
+      .versus .new {
+        background: var(--green-soft);
+        font-weight: 500;
+      }
+      .versus .new::before {
+        content: "✓";
+        color: var(--green);
+        font-weight: 800;
+      }
+      .adv-bottom {
+        display: grid;
+        grid-template-columns: 1fr 480px;
+        gap: 24px;
+        margin-top: 14px;
+        align-items: center;
+      }
+      .adv-bottom .note {
+        font-size: 18px;
+        color: var(--muted);
+      }
+      .adv-bottom .note strong {
+        color: var(--fg);
+      }
+
+      /* 6 · impact */
+      .impact {
+        display: grid;
+        grid-template-columns: 560px 1fr;
+        gap: 28px;
+        align-items: start;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 16px 12px;
+        background: var(--panel);
+      }
+      .stat .num {
+        font-size: 44px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        color: var(--green);
+      }
+      .stat .lbl {
+        font-size: 17px;
+        line-height: 1.3;
+        margin-top: 4px;
+        color: var(--fg);
+      }
+      .bar {
+        display: flex;
+        height: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 17px;
+        font-weight: 600;
+        margin: 12px 0 6px;
+      }
+      .bar div {
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        white-space: nowrap;
+      }
+      .bar .v {
+        background: var(--green);
+        color: #fff;
+      }
+      .bar .l {
+        background: var(--amber-bg);
+        color: var(--amber-fg);
+      }
+      .bar .u {
+        background: #e5e7eb;
+        color: #374151;
+        justify-content: flex-end;
+      }
+      .value {
+        display: grid;
+        gap: 10px;
+      }
+      .value .card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 9px 16px;
+      }
+      .value .card small {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        color: var(--green);
+      }
+      .value .card p {
+        margin: 3px 0 0;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .kpis {
+        margin-top: 10px;
+        border: 2px dashed #9ca3af;
+        border-radius: 14px;
+        padding: 9px 16px;
+        font-size: 17px;
+        line-height: 1.32;
+      }
+      .kpis b {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        color: var(--soft);
+      }
+
+      /* 7 · team */
+      .team {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .member {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 20px;
+        display: grid;
+        grid-template-columns: 64px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .member .avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: var(--ink);
+        color: var(--green-bright);
+        display: grid;
+        place-items: center;
+        font-family: "Geist Mono", Consolas, monospace;
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .member .name {
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1.15;
+      }
+      .member .role {
+        font-size: 19px;
+        font-weight: 600;
+        color: var(--green);
+        margin: 2px 0 6px;
+      }
+      .member .does {
+        font-size: 18px;
+        line-height: 1.32;
+        color: var(--muted);
+      }
+      .member .handle {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 15px;
+        color: var(--soft);
+        margin-top: 4px;
+      }
+      .member.placeholder {
+        border: 2px dashed #9ca3af;
+        background: #fafafa;
+      }
+      .member.placeholder .avatar {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
+      .how {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .how div {
+        border-radius: 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 10px 16px;
+        font-size: 18px;
+        line-height: 1.3;
+      }
+      .how b {
+        display: block;
+        font-size: 26px;
+        color: var(--green);
+        letter-spacing: -0.02em;
+      }
+
+      /* 8 · roadmap */
+      .road {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .phase {
+        border-radius: 16px;
+        padding: 14px 18px;
+        border: 1px solid #1f2937;
+        background: rgb(255 255 255 / 0.04);
+      }
+      .phase.now {
+        border-color: rgb(52 211 153 / 0.6);
+        background: rgb(52 211 153 / 0.08);
+      }
+      .phase h3 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .phase .tag {
+        font-family: "Geist Mono", Consolas, monospace;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--green-bright);
+        margin-bottom: 4px;
+      }
+      .phase ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 7px;
+        font-size: 19px;
+        line-height: 1.3;
+        color: #e5e7eb;
+      }
+      .phase li {
+        position: relative;
+        padding-left: 18px;
+      }
+      .phase li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.52em;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green-bright);
+      }
+      .phase:not(.now) li::before {
+        background: #6b7280;
+      }
+      .stages {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 16px 0 0;
+        font-size: 18px;
+        color: #d1d5db;
+      }
+      .stages span {
+        border: 1px solid #374151;
+        border-radius: 999px;
+        padding: 4px 14px;
+        white-space: nowrap;
+      }
+      .stages span.here {
+        border-color: var(--green-bright);
+        color: #fff;
+        background: rgb(52 211 153 / 0.15);
+      }
+      .stages em {
+        font-style: normal;
+        color: var(--green-bright);
+      }
+      .finale {
+        margin: 20px 0 0;
+        font-size: 36px;
+        line-height: 1.15;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .finale b {
+        color: var(--green-bright);
+      }
+      .links {
+        margin-top: 14px;
+        display: flex;
+        gap: 26px;
+        font-size: 18px;
+        color: #9ca3af;
+      }
+      .links span b {
+        color: #fff;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="logo">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#171717" />
+        <path
+          d="M8 13V9a1 1 0 0 1 1-1h4M19 8h4a1 1 0 0 1 1 1v4M24 19v4a1 1 0 0 1-1 1h-4M13 24H9a1 1 0 0 1-1-1v-4"
+          fill="none"
+          stroke="#fafafa"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <path
+          d="m11.5 16.2 3 3 6-6.4"
+          fill="none"
+          stroke="#34d399"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </template>
+
+    <!-- 1 · ПРОБЛЕМА -->
+    <section class="slide dark">
+      <p class="kicker">Проблема</p>
+      <div class="hook">
+        <div>
+          <p class="title-xl">Campus<b>Proof</b></p>
+          <p class="tagline">Настоящие фото университета — у каждого источник, дата и уровень доверия.</p>
+          <p class="problem">
+            Абитуриенты выбирают вузы, в которые <strong>не могут приехать</strong>. Сайты вузов показывают
+            отретушированный маркетинг, а настоящие фото разбросаны, дублируются, устаревают или сняты в другом месте.
+            Поиск картинок не говорит, <strong>какому фото верить</strong>.
+          </p>
+          <div class="who">
+            <span>Абитуриенты 16–19 лет, Казахстан и Центральная Азия</span>
+            <span>Родители</span>
+            <span>Консультанты по поступлению</span>
+          </div>
+          <p class="team-line">Команда <b>Phantomlanc3rs</b> · LOCUS Startup Hackathon 2026 · кейс 01</p>
+        </div>
+        <div class="questions">
+          <div class="q"><i>?</i>Откуда это фото?</div>
+          <div class="q"><i>?</i>Когда оно снято?</div>
+          <div class="q"><i>?</i>Это точно этот вуз?</div>
+          <div class="fact">
+            <div class="big">27 %</div>
+            <p>
+              самых перспективных изображений из открытых источников мы отклонили: дубли, логотипы и документы, мелкие
+              файлы, портреты, название другой организации — 137 из 513 по 14 вузам.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Источник: сохранённые профили на проде, 19.09.2026 · 1 / 8</span>
+      </div>
+    </section>
+
+    <!-- 2 · РЕШЕНИЕ -->
+    <section class="slide">
+      <p class="kicker">Решение</p>
+      <h1>Название вуза → проверенный фотопрофиль</h1>
+      <p class="sub">Доказательства, а не картинки: честное «не нашли» лучше чужого фото.</p>
+      <div class="solution">
+        <div>
+          <div class="flow">
+            <div class="box"><small>Проблема</small><span>Фото кампуса нельзя проверить</span></div>
+            <div class="arrow">↓</div>
+            <div class="box accent">
+              <small>CampusProof</small><span>Пайплайн доказательств: открытые данные, веб-поиск, ИИ</span>
+            </div>
+            <div class="arrow">↓</div>
+            <div class="box"><small>Действие</small><span>Ввести название — можно с опечаткой</span></div>
+            <div class="arrow">↓</div>
+            <div class="box">
+              <small>Результат</small><span>Кампус, общежития, аудитории, библиотеки, город — проверено</span>
+            </div>
+          </div>
+          <div class="tiers-col">
+            <span class="chip verified">✓ Проверено</span><span class="chip likely">◐ Вероятно</span
+            ><span class="chip unconfirmed">? Не подтверждено</span>
+          </div>
+        </div>
+        <div>
+          <div class="shot"><img src="../en/img/dorms.jpg" alt="Раздел «Общежития» КБТУ на проде" /></div>
+          <p class="caption">
+            Прод, КБТУ: общежития с сайта самого вуза — у каждого фото источник, дата и уровень доверия.
+          </p>
+          <div class="features">
+            <div class="feature"><b>01</b>Умный поиск: опечатки, сокращения, кириллица; выбор при неоднозначности</div>
+            <div class="feature"><b>02</b>Кликабельный источник, дата с типом и лицензия у каждого фото</div>
+            <div class="feature"><b>03</b>Уровень доверия считается по записанным доказательствам</div>
+            <div class="feature"><b>04</b>Честные пробелы и список того, что отфильтровано и почему</div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>campusproof.vercel.app · 2 / 8</span>
+      </div>
+    </section>
+
+    <!-- 3 · ДЕМО -->
+    <section class="slide">
+      <p class="kicker">Демо · реальный прогон на проде · КБТУ · 19.09.2026</p>
+      <h1>От названия до доказательств за секунды</h1>
+      <div class="demo-row a">
+        <div>
+          <div class="step-label"><i>1</i>Ввод названия</div>
+          <div class="frame" style="height: 150px">
+            <img
+              src="../en/img/home.png"
+              alt="Главная страница с полем поиска"
+              style="width: 709px; left: -79px; top: -165px"
+            />
+          </div>
+          <p class="step-caption">«КБТУ», «MSU» и даже «Nazarbaev Univercity» работают.</p>
+        </div>
+        <div>
+          <div class="step-label"><i>2</i>Живой пайплайн</div>
+          <div class="frame" style="height: 150px">
+            <img
+              src="../en/img/profile-top.png"
+              alt="Этапы проверки со счётчиками и статусы источников"
+              style="width: 812px; left: 0; top: -124px"
+            />
+          </div>
+          <p class="step-caption">
+            <strong>135 кандидатов</strong> из Commons, веб-поиска и Openverse → 36 проверено →
+            <strong>31 фото, 5 отсеяно</strong>. Собрано за 1,9 с (источники в кеше).
+          </p>
+        </div>
+      </div>
+      <div class="demo-row b">
+        <div>
+          <div class="step-label"><i>3</i>Решают доказательства</div>
+          <div class="frame" style="height: 160px">
+            <img
+              src="../en/img/evidence.jpg"
+              alt="Диалог доказательств проверенного фото"
+              style="width: 400px; left: 0; top: -314px"
+            />
+          </div>
+          <p class="step-caption">
+            Gemini описывает снимок, <strong>очки считает код</strong>: 100 очков → ✓ Проверено.
+          </p>
+        </div>
+        <div>
+          <div class="step-label"><i>4</i>Проверенный профиль</div>
+          <div class="frame" style="height: 160px">
+            <img
+              src="../en/img/campus.jpg"
+              alt="Раздел «Кампус» с проверенными фото"
+              style="width: 742px; left: 0; top: 0"
+            />
+          </div>
+          <p class="step-caption">
+            8 разделов, <strong>4 фильтра</strong>, карта и сравнение — у каждого фото источник в один клик.
+          </p>
+        </div>
+      </div>
+      <div class="demo-result">
+        <b>ИТОГ</b>31 фото — у каждого источник, дата и уровень доверия. Сохранённый профиль открывается примерно за 0,4
+        с.
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Скриншоты: интерфейс прода · 3 / 8</span>
+      </div>
+    </section>
+
+    <!-- 4 · ТЕХНОЛОГИИ -->
+    <section class="slide">
+      <p class="kicker">Технологии · как это устроено</p>
+      <h1>ИИ наблюдает. Решает код.</h1>
+      <p class="sub">Потоковый пайплайн на бесплатных и открытых API — у каждого этапа свой тайм-аут.</p>
+      <div class="arch">
+        <div>
+          <div class="col-title">Продукт</div>
+          <div class="tile dark">
+            <b>Браузер · любое устройство</b><span>Без аккаунтов; IP хранится только хешем для лимитов</span>
+          </div>
+          <div class="tile"><b>Next.js 16 · React 19</b><span>Интерфейс и API на Vercel, Node.js 24</span></div>
+          <div class="tile"><b>Server-Sent Events</b><span>Этапы и фото приходят по мере готовности</span></div>
+          <div class="tile">
+            <b>Tailwind 4 · shadcn/ui</b><span>Доступный интерфейс, тёмная тема; карта Leaflet + OSM</span>
+          </div>
+        </div>
+        <div class="pipe">
+          <div class="col-title">Пайплайн · TypeScript · один путь для любого вуза</div>
+          <div class="pipe-steps">
+            <div class="pstep">
+              <b><em>1</em>Вуз</b><span>Локальный индекс 1 041 вуза + живой поиск Wikidata</span>
+            </div>
+            <div class="pstep">
+              <b><em>2</em>Сбор</b><span>Commons, Википедия · Serper · Openverse — параллельно</span>
+            </div>
+            <div class="pstep">
+              <b><em>3</em>Загрузка</b><span>Защита от SSRF, сжатие sharp, геометки EXIF</span>
+            </div>
+            <div class="pstep">
+              <b><em>4</em>Дубли</b><span>Перцептивный хеш (dHash) + проверка той же сцены</span>
+            </div>
+            <div class="pstep ai">
+              <b><em>5</em>Наблюдение · Gemini</b><span>Тип снимка, текст, раздел — JSON с проверкой zod</span>
+            </div>
+            <div class="pstep rule">
+              <b><em>6</em>Очки · правила</b><span>Очки за доказательства → уровень; детерминированно</span>
+            </div>
+            <div class="pstep ai">
+              <b><em>7</em>Описание · Gemini</b><span>3–5 предложений только по источникам, со ссылками</span>
+            </div>
+            <div class="pstep">
+              <b><em>8</em>Сборка</b><span>Покрытие по разделам, список отфильтрованного</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="col-title">Данные и качество</div>
+          <div class="tile green">
+            <b>Upstash Redis</b><span>Кеш профилей на 14 дней, ответы источников и модели, лимиты</span>
+          </div>
+          <div class="tile">
+            <b>Защита от сбоев</b
+            ><span
+              >Дедлайн 27 с, тайм-ауты источников, <span class="mono" style="display: inline">?simulate=</span></span
+            >
+          </div>
+          <div class="tile"><b>291 автотест</b><span>vitest; CI проверяет каждый pull request</span></div>
+          <div class="tile"><b>Аудиты прода</b><span>Smoke-тест + аудит доказательств 1 105 фото</span></div>
+        </div>
+      </div>
+      <div class="principle">
+        <span><b>✓</b> ИИ не ставит очки и уровни</span><span><b>✓</b> Не распознаём людей</span
+        ><span><b>✓</b> Только официальные API и открытые данные</span><span><b>✓</b> Без особых случаев под вуз</span>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>github.com/Amir10202010/campusproof · 4 / 8</span>
+      </div>
+    </section>
+
+    <!-- 5 · ПРЕИМУЩЕСТВА -->
+    <section class="slide">
+      <p class="kicker">Почему наш подход</p>
+      <h1>Картинки против доказательств</h1>
+      <p class="sub">Одни и те же вопросы — с ответом на каждом фото.</p>
+      <div class="versus">
+        <div class="h">Вопрос</div>
+        <div class="h">Поиск картинок / сайт вуза</div>
+        <div class="h ours">CampusProof</div>
+
+        <div class="k">Откуда фото?</div>
+        <div class="old">Миниатюра, происхождение неизвестно</div>
+        <div class="new">Кликабельный источник, лицензия, автор</div>
+
+        <div class="k">Когда снято?</div>
+        <div class="old">Без даты или непонятно, что за дата</div>
+        <div class="new">Дата с пометкой: снято, загружено или найдено</div>
+
+        <div class="k">Это этот вуз?</div>
+        <div class="old">Догадка того, кто смотрит</div>
+        <div class="new">Уровень по доказательствам, очки видны</div>
+
+        <div class="k">Шум</div>
+        <div class="old">Дубли, стоки, рендеры, чужие места</div>
+        <div class="new">Убраны до показа, причина видна</div>
+
+        <div class="k">Нет данных</div>
+        <div class="old">Пробел заполнен чем-то похожим</div>
+        <div class="new">Честное «не смогли подтвердить»</div>
+
+        <div class="k">Маркетинг</div>
+        <div class="old">Только то, что показал сам вуз</div>
+        <div class="new">Официальные и независимые — рядом</div>
+      </div>
+      <div class="adv-bottom">
+        <p class="note">
+          <strong>Реальный пример, профиль КБТУ:</strong> фото с вывесками «Amanat party office» и «Kazpatent»
+          визуальная проверка отметила и перенесла в «Отфильтровано» — с причиной для пользователя.
+        </p>
+        <div class="frame" style="height: 140px">
+          <img
+            src="../en/img/filtered.jpg"
+            alt="Отфильтровано: на снимке название другой организации"
+            style="width: 538px; left: -10px; top: -72px"
+          />
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>5 / 8</span>
+      </div>
+    </section>
+
+    <!-- 6 · РЕЗУЛЬТАТЫ -->
+    <section class="slide">
+      <p class="kicker">Результаты · измерено на проде</p>
+      <h1>Доверие, которое можно проверить</h1>
+      <p class="sub">Замеры на проде с выборкой и датой. Цели помечены как цели.</p>
+      <div class="impact">
+        <div>
+          <div class="stats">
+            <div class="stat">
+              <div class="num">27 / 27</div>
+              <div class="lbl">запросов smoke-теста пройдены: опечатки, неоднозначность, мусор, сбои</div>
+            </div>
+            <div class="stat">
+              <div class="num">2,6 с</div>
+              <div class="lbl">
+                медиана до готового профиля (источники в кеше; холодный прогон
+                <span style="white-space: nowrap">9–20 с</span>)
+              </div>
+            </div>
+            <div class="stat">
+              <div class="num">0</div>
+              <div class="lbl">расхождений очков и доказательств на 1 105 фото из 42 профилей</div>
+            </div>
+            <div class="stat">
+              <div class="num">365 / 365</div>
+              <div class="lbl">заявок «официальный сайт» подтверждены по Wikidata</div>
+            </div>
+          </div>
+          <div class="bar">
+            <div class="v" style="width: 30.1%">✓ 30,1 %</div>
+            <div class="l" style="width: 53.9%">◐ Вероятно 53,9 %</div>
+            <div class="u" style="width: 16%">? 15,9 %</div>
+          </div>
+          <p class="note">
+            ✓ Проверено · ◐ Вероятно · ? Не подтверждено — 1 105 фото в 42 профилях. Источники:
+            docs/qa-report-2026-09-19.md, eval/results/2026-09-19-evidence-audit.md
+          </p>
+        </div>
+        <div>
+          <div class="value">
+            <div class="card">
+              <small>АБИТУРИЕНТАМ И РОДИТЕЛЯМ</small>
+              <p>Настоящие общежития, аудитории и кампус до поступления — и понятно, какому фото верить.</p>
+            </div>
+            <div class="card">
+              <small>КОНСУЛЬТАНТАМ И ПЛАТФОРМАМ</small>
+              <p>Профили со ссылками на источники; JSON-эндпоинт профиля уже есть для интеграции.</p>
+            </div>
+            <div class="card">
+              <small>ОТРАСЛИ</small>
+              <p>Стандарт прозрачности для фото на открытых данных — с авторами и лицензиями.</p>
+            </div>
+          </div>
+          <div class="kpis">
+            <b>СЛЕДУЮЩИЕ KPI · ЦЕЛИ, ЕЩЁ НЕ ИЗМЕРЕНЫ</b><br />
+            Точность «Проверено» на размеченной выборке ≥ 90 % · точность разделов ≥ 85 % · p50/p90 холодного прогона ·
+            жалобы на 1 000 фото
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Замеры 19.09.2026 · 6 / 8</span>
+      </div>
+    </section>
+
+    <!-- 7 · КОМАНДА -->
+    <section class="slide">
+      <p class="kicker">Команда Phantomlanc3rs</p>
+      <h1>72 часа, четыре параллельные зоны</h1>
+      <p class="sub">LOCUS Startup Hackathon 2026 · кейс 01 «Визуальный профиль университета».</p>
+      <div class="team">
+        <div class="member">
+          <div class="avatar">P1</div>
+          <div>
+            <div class="name">Сагындык Амирхан</div>
+            <div class="role">Пайплайн и интеграция</div>
+            <div class="does">Пайплайн, резолвер, источники, Gemini, правила скоринга, кеш и лимиты.</div>
+            <div class="handle">github.com/Amir10202010</div>
+          </div>
+        </div>
+        <div class="member">
+          <div class="avatar">P4</div>
+          <div>
+            <div class="name">Айжигитов Алдияр</div>
+            <div class="role">Продукт и интерфейс</div>
+            <div class="does">
+              Интерфейс профиля: доказательства, фильтры, карта, сравнение; QA, README, презентация.
+            </div>
+            <div class="handle">github.com/aldiyaraizhigitov</div>
+          </div>
+        </div>
+        <div class="member">
+          <div class="avatar">P3</div>
+          <div>
+            <div class="name">Садвакасов Данияр</div>
+            <div class="role">Данные</div>
+            <div class="does">Индекс 1 041 вуза из Wikidata (SPARQL): названия, сокращения, домены.</div>
+            <div class="handle">github.com/Chelovek12346</div>
+          </div>
+        </div>
+        <div class="member">
+          <div class="avatar">P2</div>
+          <div>
+            <div class="name">Сулейменов Султан</div>
+            <div class="role">Проверка</div>
+            <div class="does">Зона проверки фото: поиск изображений, дубликаты, визуальная проверка, скоринг.</div>
+          </div>
+        </div>
+      </div>
+      <div class="how">
+        <div><b>Контракты</b>Типы и каркас с первого часа — зоны не мешали друг другу</div>
+        <div><b>291 тест</b>Маленькие pull request, влиты только с зелёным CI</div>
+        <div><b>Открыто</b>Публичный репозиторий; ИИ-ассистент указан в README</div>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Phantomlanc3rs · 7 / 8</span>
+      </div>
+    </section>
+
+    <!-- 8 · ПЛАН РАЗВИТИЯ -->
+    <section class="slide dark">
+      <p class="kicker">План развития</p>
+      <h1>От MVP к слою доверия для фото вузов</h1>
+      <div class="road">
+        <div class="phase now">
+          <div class="tag">Сейчас · работает</div>
+          <h3>Работающий MVP</h3>
+          <ul>
+            <li>Поиск с опечатками, сокращениями и списком выбора</li>
+            <li>8 разделов, 4 фильтра, уровни с доказательствами</li>
+            <li>Отфильтрованное, карта, сравнение, сохранённые профили</li>
+            <li>Честная деградация, проверено на проде</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="tag">Дальше · в планах</div>
+          <h3>Доказать точность</h3>
+          <ul>
+            <li>Размеченная выборка и публичная страница точности</li>
+            <li>Детектор повторов: тот же кадр на стоке или у другого вуза</li>
+            <li>Жалобы на фото как сигнал в оценке</li>
+            <li>Больше локальных источников для Казахстана и ЦА</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="tag">Будущее · исследуем</div>
+          <h3>Масштабировать</h3>
+          <ul>
+            <li>API профилей для консультантов и образовательных платформ</li>
+            <li>Интерфейс на казахском и английском</li>
+            <li>Больше стран и систем образования</li>
+            <li>Экскурсия по кампусу по фото с геометками</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stages">
+        <span class="here">MVP · сейчас</span><em>→</em><span>Пилот с консультантами</span><em>→</em
+        ><span>Абитуриенты</span><em>→</em><span>Интеграции</span><em>→</em><span>Новые регионы</span>
+      </div>
+      <p class="finale">
+        От фото, которым приходится <b>верить на слово</b>, — к доказательствам, которые <b>проверяются в один клик</b>.
+      </p>
+      <div class="links">
+        <span>Попробовать: <b>campusproof.vercel.app</b></span
+        ><span>Код: <b>github.com/Amir10202010/campusproof</b></span>
+      </div>
+      <div class="footer">
+        <span class="brand" data-logo
+          ><span>Campus<b>Proof</b></span></span
+        ><span>Планы без обещанных сроков · 8 / 8</span>
+      </div>
+    </section>
+
+    <script>
+      // One logo definition for every footer.
+      const logo = document.getElementById("logo").content;
+      for (const brand of document.querySelectorAll("[data-logo]")) brand.prepend(logo.cloneNode(true));
+    </script>
+  </body>
+</html>
